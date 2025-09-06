@@ -1,7 +1,44 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Environment variables that should be available at build time
+  env: {
+    AI_CONFIDENCE_THRESHOLD: process.env.AI_CONFIDENCE_THRESHOLD,
+    USE_MOCK_DATA: process.env.USE_MOCK_DATA,
+    DEBUG_AI_RESPONSES: process.env.DEBUG_AI_RESPONSES,
+  },
+
+
+  // Image optimization settings
+  images: {
+    domains: ['localhost'],
+    remotePatterns: [
+      // Add any remote patterns needed for your deployment
+    ],
+  },
+
+  // TypeScript strict mode
+  typescript: {
+    tsconfigPath: './tsconfig.json',
+  },
+
+  // ESLint configuration
+  eslint: {
+    ignoreDuringBuilds: false,
+  },
+
+  // Webpack configuration for better module resolution
+  webpack: (config, { isServer }) => {
+    // Handle server-only imports
+    if (isServer) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@/lib/server': require('path').resolve(__dirname, 'src/lib/server'),
+      };
+    }
+
+    return config;
+  },
 };
 
 export default nextConfig;

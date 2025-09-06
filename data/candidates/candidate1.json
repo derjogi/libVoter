@@ -1,0 +1,27 @@
+{
+  "id": "candidate_1",
+  "name": "Jane Smith",
+  "party": "Democratic",
+  "biography": "Experienced politician with 10 years in public service...",
+  "positions": {
+    "healthcare": {
+      "stance": "Supports universal healthcare",
+      "details": "Advocates for Medicare for All system...",
+      "sources": ["campaign website", "policy paper 2024"]
+    },
+    "economy": {
+      "stance": "Progressive economic policies",
+      "details": "Supports raising minimum wage to $15/hour...",
+      "sources": ["economic plan document"]
+    }
+  },
+  "experience": [
+    "Mayor of Springfield (2018-2024)",
+    "State Senator (2012-2018)"
+  ],
+  "website": "https://janesmith2024.com",
+  "socialMedia": {
+    "twitter": "@JaneSmith2024",
+    "facebook": "JaneSmithForOffice"
+  }
+}

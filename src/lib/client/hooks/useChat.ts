@@ -1,0 +1,91 @@
+'use client';
+
+import { useState, useCallback } from 'react';
+import type { ConversationMessage, UserResponse } from '@/types';
+import type { ChatResponse } from '@/lib/server/ai/chat-handler';
+
+export function useChat() {
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState(0);
+  const [shouldShowCandidates, setShouldShowCandidates] = useState(false);
+
+  const sendMessage = useCallback(async (
+    message: string,
+    userResponses: UserResponse[]
+  ) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Add user message to history
+      const userMessage: ConversationMessage = {
+        id: `msg_${Date.now()}`,
+        role: 'user',
+        content: message,
+        timestamp: new Date()
+      };
+
+      const updatedHistory = [...messages, userMessage];
+      setMessages(updatedHistory);
+
+      // Process with AI
+      const response = await fetch('/api/chat/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          conversationHistory: updatedHistory,
+          userResponses
+        })
+      });
+
+      const result: ChatResponse = await response.json();
+
+      if (!result) {
+        throw new Error('No response from server');
+      }
+
+      // Add AI response to history
+      const aiMessage: ConversationMessage = {
+        id: `msg_${Date.now() + 1}`,
+        role: 'assistant',
+        content: result.message,
+        timestamp: new Date(),
+        componentData: result.nextComponent
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+      setConfidence(result.confidence);
+      setShouldShowCandidates(result.shouldShowCandidates);
+
+      return result;
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(errorMessage);
+      console.error('Chat error:', err);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [messages]);
+
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    setConfidence(0);
+    setShouldShowCandidates(false);
+    setError(null);
+  }, []);
+
+  return {
+    messages,
+    isLoading,
+    error,
+    confidence,
+    shouldShowCandidates,
+    sendMessage,
+    clearChat
+  };
+}
