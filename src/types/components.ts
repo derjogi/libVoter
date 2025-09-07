@@ -14,4 +14,9 @@ export interface ComponentRendererProps {
   onNext?: () => void;
   disabled?: boolean;
   isLoading?: boolean;
+  followupQuestion?: {
+    question: string;
+    type: string;
+    reasoning?: string;
+  };
 }

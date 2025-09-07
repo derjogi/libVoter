@@ -4,7 +4,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { getAIConfig } from './config';
 import { ConfidenceCalculator } from './confidence-calculator';
-import { selectNextComponent } from '@/lib/actions/prompts';
+import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } from '@/lib/actions/prompts';
 import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
 import type { AIModelConfig } from './config';
 
@@ -14,6 +14,11 @@ export interface ChatResponse {
   shouldShowCandidates: boolean;
   nextComponent?: ComponentData;
   candidateMatches?: any[];
+  followupQuestion?: {
+    question: string;
+    type: string;
+    reasoning?: string;
+  };
 }
 
 export class AIChatHandler {
@@ -106,12 +111,31 @@ export class AIChatHandler {
         confidenceResult.score >= config.thresholds.confidence &&
         userResponses.length >= config.thresholds.minInteractions;
 
+      // Generate followup question if confidence is low
+      let followupQuestion;
+      if (confidenceResult.score < 70) {
+        try {
+          const context = `AI Response: ${responseText}\nConfidence: ${confidenceResult.score}/100\nReasoning: ${confidenceResult.reasoning}`;
+          const followupResult = await generateFollowupQuestion(userMessage, context);
+          if (followupResult.success && followupResult.data) {
+            followupQuestion = {
+              question: followupResult.data.question,
+              type: followupResult.data.type,
+              reasoning: followupResult.data.reasoning
+            };
+          }
+        } catch (error) {
+          console.error('Failed to generate followup question:', error);
+        }
+      }
+
       return {
         message: responseText,
         confidence: confidenceResult.score,
         shouldShowCandidates,
         nextComponent,
-        candidateMatches: shouldShowCandidates ? await this.generateCandidateMatches(userResponses) : undefined
+        candidateMatches: shouldShowCandidates ? await this.generateCandidateMatches(userResponses) : undefined,
+        followupQuestion
       };
 
     } catch (error) {
@@ -266,14 +290,17 @@ Please select the next component that will best help narrow down the user's poli
     // Simplified candidate matching - in production, use more sophisticated algorithm
     // This would integrate with the RAG system and database
 
-    // For now, return mock matches
-    return [
+    // Create user profile summary from responses
+    const userProfile = this.createUserProfileSummary(userResponses);
+
+    // Mock candidates - in production, these would come from database
+    const mockCandidates = [
       {
         id: 'candidate_1',
         name: 'Jane Smith',
         party: 'Democratic',
         score: 85,
-        reasoning: 'Strong alignment with progressive policies',
+        info: 'Progressive candidate focused on healthcare reform, climate action, and economic equality. Supports universal healthcare, green energy transition, and progressive taxation.',
         topPolicies: ['Healthcare reform', 'Climate action', 'Economic equality']
       },
       {
@@ -281,9 +308,47 @@ Please select the next component that will best help narrow down the user's poli
         name: 'John Doe',
         party: 'Republican',
         score: 72,
-        reasoning: 'Conservative positions on key issues',
+        info: 'Conservative candidate emphasizing fiscal responsibility, national security, and traditional values. Advocates for tax cuts, strong borders, and Second Amendment rights.',
         topPolicies: ['Tax reduction', 'Border security', 'Second Amendment']
       }
     ];
+
+    // Generate explanations using centralized function
+    const matchesWithExplanations = await Promise.all(
+      mockCandidates.map(async (candidate) => {
+        const explanationResult = await explainCandidateMatch(
+          userProfile,
+          candidate.info,
+          candidate.score
+        );
+
+        return {
+          id: candidate.id,
+          name: candidate.name,
+          party: candidate.party,
+          score: candidate.score,
+          reasoning: explanationResult.success ? explanationResult.data : 'Unable to generate explanation',
+          topPolicies: candidate.topPolicies
+        };
+      })
+    );
+
+    return matchesWithExplanations;
+  }
+
+  private createUserProfileSummary(userResponses: UserResponse[]): string {
+    // Create a simple summary of user preferences from responses
+    const responsesText = userResponses
+      .map(r => `${r.questionId}: ${this.extractTextFromResponse(r)}`)
+      .join('\n');
+
+    return `User responses summary:\n${responsesText}`;
+  }
+
+  private extractTextFromResponse(response: UserResponse): string {
+    if (typeof response.value === 'string') return response.value;
+    if (Array.isArray(response.value)) return response.value.join(', ');
+    if (typeof response.value === 'object') return JSON.stringify(response.value);
+    return String(response.value || '');
   }
 }

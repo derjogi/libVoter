@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { explainCandidateMatch } from '@/lib/actions/prompts';
 
 export function usePromptActions() {
   const [loading, setLoading] = useState(false);
@@ -45,17 +46,7 @@ export function usePromptActions() {
     setError(null);
 
     try {
-      const response = await fetch('/api/prompts/explain-match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userProfile,
-          candidateInfo,
-          matchScore
-        })
-      });
-
-      const result = await response.json();
+      const result = await explainCandidateMatch(userProfile, candidateInfo, matchScore);
       return result;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';

@@ -10,6 +10,7 @@ export function useChat() {
   const [error, setError] = useState<string | null>(null);
   const [confidence, setConfidence] = useState(0);
   const [shouldShowCandidates, setShouldShowCandidates] = useState(false);
+  const [followupQuestion, setFollowupQuestion] = useState<ChatResponse['followupQuestion']>(undefined);
 
   const sendMessage = useCallback(async (
     message: string,
@@ -59,6 +60,7 @@ export function useChat() {
       setMessages(prev => [...prev, aiMessage]);
       setConfidence(result.confidence);
       setShouldShowCandidates(result.shouldShowCandidates);
+      setFollowupQuestion(result.followupQuestion);
 
       return result;
 
@@ -76,6 +78,7 @@ export function useChat() {
     setMessages([]);
     setConfidence(0);
     setShouldShowCandidates(false);
+    setFollowupQuestion(undefined);
     setError(null);
   }, []);
 
@@ -85,6 +88,7 @@ export function useChat() {
     error,
     confidence,
     shouldShowCandidates,
+    followupQuestion,
     sendMessage,
     clearChat
   };

@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CandidateList } from '@/components/candidates/CandidateList';
 import { CandidateModal } from '@/components/candidates/CandidateModal';
 import { ComparisonView } from '@/components/candidates/ComparisonView';
-import { TrendingUp, Users } from 'lucide-react';
-import type { CandidateMatch } from '@/types';
+import { TrendingUp, Users, User } from 'lucide-react';
+import { summarizeUserPreferences } from '@/lib/actions/prompts';
+import type { CandidateMatch, UserResponse } from '@/types';
 
 interface RightPanelProps {
   candidates: CandidateMatch[];
@@ -16,6 +17,7 @@ interface RightPanelProps {
   isVisible: boolean;
   isMobile?: boolean;
   onCandidateSelect?: (candidate: CandidateMatch) => void;
+  userResponses?: UserResponse[];
 }
 
 export function RightPanel({
@@ -23,11 +25,14 @@ export function RightPanel({
   confidence,
   isVisible,
   isMobile = false,
-  onCandidateSelect
+  onCandidateSelect,
+  userResponses = []
 }: RightPanelProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateMatch | null>(null);
   const [comparisonCandidates, setComparisonCandidates] = useState<CandidateMatch[]>([]);
   const [showComparison, setShowComparison] = useState(false);
+  const [preferenceSummary, setPreferenceSummary] = useState<string>('');
+  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
 
@@ -51,6 +56,35 @@ export function RightPanel({
     }
   };
 
+  const fetchPreferenceSummary = async (responses: UserResponse[]) => {
+    if (responses.length === 0) {
+      setPreferenceSummary('');
+      return;
+    }
+
+    setIsLoadingSummary(true);
+    try {
+      const result = await summarizeUserPreferences(responses);
+
+      if (result.success) {
+        setPreferenceSummary(result.data || '');
+      } else {
+        console.error('Failed to fetch preference summary:', result.error);
+        setPreferenceSummary('');
+      }
+    } catch (error) {
+      console.error('Error fetching preference summary:', error);
+      setPreferenceSummary('');
+    } finally {
+      setIsLoadingSummary(false);
+    }
+  };
+
+  // Update preference summary when user responses change
+  useEffect(() => {
+    fetchPreferenceSummary(userResponses);
+  }, [userResponses]);
+
   if (!isVisible) {
     return null;
   }
@@ -58,6 +92,31 @@ export function RightPanel({
   return (
     <>
       <div className={`space-y-4 ${isMobile ? 'w-full' : ''}`}>
+        {/* Preference Summary */}
+        {userResponses.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center">
+                <User className="mr-2 h-5 w-5" />
+                Your Preferences Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {isLoadingSummary ? (
+                  <p className="text-sm text-muted-foreground">Generating summary...</p>
+                ) : preferenceSummary ? (
+                  <p className="text-sm">{preferenceSummary}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Based on your {userResponses.length} response{userResponses.length !== 1 ? 's' : ''}, we're analyzing your preferences...
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Confidence Indicator */}
         <Card>
           <CardHeader className="pb-3">

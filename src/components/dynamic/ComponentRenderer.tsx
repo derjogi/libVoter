@@ -14,7 +14,8 @@ export function ComponentRenderer({
   onResponse,
   onNext,
   disabled = false,
-  isLoading = false
+  isLoading = false,
+  followupQuestion
 }: ComponentRendererProps) {
   switch (type) {
     case 'chat':
@@ -25,6 +26,7 @@ export function ComponentRenderer({
           messages={(data as ChatData).messages || []}
           isLoading={isLoading}
           disabled={disabled}
+          followupQuestion={followupQuestion}
         />
       );
 

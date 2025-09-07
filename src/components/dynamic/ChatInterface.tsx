@@ -13,6 +13,11 @@ interface ChatInterfaceProps {
   messages: ConversationMessage[];
   isLoading?: boolean;
   disabled?: boolean;
+  followupQuestion?: {
+    question: string;
+    type: string;
+    reasoning?: string;
+  };
 }
 
 export function ChatInterface({
@@ -20,7 +25,8 @@ export function ChatInterface({
   onSendMessage,
   messages,
   isLoading = false,
-  disabled = false
+  disabled = false,
+  followupQuestion
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -110,6 +116,21 @@ export function ChatInterface({
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Follow-up Question Suggestion */}
+        {followupQuestion && (
+          <div className="mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onSendMessage(followupQuestion.question)}
+              disabled={disabled || isLoading}
+              className="text-xs"
+            >
+              💡 {followupQuestion.question}
+            </Button>
+          </div>
+        )}
 
         {/* Input Area */}
         <div className="flex space-x-2">
