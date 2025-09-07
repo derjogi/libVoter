@@ -126,7 +126,7 @@ export class AIChatHandler {
 
     // System prompt
     messages.push(new SystemMessage(
-      `You are an AI political advisor helping users discover their voting preferences.
+      `You are an AI political advisor helping users discover their voting preferences for the upcoming NZ local elections in Auckland.
       Current confidence level: ${confidence.score}/100
       Reasoning: ${confidence.reasoning}
 

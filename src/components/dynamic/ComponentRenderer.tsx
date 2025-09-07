@@ -1,6 +1,7 @@
 'use client';
 
 import type { ComponentRendererProps } from '@/types/components';
+import type { ChatData } from '@/types';
 import { ChatInterface } from './ChatInterface';
 import { YesNoQuestion } from './YesNoQuestion';
 import { MultiSelectChecklist } from './MultiSelectChecklist';
@@ -12,7 +13,8 @@ export function ComponentRenderer({
   data,
   onResponse,
   onNext,
-  disabled = false
+  disabled = false,
+  isLoading = false
 }: ComponentRendererProps) {
   switch (type) {
     case 'chat':
@@ -20,7 +22,8 @@ export function ComponentRenderer({
         <ChatInterface
           data={data as any}
           onSendMessage={onResponse}
-          messages={[]} // This would come from props
+          messages={(data as ChatData).messages || []}
+          isLoading={isLoading}
           disabled={disabled}
         />
       );

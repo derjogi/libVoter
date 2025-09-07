@@ -48,7 +48,7 @@ export function ChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-full max-h-[600px]">
+    <Card className="flex flex-col h-full max-h-[600px] overflow-scroll">
       <CardContent className="flex-1 flex flex-col p-4">
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">

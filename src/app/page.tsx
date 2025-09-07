@@ -37,12 +37,25 @@ export default function VotingAdvisor() {
       setCurrentComponent({
         type: 'chat',
         data: {
-          messages: [],
+          messages: messages,
           placeholder: 'Tell me about your political preferences...'
         }
       });
     }
   }, [currentComponent]);
+
+  // Update messages in currentComponent when messages change
+  useEffect(() => {
+    if (currentComponent && currentComponent.type === 'chat') {
+      setCurrentComponent(prev => prev ? {
+        ...prev,
+        data: {
+          ...prev.data,
+          messages: messages
+        }
+      } : null);
+    }
+  }, [messages]);
 
   const handleComponentResponse = async (response: any) => {
     try {
@@ -164,28 +177,10 @@ export default function VotingAdvisor() {
                     data={currentComponent.data}
                     onResponse={handleComponentResponse}
                     disabled={isLoading}
+                    isLoading={isLoading}
                   />
                 )}
 
-                {messages.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-sm font-medium mb-2">Recent Conversation</h3>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {messages.slice(-3).map((message) => (
-                        <div
-                          key={message.id}
-                          className={`text-sm p-2 rounded ${
-                            message.role === 'user'
-                              ? 'bg-primary/10 text-right'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {message.content}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>

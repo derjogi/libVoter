@@ -13,4 +13,5 @@ export interface ComponentRendererProps {
   onResponse: (response: any) => void;
   onNext?: () => void;
   disabled?: boolean;
+  isLoading?: boolean;
 }
