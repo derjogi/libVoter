@@ -102,7 +102,6 @@ export type ComponentSpecificData =
   | YesNoData
   | MultiSelectData
   | FreeTextData
-  | SwipeData
   | SliderData;
 
 export interface ChatData {
@@ -131,16 +130,6 @@ export interface FreeTextData {
   prompt: string;
   placeholder: string;
   maxLength?: number;
-}
-
-export interface SwipeData {
-  statements: SwipeStatement[];
-}
-
-export interface SwipeStatement {
-  id: string;
-  text: string;
-  context?: string;
 }
 
 export interface SliderData {

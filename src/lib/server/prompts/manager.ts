@@ -37,7 +37,7 @@ export class PromptManager {
       const template = getPrompt(promptId);
       const formatted = formatPrompt(template, variables);
 
-      const response = await this.chatModel.call([
+      const response = await this.chatModel.invoke([
         { role: 'system', content: 'You are a helpful AI assistant. Provide accurate, neutral responses.' },
         { role: 'user', content: formatted.content }
       ]);

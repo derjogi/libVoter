@@ -25,7 +25,7 @@ export const AI_CONFIG = {
     minInteractions: parseInt(process.env.MIN_INTERACTIONS_BEFORE_RESULTS || '3')
   },
   limits: {
-    maxTokens: parseInt(process.env.AI_MAX_TOKENS || '2000'),
+    maxTokens: parseInt(process.env.AI_MAX_TOKENS || '64000'),
     temperature: parseFloat(process.env.AI_TEMPERATURE || '0.7')
   }
 };

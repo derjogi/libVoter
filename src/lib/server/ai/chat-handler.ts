@@ -36,7 +36,8 @@ export class AIChatHandler {
           modelName: model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          openAIApiKey: process.env.OPENAI_API_KEY!
+          openAIApiKey: process.env.OPENAI_API_KEY!,
+          streaming: false // Disable streaming to ensure complete responses
         });
 
       case 'anthropic':
@@ -45,7 +46,8 @@ export class AIChatHandler {
           modelName: model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          anthropicApiKey: process.env.ANTHROPIC_API_KEY!
+          anthropicApiKey: process.env.ANTHROPIC_API_KEY!,
+          streaming: false // Disable streaming to ensure complete responses
         });
 
       case 'openrouter':
@@ -57,7 +59,8 @@ export class AIChatHandler {
           apiKey: process.env.OPENROUTER_API_KEY!,
           configuration: {
             baseURL: 'https://openrouter.ai/api/v1'
-          }
+          },
+          streaming: false // Disable streaming to ensure complete responses
         });
 
       default:
@@ -84,10 +87,9 @@ export class AIChatHandler {
         confidenceResult
       );
 
-      // Get AI response
-      console.log(`Processing message ${messages} with AI model: ${JSON.stringify(this.chatModel)}`);
-      const aiResponse = await this.chatModel.invoke(messages);
-      const responseText = aiResponse.content as string;
+      // Get AI response with validation
+      console.log(`Processing message with AI model`);
+      const responseText = await this.getValidatedAIResponse(messages);
       console.log('AI response:', responseText);
       // Determine next component based on context
       const nextComponent = await this.determineNextComponent(
@@ -115,6 +117,31 @@ export class AIChatHandler {
       console.error('AI chat processing error:', error);
       throw new Error('Failed to process chat message');
     }
+  }
+
+  private async getValidatedAIResponse(messages: (HumanMessage | AIMessage | SystemMessage)[]): Promise<string> {
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`AI request attempt ${attempt}/${maxRetries}`);
+        const aiResponse = await this.chatModel.invoke(messages);
+        const responseText = aiResponse.content as string;
+        return responseText;
+      } catch (error) {
+        console.error(`AI request attempt ${attempt} failed:`, error);
+        lastError = error as Error;
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        }
+      }
+    }
+
+    // If all retries failed, return a fallback response
+    console.error('All AI request attempts failed, using fallback');
+    throw lastError || new Error('Failed to get AI response after retries');
   }
 
   private buildConversationContext(
@@ -227,8 +254,8 @@ Available component types and their EXACT data structures (based on TypeScript i
 1. chat: Continue conversational interaction
    Data structure: { "messages": ConversationMessage[], "placeholder": string }
 
-2. yesno: Ask a yes/no question about a specific statement
-   Data structure: { "statement": string, "context": string }
+2. yesno: Ask one or more yes/no questions about a specific statement
+   Data structure: [{"id": string, "statement": string, "context": string }]
 
 3. multiselect: Allow user to select multiple options from a list
    Data structure: {
@@ -240,12 +267,7 @@ Available component types and their EXACT data structures (based on TypeScript i
 4. freetext: Ask for open-ended text response
    Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
 
-5. swipe: Present statements for user to swipe left/right (agree/disagree)
-   Data structure: {
-     "statements": [{ "id": string, "text": string, "context": string }]
-   }
-
-6. slider: Use a slider for quantitative responses
+5. slider: Use a slider for quantitative responses
    Data structure: {
      "label": string,
      "min": number,
@@ -265,7 +287,7 @@ Your task: Choose the most appropriate next component type that will best help n
 
 Respond with a JSON object in this format:
 {
-  "componentType": "chat|yesno|multiselect|freetext|swipe|slider",
+  "componentType": "chat|yesno|multiselect|freetext|slider",
   "data": {
     // Use the exact structure for the chosen component type - no extra fields
   },
@@ -273,9 +295,8 @@ Respond with a JSON object in this format:
 }
 
 Guidelines for data generation:
-- swipe: Generate up to 10 relevant political statements with unique IDs (e.g., "stmt_1", "stmt_2")
 - multiselect: Provide up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
-- yesno: Provide one clear, specific statement about a political issue
+- yesno: Generate up to 10 relevant political statements with unique IDs (e.g., "stmt_1", "stmt_2")
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages, 100 (100k) -10'000 (10m) for budgeting questions, ...), include unit and description
 - chat: Use empty messages array and a relevant placeholder text
 - freetext: Include a clear prompt, placeholder text, and optional maxLength`;
@@ -290,14 +311,31 @@ Based on this conversation, what should be the next component to engage the user
 
   private parseComponentDecision(decisionText: string): ComponentData | null {
     try {
+      console.log('Parsing component decision:', decisionText);
+
       // Try to extract JSON from the response
       const jsonMatch = decisionText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return null;
+      if (!jsonMatch) {
+        console.warn('No JSON found in response');
+        return null;
+      }
 
-      const parsed = JSON.parse(jsonMatch[0]);
+      let jsonString = jsonMatch[0];
 
-      if (!parsed.componentType || !parsed.data) return null;
+      // Check if JSON appears complete
+      if (!this.isValidJson(jsonString)) {
+        console.error('Could not fix incomplete JSON');
+        return null;
+      }
 
+      const parsed = JSON.parse(jsonString);
+
+      if (!parsed.componentType || !parsed.data) {
+        console.warn('Parsed JSON missing required fields:', parsed);
+        return null;
+      }
+
+      console.log('Successfully parsed component decision:', parsed);
       return {
         type: parsed.componentType,
         data: parsed.data
@@ -305,6 +343,15 @@ Based on this conversation, what should be the next component to engage the user
     } catch (error) {
       console.error('Failed to parse component decision:', error);
       return null;
+    }
+  }
+
+  private isValidJson(jsonString: string): boolean {
+    try {
+      JSON.parse(jsonString);
+      return true;
+    } catch {
+      return false;
     }
   }
 
