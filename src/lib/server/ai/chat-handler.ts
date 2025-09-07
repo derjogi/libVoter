@@ -4,6 +4,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { getAIConfig } from './config';
 import { ConfidenceCalculator } from './confidence-calculator';
+import { selectNextComponent } from '@/lib/actions/prompts';
 import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
 import type { AIModelConfig } from './config';
 
@@ -185,29 +186,50 @@ export class AIChatHandler {
   ): Promise<ComponentData | undefined> {
     const config = getAIConfig();
 
-    // Build prompt for AI to decide next component
-    const componentPrompt = this.buildComponentSelectionPrompt(
-      userMessage,
-      aiResponse,
-      confidence,
-      history
-    );
+    // If confidence is low, continue with chat
+    if (confidence.score < config.thresholds.confidence) {
+      return {
+        type: 'chat',
+        data: {
+          messages: [],
+          placeholder: 'Tell me more about your views...'
+        }
+      };
+    }
+
+    // Create conversation state for the existing prompt system
+    const recentHistory = history.slice(-5).map(h => `${h.role}: ${h.content}`).join('\n');
+    const conversationState = `
+Current confidence: ${confidence.score}/100
+Reasoning: ${confidence.reasoning}
+
+Recent conversation:
+${recentHistory}
+
+Latest user message: "${userMessage}"
+AI response: "${aiResponse}"
+
+Please select the next component that will best help narrow down the user's political preferences.`;
 
     try {
-      const componentDecision = await this.chatModel.invoke([
-        new SystemMessage(componentPrompt.system),
-        new HumanMessage(componentPrompt.user)
-      ]);
+      console.log('Calling selectNextComponent with conversation state');
+      const result = await selectNextComponent(conversationState);
 
-      const decisionText = componentDecision.content as string;
-      console.log('Component decision text:', decisionText);
-      const parsedDecision = this.parseComponentDecision(decisionText);
+      if (result.success && result.data) {
+        console.log('Component selection result:', result.data);
 
-      if (parsedDecision) {
-        return parsedDecision;
+        // Convert the result to ComponentData format
+        const componentData: ComponentData = {
+          type: result.data.component,
+          data: result.data.data
+        };
+
+        return componentData;
+      } else {
+        console.warn('Component selection failed:', result.error);
       }
     } catch (error) {
-      console.error('Error determining next component with AI:', error);
+      console.error('Error calling selectNextComponent:', error);
     }
 
     // Fallback to simple logic
@@ -239,121 +261,6 @@ export class AIChatHandler {
     };
   }
 
-  private buildComponentSelectionPrompt(
-    userMessage: string,
-    aiResponse: string,
-    confidence: any,
-    history: ConversationMessage[]
-  ): { system: string; user: string } {
-    const recentHistory = history.slice(-5).map(h => `${h.role}: ${h.content}`).join('\n');
-
-    const system = `You are an AI assistant helping to determine the next interactive component for a political voting advisor app.
-
-Available component types and their EXACT data structures (based on TypeScript interfaces):
-
-1. chat: Continue conversational interaction
-   Data structure: { "messages": ConversationMessage[], "placeholder": string }
-
-2. yesno: Ask one or more yes/no questions about a specific statement
-   Data structure: [{"id": string, "statement": string, "context": string }]
-
-3. multiselect: Allow user to select multiple options from a list
-   Data structure: {
-     "question": string,
-     "options": [{ "id": string, "label": string, "description": string }],
-     "maxSelections": number
-   }
-
-4. freetext: Ask for open-ended text response
-   Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
-
-5. slider: Use a slider for quantitative responses
-   Data structure: {
-     "label": string,
-     "min": number,
-     "max": number,
-     "step": number,
-     "unit": string,
-     "description": string
-   }
-
-Current context:
-- Confidence score: ${confidence.score}/100
-- Reasoning: ${confidence.reasoning}
-- Recent conversation:
-${recentHistory}
-
-Your task: Choose the most appropriate next component type that will best help narrow down the user's political preferences. Then generate the specific data for that component using the EXACT structure specified above.
-
-Respond with a JSON object in this format:
-{
-  "componentType": "chat|yesno|multiselect|freetext|slider",
-  "data": {
-    // Use the exact structure for the chosen component type - no extra fields
-  },
-  "reasoning": "Brief explanation of why this component was chosen"
-}
-
-Guidelines for data generation:
-- multiselect: Provide up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
-- yesno: Generate up to 10 relevant political statements with unique IDs (e.g., "stmt_1", "stmt_2")
-- slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages, 100 (100k) -10'000 (10m) for budgeting questions, ...), include unit and description
-- chat: Use empty messages array and a relevant placeholder text
-- freetext: Include a clear prompt, placeholder text, and optional maxLength`;
-
-    const user = `User's latest message: "${userMessage}"
-AI's previous response: "${aiResponse}"
-
-Based on this conversation, what should be the next component to engage the user and gather more information about their political views?`;
-
-    return { system, user };
-  }
-
-  private parseComponentDecision(decisionText: string): ComponentData | null {
-    try {
-      console.log('Parsing component decision:', decisionText);
-
-      // Try to extract JSON from the response
-      const jsonMatch = decisionText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        console.warn('No JSON found in response');
-        return null;
-      }
-
-      let jsonString = jsonMatch[0];
-
-      // Check if JSON appears complete
-      if (!this.isValidJson(jsonString)) {
-        console.error('Could not fix incomplete JSON');
-        return null;
-      }
-
-      const parsed = JSON.parse(jsonString);
-
-      if (!parsed.componentType || !parsed.data) {
-        console.warn('Parsed JSON missing required fields:', parsed);
-        return null;
-      }
-
-      console.log('Successfully parsed component decision:', parsed);
-      return {
-        type: parsed.componentType,
-        data: parsed.data
-      };
-    } catch (error) {
-      console.error('Failed to parse component decision:', error);
-      return null;
-    }
-  }
-
-  private isValidJson(jsonString: string): boolean {
-    try {
-      JSON.parse(jsonString);
-      return true;
-    } catch {
-      return false;
-    }
-  }
 
   private async generateCandidateMatches(userResponses: UserResponse[]): Promise<any[]> {
     // Simplified candidate matching - in production, use more sophisticated algorithm

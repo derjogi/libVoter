@@ -30,9 +30,9 @@ export interface PromptValidationResult {
 export const PROMPTS: Record<string, PromptTemplate> = {
   // Candidate matching prompts
   CANDIDATE_MATCHING: {
-    id: 'candidate_matching',
-    name: 'Candidate Matching Algorithm',
-    category: 'matching',
+    id: "candidate_matching",
+    name: "Candidate Matching Algorithm",
+    category: "matching",
     template: `You are an AI political advisor helping users find candidates that match their preferences.
 
 User Responses Summary:
@@ -59,17 +59,18 @@ Return ONLY a JSON array in this exact format:
     "concerns": ["potential issue1", "potential issue2"]
   }
 ]`,
-    variables: ['userResponses', 'candidates'],
-    description: 'Calculates compatibility scores between user preferences and candidates',
-    version: '1.0',
-    tags: ['matching', 'scoring', 'candidates']
+    variables: ["userResponses", "candidates"],
+    description:
+      "Calculates compatibility scores between user preferences and candidates",
+    version: "1.0",
+    tags: ["matching", "scoring", "candidates"],
   },
 
   // Question generation prompts
   NEXT_QUESTION_GENERAL: {
-    id: 'next_question_general',
-    name: 'Generate Next Question - General',
-    category: 'question_generation',
+    id: "next_question_general",
+    name: "Generate Next Question - General",
+    category: "question_generation",
     template: `You are guiding a user through discovering their political preferences.
 
 Previous conversation:
@@ -95,16 +96,17 @@ Return JSON format:
   "context": "Why this question is important",
   "options": ["option1", "option2"] // if applicable
 }`,
-    variables: ['conversationHistory', 'currentPreferences', 'questionType'],
-    description: 'Generates contextually relevant questions based on conversation history',
-    version: '1.0',
-    tags: ['questions', 'generation', 'contextual']
+    variables: ["conversationHistory", "currentPreferences", "questionType"],
+    description:
+      "Generates contextually relevant questions based on conversation history",
+    version: "1.0",
+    tags: ["questions", "generation", "contextual"],
   },
 
   FOLLOWUP_QUESTION: {
-    id: 'followup_question',
-    name: 'Generate Follow-up Question',
-    category: 'question_generation',
+    id: "followup_question",
+    name: "Generate Follow-up Question",
+    category: "question_generation",
     template: `Based on the user's last response: "{lastResponse}"
 
 Generate a thoughtful follow-up question that:
@@ -121,54 +123,86 @@ Return JSON format:
   "type": "chat",
   "reasoning": "Why this follow-up is valuable"
 }`,
-    variables: ['lastResponse', 'context'],
-    description: 'Creates deeper follow-up questions based on user responses',
-    version: '1.0',
-    tags: ['followup', 'questions', 'deepening']
+    variables: ["lastResponse", "context"],
+    description: "Creates deeper follow-up questions based on user responses",
+    version: "1.0",
+    tags: ["followup", "questions", "deepening"],
   },
 
   // Component selection prompts
   COMPONENT_SELECTOR: {
-    id: 'component_selector',
-    name: 'Select Next UI Component',
-    category: 'component_selection',
+    id: "component_selector",
+    name: "Select Next UI Component with Data Generation",
+    category: "component_selection",
     template: `Analyze the conversation state and determine the best UI component for the next interaction.
 
 Current conversation state:
 {conversationState}
 
-Available components:
-- chat: Open conversation, good for nuanced topics
-- yesno: Quick Judgments on binary choices, good for clear stances.
-- multiselect: Multiple choice, good for priorities
-- freetext: Detailed input, good for complex opinions
-- slider: Quantitative input, good for budget/priority allocation
+Available component types and their EXACT data structures:
+
+1. chat: Continue conversational interaction
+   Data structure: { "messages": ConversationMessage[], "placeholder": string }
+
+2. yesno: Ask a yes/no question about a specific statement
+   Data structure: { "statement": string, "context": string }
+
+3. multiselect: Allow user to select multiple options from a list
+   Data structure: {
+     "question": string,
+     "options": [{ "id": string, "label": string, "description": string }],
+     "maxSelections": number
+   }
+
+4. freetext: Ask for open-ended text response
+   Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
+
+5. slider: Use a slider for quantitative responses
+   Data structure: {
+     "label": string,
+     "min": number,
+     "max": number,
+     "step": number,
+     "unit": string,
+     "description": string
+   }
 
 Consider:
-- User engagement level
-- Complexity of next topic
+- User engagement level and conversation flow
+- Complexity of next topic to explore
 - Variety in interaction types used so far
-- User's response patterns
+- User's response patterns and depth of answers
+- What would most effectively narrow down their political preferences
+
+Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
 
 Return JSON format:
 {
-  "component": "component_name",
-  "reasoning": "Why this component fits best",
+  "component": "chat|yesno|multiselect|freetext|slider",
+  "reasoning": "Why this component fits best for narrowing preferences",
   "data": {
-    // Component-specific configuration
+    // Use the exact structure for the chosen component type - no extra fields
   }
-}`,
-    variables: ['conversationState'],
-    description: 'Determines optimal UI component for next user interaction',
-    version: '1.0',
-    tags: ['ui', 'components', 'selection']
+}
+
+Guidelines for data generation:
+- multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
+- yesno: Generate up to 10 relevant political statements with unique IDs (e.g., "stmt_1", "stmt_2")
+- slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
+- chat: Use empty messages array and a relevant placeholder text
+- freetext: Include a clear prompt, placeholder text, and optional maxLength`,
+    variables: ["conversationState"],
+    description:
+      "Determines optimal UI component for next user interaction and generates component data",
+    version: "1.0",
+    tags: ["ui", "components", "selection", "data-generation"],
   },
 
   // Analysis and explanation prompts
   EXPLAIN_MATCH: {
-    id: 'explain_match',
-    name: 'Explain Candidate Match',
-    category: 'analysis',
+    id: "explain_match",
+    name: "Explain Candidate Match",
+    category: "analysis",
     template: `Provide a clear, balanced explanation of why a candidate matches a user's preferences.
 
 User Profile:
@@ -187,16 +221,16 @@ Create an explanation that:
 - Avoids political bias
 
 Format as conversational explanation, not a list.`,
-    variables: ['userProfile', 'candidateInfo', 'matchScore'],
-    description: 'Generates human-readable explanations for candidate matches',
-    version: '1.0',
-    tags: ['explanation', 'analysis', 'matches']
+    variables: ["userProfile", "candidateInfo", "matchScore"],
+    description: "Generates human-readable explanations for candidate matches",
+    version: "1.0",
+    tags: ["explanation", "analysis", "matches"],
   },
 
   SUMMARIZE_PREFERENCES: {
-    id: 'summarize_preferences',
-    name: 'Summarize User Preferences',
-    category: 'analysis',
+    id: "summarize_preferences",
+    name: "Summarize User Preferences",
+    category: "analysis",
     template: `Summarize the user's political preferences based on their responses.
 
 User responses:
@@ -209,11 +243,11 @@ Create a clear, organized summary that includes:
 - Areas where they seem undecided
 
 Keep it neutral and descriptive, not prescriptive.`,
-    variables: ['allResponses'],
-    description: 'Creates readable summaries of user political preferences',
-    version: '1.0',
-    tags: ['summary', 'analysis', 'preferences']
-  }
+    variables: ["allResponses"],
+    description: "Creates readable summaries of user political preferences",
+    version: "1.0",
+    tags: ["summary", "analysis", "preferences"],
+  },
 };
 
 export function getPrompt(id: keyof typeof PROMPTS): PromptTemplate {
