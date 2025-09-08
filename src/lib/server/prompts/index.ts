@@ -144,8 +144,8 @@ Available component types and their EXACT data structures:
 1. chat: Continue conversational interaction
    Data structure: { "messages": ConversationMessage[], "placeholder": string }
 
-2. yesno: Ask a yes/no question about a specific statement
-   Data structure: { "statement": string, "context": string }
+2. yesno: Ask a yes/no question about multiple statements
+    Data structure: { "statements": [{ "statement": string, "context": string }, ...] }
 
 3. multiselect: Allow user to select multiple options from a list
    Data structure: {
@@ -187,7 +187,7 @@ Return JSON format:
 
 Guidelines for data generation:
 - multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
-- yesno: Generate up to 10 relevant political statements with unique IDs (e.g., "stmt_1", "stmt_2")
+- yesno: Generate up to 10 relevant political statements as an array of objects with statement and optional context
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
 - chat: Use empty messages array and a relevant placeholder text
 - freetext: Include a clear prompt, placeholder text, and optional maxLength`,

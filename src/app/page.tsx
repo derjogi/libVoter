@@ -67,12 +67,22 @@ export default function VotingAdvisor() {
 
   const handleComponentResponse = async (response: any) => {
     try {
+      // Handle different response formats based on component type
+      let processedResponse = response;
+      let questionId = `question_${Date.now()}`;
+
+      if (currentComponent?.type === 'yesno' && typeof response === 'object' && 'index' in response) {
+        // For yesno components, include the statement index in the question ID
+        questionId = `yesno_statement_${response.index}_${Date.now()}`;
+        processedResponse = response.response; // Extract the actual response ('agree' | 'disagree' | 'skip')
+      }
+
       // Create user response record
       const userResponse: UserResponse = {
         id: `response_${Date.now()}`,
-        questionId: `question_${Date.now()}`,
+        questionId,
         componentType: currentComponent?.type || 'chat',
-        value: response,
+        value: processedResponse,
         timestamp: new Date(),
         confidence: 80 // User confidence rating
       };
@@ -81,7 +91,7 @@ export default function VotingAdvisor() {
 
       // Send message to AI and get response
       const aiResponse = await sendMessage(
-        typeof response === 'string' ? response : JSON.stringify(response),
+        typeof processedResponse === 'string' ? processedResponse : JSON.stringify(processedResponse),
         userResponses
       );
 

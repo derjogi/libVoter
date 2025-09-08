@@ -12,10 +12,6 @@ bun add lucide-react
 
 # Install form handling
 bun add react-hook-form @hookform/resolvers zod
-
-# Install swipe functionality (optional)
-bun add react-tinder-card
-bun add -d @types/react-tinder-card
 ```
 
 ## Implementation Steps

@@ -159,7 +159,6 @@ Available components:
 - yesno: Binary choices, good for clear stances
 - multiselect: Multiple choice, good for priorities
 - freetext: Detailed input, good for complex opinions
-- swipe: Quick judgments, good for many statements
 - slider: Quantitative input, good for budget/priority allocation
 
 Consider:

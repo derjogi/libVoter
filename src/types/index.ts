@@ -89,7 +89,6 @@ export type ComponentType =
   | 'yesno'
   | 'multiselect'
   | 'freetext'
-  | 'swipe'
   | 'slider';
 
 export interface ComponentData {
@@ -110,8 +109,10 @@ export interface ChatData {
 }
 
 export interface YesNoData {
-  statement: string;
-  context?: string;
+  statements: Array<{
+    statement: string;
+    context?: string;
+  }>;
 }
 
 export interface MultiSelectData {
@@ -199,7 +200,7 @@ export const UserSessionSchema = z.object({
     responses: z.array(z.object({
       id: z.string(),
       questionId: z.string(),
-      componentType: z.enum(['chat', 'yesno', 'multiselect', 'freetext', 'swipe', 'slider']),
+      componentType: z.enum(['chat', 'yesno', 'multiselect', 'freetext', 'slider']),
       value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.record(z.any(), z.any())]),
       timestamp: z.date(),
       confidence: z.number().min(0).max(100).optional()

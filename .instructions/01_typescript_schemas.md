@@ -108,7 +108,6 @@ export type ComponentType =
   | 'yesno'
   | 'multiselect'
   | 'freetext'
-  | 'swipe'
   | 'slider';
 
 export interface ComponentData {
@@ -121,7 +120,6 @@ export type ComponentSpecificData =
   | YesNoData
   | MultiSelectData
   | FreeTextData
-  | SwipeData
   | SliderData;
 
 export interface ChatData {
@@ -150,16 +148,6 @@ export interface FreeTextData {
   prompt: string;
   placeholder: string;
   maxLength?: number;
-}
-
-export interface SwipeData {
-  statements: SwipeStatement[];
-}
-
-export interface SwipeStatement {
-  id: string;
-  text: string;
-  context?: string;
 }
 
 export interface SliderData {
@@ -229,7 +217,7 @@ export const UserSessionSchema = z.object({
     responses: z.array(z.object({
       id: z.string(),
       questionId: z.string(),
-      componentType: z.enum(['chat', 'yesno', 'multiselect', 'freetext', 'swipe', 'slider']),
+      componentType: z.enum(['chat', 'yesno', 'multiselect', 'freetext', 'slider']),
       value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.record(z.any())]),
       timestamp: z.date(),
       confidence: z.number().min(0).max(100).optional()
@@ -405,7 +393,6 @@ export type ComponentType =
   | 'yesno'
   | 'multiselect'
   | 'freetext'
-  | 'swipe'
   | 'slider'
   | 'newComponentType'; // Add new type here
 
@@ -420,7 +407,6 @@ export type ComponentSpecificData =
   | YesNoData
   | MultiSelectData
   | FreeTextData
-  | SwipeData
   | SliderData
   | NewComponentData; // Add here
 ```
