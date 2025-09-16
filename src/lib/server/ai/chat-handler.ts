@@ -6,6 +6,7 @@ import { getAIConfig } from './config';
 import { ConfidenceCalculator } from './confidence-calculator';
 import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } from '@/lib/actions/prompts';
 import { getUniqueWards, getCandidatesByWard, getMayorCandidates } from '@/lib/actions/database';
+import { queryRAGContext } from '@/lib/actions/rag';
 import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
 import type { AIModelConfig } from './config';
 
@@ -90,12 +91,17 @@ export class AIChatHandler {
       // Always fetch eligible candidates for AI context
       const candidates = await this.generateCandidateMatches(userResponses);
 
+      // Query RAG for semantically relevant candidate information
+      const userContext = this.createUserProfileSummary(userResponses);
+      const ragContext = await this.queryRAGContext(userMessage, userContext);
+
       // Prepare conversation context
       const messages = this.buildConversationContext(
         userMessage,
         conversationHistory,
         confidenceResult,
-        candidates
+        candidates,
+        ragContext
       );
 
       // Get AI response with validation
@@ -175,11 +181,68 @@ export class AIChatHandler {
     throw lastError || new Error('Failed to get AI response after retries');
   }
 
+  private async queryRAGContext(userMessage: string, userContext: string) {
+    try {
+      const result = await queryRAGContext(userMessage, userContext);
+      if (result.success && result.data) {
+        return result.data;
+      } else {
+        console.warn('RAG query failed, falling back to database-only context:', result.error);
+        return {
+          candidates: [],
+          relevantPolicies: [],
+          sources: []
+        };
+      }
+    } catch (error) {
+      console.error('Error querying RAG context:', error);
+      return {
+        candidates: [],
+        relevantPolicies: [],
+        sources: []
+      };
+    }
+  }
+
+  private formatRAGContext(ragContext: any, existingCandidates: any[]): string {
+    if (!ragContext || (!ragContext.relevantPolicies?.length && !ragContext.sources?.length)) {
+      return '';
+    }
+
+    let ragInfo = '\n\nAdditional context from knowledge base:';
+
+    // Add relevant policies that aren't already covered in structured data
+    if (ragContext.relevantPolicies?.length > 0) {
+      const existingPolicyTopics = new Set(
+        existingCandidates.flatMap(c => c.topPolicies || []).map((p: string) => p.toLowerCase())
+      );
+
+      const newPolicies = ragContext.relevantPolicies.filter((policy: any) =>
+        !existingPolicyTopics.has(policy.topic?.toLowerCase())
+      );
+
+      if (newPolicies.length > 0) {
+        ragInfo += '\nRelevant policy positions:';
+        newPolicies.slice(0, 3).forEach((policy: any) => {
+          ragInfo += `\n- ${policy.topic}: ${policy.stance} - ${policy.details.substring(0, 100)}...`;
+        });
+      }
+    }
+
+    // Add sources if available
+    if (ragContext.sources?.length > 0) {
+      ragInfo += '\nSources: ' + ragContext.sources.slice(0, 3).join(', ');
+    }
+
+    return ragInfo;
+  }
+
   private buildConversationContext(
     userMessage: string,
     history: ConversationMessage[],
     confidence: any,
-    candidates: any[]
+    candidates: any[],
+    ragContext: any
   ): (HumanMessage | AIMessage | SystemMessage)[] {
     const messages: (HumanMessage | AIMessage | SystemMessage)[] = [];
 
@@ -190,10 +253,13 @@ export class AIChatHandler {
         ).join('\n')}`
       : '\n\nNo candidates available yet.';
 
+    // Add RAG-enhanced context without duplicating structured data
+    const ragInfo = this.formatRAGContext(ragContext, candidates);
+
     messages.push(new SystemMessage(
       `You are an AI political advisor helping users discover their voting preferences for the upcoming NZ local elections in Auckland.
       Current confidence level: ${confidence.score}/100
-      Reasoning: ${confidence.reasoning}${candidateInfo}
+      Reasoning: ${confidence.reasoning}${candidateInfo}${ragInfo}
 
       Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
       Focus on policy topics and candidate positions.`
