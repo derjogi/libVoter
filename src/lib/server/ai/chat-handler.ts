@@ -5,6 +5,7 @@ import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages
 import { getAIConfig } from './config';
 import { ConfidenceCalculator } from './confidence-calculator';
 import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } from '@/lib/actions/prompts';
+import { getUniqueWards, getCandidatesByWard, getMayorCandidates } from '@/lib/actions/database';
 import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
 import type { AIModelConfig } from './config';
 
@@ -102,7 +103,8 @@ export class AIChatHandler {
         userMessage,
         responseText,
         confidenceResult,
-        conversationHistory
+        conversationHistory,
+        userResponses
       );
       console.log('Next component:', JSON.stringify(nextComponent));
       // Check if we should show candidates
@@ -206,7 +208,8 @@ export class AIChatHandler {
     userMessage: string,
     aiResponse: string,
     confidence: any,
-    history: ConversationMessage[]
+    history: ConversationMessage[],
+    userResponses: UserResponse[]
   ): Promise<ComponentData | undefined> {
     const config = getAIConfig();
 
@@ -259,6 +262,23 @@ Please select the next component that will best help narrow down the user's poli
     // Fallback to simple logic
     const lastComponents = history.slice(-3).map(h => h.componentData?.type).filter(Boolean);
 
+    // Check if ward has been selected
+    if (!userResponses.some(r => r.questionId === 'ward_selection')) {
+      const wardResult = await getUniqueWards();
+      if (wardResult.success && wardResult.data && wardResult.data.length > 0) {
+        const options = wardResult.data.map(ward => ({ id: ward, label: ward, description: '' }));
+        return {
+          type: 'multiselect',
+          data: {
+            question: 'Which ward do you live in?',
+            options,
+            maxSelections: 1,
+            questionId: 'ward_selection'
+          }
+        };
+      }
+    }
+
     if (!lastComponents.includes('multiselect')) {
       return {
         type: 'multiselect',
@@ -287,53 +307,71 @@ Please select the next component that will best help narrow down the user's poli
 
 
   private async generateCandidateMatches(userResponses: UserResponse[]): Promise<any[]> {
-    // Simplified candidate matching - in production, use more sophisticated algorithm
-    // This would integrate with the RAG system and database
-
     // Create user profile summary from responses
     const userProfile = this.createUserProfileSummary(userResponses);
 
-    // Mock candidates - in production, these would come from database
-    const mockCandidates = [
-      {
-        id: 'candidate_1',
-        name: 'Jane Smith',
-        party: 'Democratic',
-        score: 85,
-        info: 'Progressive candidate focused on healthcare reform, climate action, and economic equality. Supports universal healthcare, green energy transition, and progressive taxation.',
-        topPolicies: ['Healthcare reform', 'Climate action', 'Economic equality']
-      },
-      {
-        id: 'candidate_2',
-        name: 'John Doe',
-        party: 'Republican',
-        score: 72,
-        info: 'Conservative candidate emphasizing fiscal responsibility, national security, and traditional values. Advocates for tax cuts, strong borders, and Second Amendment rights.',
-        topPolicies: ['Tax reduction', 'Border security', 'Second Amendment']
+    // Extract selected ward from user responses
+    const wardResponse = userResponses.find(r => r.questionId === 'ward_selection');
+    const selectedWard = wardResponse ? this.extractTextFromResponse(wardResponse) : null;
+
+    let candidates: any[] = [];
+
+    try {
+      // Always fetch mayor candidates
+      const mayorResult = await getMayorCandidates();
+      if (mayorResult.success && mayorResult.data) {
+        candidates = candidates.concat(mayorResult.data);
       }
-    ];
 
-    // Generate explanations using centralized function
-    const matchesWithExplanations = await Promise.all(
-      mockCandidates.map(async (candidate) => {
-        const explanationResult = await explainCandidateMatch(
-          userProfile,
-          candidate.info,
-          candidate.score
-        );
+      // Fetch ward candidates if ward is selected
+      if (selectedWard) {
+        const wardResult = await getCandidatesByWard(selectedWard);
+        if (wardResult.success && wardResult.data) {
+          candidates = candidates.concat(wardResult.data);
+        }
+      }
 
-        return {
-          id: candidate.id,
-          name: candidate.name,
-          party: candidate.party,
-          score: candidate.score,
-          reasoning: explanationResult.success ? explanationResult.data : 'Unable to generate explanation',
-          topPolicies: candidate.topPolicies
-        };
-      })
-    );
+      // If no candidates found, return empty array
+      if (candidates.length === 0) {
+        console.warn('No candidates found for matching');
+        return [];
+      }
 
-    return matchesWithExplanations;
+      // Transform database records to match format and generate explanations
+      const matchesWithExplanations = await Promise.all(
+        candidates.map(async (candidate) => {
+          // Create info summary from candidate data
+          const info = this.createCandidateInfoSummary(candidate);
+
+          // Generate a simple score (in production, use more sophisticated matching)
+          const score = this.calculateCandidateScore(candidate, userResponses);
+
+          // Generate explanation
+          const explanationResult = await explainCandidateMatch(
+            userProfile,
+            info,
+            score
+          );
+
+          // Extract top policies from candidate data
+          const topPolicies = this.extractTopPolicies(candidate);
+
+          return {
+            id: candidate.id.toString(),
+            name: candidate.name,
+            party: candidate.party || 'Independent',
+            score,
+            reasoning: explanationResult.success ? explanationResult.data : 'Unable to generate explanation',
+            topPolicies
+          };
+        })
+      );
+
+      return matchesWithExplanations;
+    } catch (error) {
+      console.error('Error generating candidate matches:', error);
+      return [];
+    }
   }
 
   private createUserProfileSummary(userResponses: UserResponse[]): string {
@@ -350,5 +388,76 @@ Please select the next component that will best help narrow down the user's poli
     if (Array.isArray(response.value)) return response.value.join(', ');
     if (typeof response.value === 'object') return JSON.stringify(response.value);
     return String(response.value || '');
+  }
+
+  private createCandidateInfoSummary(candidate: any): string {
+    const parts = [];
+
+    if (candidate.candidate_statement) {
+      parts.push(candidate.candidate_statement);
+    }
+
+    if (candidate.why) {
+      parts.push(`Why running: ${candidate.why}`);
+    }
+
+    if (candidate.key_skills) {
+      parts.push(`Key skills: ${candidate.key_skills}`);
+    }
+
+    if (candidate.top_issues) {
+      parts.push(`Top issues: ${candidate.top_issues}`);
+    }
+
+    if (candidate.key_positions && typeof candidate.key_positions === 'object') {
+      const positions = Object.entries(candidate.key_positions)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(', ');
+      parts.push(`Key positions: ${positions}`);
+    }
+
+    return parts.join('. ') || 'No detailed information available.';
+  }
+
+  private calculateCandidateScore(candidate: any, userResponses: UserResponse[]): number {
+    // Simple scoring mechanism - in production, use more sophisticated matching
+    // For now, return a score between 60-90 based on some basic heuristics
+
+    let baseScore = 75; // Default score
+
+    // Boost score if candidate has detailed information
+    if (candidate.candidate_statement) baseScore += 5;
+    if (candidate.key_positions) baseScore += 5;
+    if (candidate.top_issues) baseScore += 5;
+
+    // Add some randomness to simulate different matches
+    const randomVariation = Math.floor(Math.random() * 20) - 10; // -10 to +10
+    baseScore += randomVariation;
+
+    // Ensure score is within reasonable bounds
+    return Math.max(50, Math.min(95, baseScore));
+  }
+
+  private extractTopPolicies(candidate: any): string[] {
+    const policies: string[] = [];
+
+    // Extract from key_positions if available
+    if (candidate.key_positions && typeof candidate.key_positions === 'object') {
+      const positions = Object.keys(candidate.key_positions);
+      policies.push(...positions.slice(0, 3)); // Take up to 3
+    }
+
+    // Extract from top_issues if available
+    if (candidate.top_issues && policies.length < 3) {
+      const issues = candidate.top_issues.split(',').map((s: string) => s.trim());
+      policies.push(...issues.slice(0, 3 - policies.length));
+    }
+
+    // Fallback if no policies found
+    if (policies.length === 0) {
+      policies.push('General representation', 'Community service', 'Local governance');
+    }
+
+    return policies.slice(0, 3); // Ensure max 3 policies
   }
 }

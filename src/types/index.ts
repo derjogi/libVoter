@@ -119,6 +119,7 @@ export interface MultiSelectData {
   question: string;
   options: SelectOption[];
   maxSelections?: number;
+  questionId?: string;
 }
 
 export interface SelectOption {

@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/server/db';
 import { candidates, parties, appSettings } from '@/lib/db/schema';
-import { eq, like, or } from 'drizzle-orm';
+import { eq, like, or, ne } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import type { Candidate, CandidateMatch } from '@/types';
 
@@ -37,13 +37,13 @@ export async function updateAppSetting(key: string, value: any) {
         id: crypto.randomUUID(),
         key,
         value: JSON.stringify(value),
-        updatedAt: new Date(),
+        updated_at: new Date(),
       })
       .onConflictDoUpdate({
         target: appSettings.key,
         set: {
           value: JSON.stringify(value),
-          updatedAt: new Date(),
+          updated_at: new Date(),
         },
       });
 
@@ -75,6 +75,23 @@ export async function getAppSetting(key: string) {
   }
 }
 
+// Get unique wards from candidates table, excluding "Mayor"
+export async function getUniqueWards() {
+  try {
+    const data = await db
+      .selectDistinct({ ward: candidates.ward })
+      .from(candidates)
+      .where(ne(candidates.ward, 'Mayor'))
+      .orderBy(candidates.ward);
+
+    const wards = data.map(row => row.ward);
+    return { success: true, data: wards };
+  } catch (error) {
+    console.error('Error loading wards:', error);
+    return { success: false, error: 'Failed to load wards' };
+  }
+}
+
 // Search candidates by name or party
 export async function searchCandidates(query: string) {
   try {
@@ -94,5 +111,37 @@ export async function searchCandidates(query: string) {
   } catch (error) {
     console.error('Error searching candidates:', error);
     return { success: false, error: 'Failed to search candidates' };
+  }
+}
+
+// Get candidates by ward
+export async function getCandidatesByWard(ward: string) {
+  try {
+    const data = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.ward, ward))
+      .orderBy(candidates.name);
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error loading candidates by ward:', error);
+    return { success: false, error: 'Failed to load candidates by ward' };
+  }
+}
+
+// Get mayor candidates
+export async function getMayorCandidates() {
+  try {
+    const data = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.ward, 'Mayor'))
+      .orderBy(candidates.name);
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error loading mayor candidates:', error);
+    return { success: false, error: 'Failed to load mayor candidates' };
   }
 }

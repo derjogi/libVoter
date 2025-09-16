@@ -75,9 +75,6 @@ async function scrapeCandidateList(page: Page): Promise<Candidate[]> {
         const wardPath = pathParts[4];
         let ward = wardPath.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
         if (wardPath === 'mayor') ward = 'Mayor';
-        if (!ward.includes('Board') && !ward.includes('Trust') && ward !== 'Mayor') {
-          ward += ' Ward';
-        }
         candidates.push({ name: name.trim(), ward: ward.trim(), link, details: {} as CandidateDetails });
       }
       // await page.waitForTimeout(DELAY_MS);

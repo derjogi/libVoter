@@ -9,6 +9,7 @@ import { RightPanel } from '@/components/layout/RightPanel';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useChat } from '@/lib/client/hooks/useChat';
 import { summarizeUserPreferences } from '@/lib/actions/prompts';
+import { getUniqueWards } from '@/lib/actions/database';
 import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch } from '@/types';
 
 export default function VotingAdvisor() {
@@ -20,6 +21,8 @@ export default function VotingAdvisor() {
   const [showCandidates, setShowCandidates] = useState(false);
   const [preferenceSummary, setPreferenceSummary] = useState<string>('Your Preferences');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  const [wards, setWards] = useState<string[]>([]);
+  const [isLoadingWards, setIsLoadingWards] = useState(true);
 
   const { messages, isLoading, sendMessage, clearChat, followupQuestion } = useChat();
 
@@ -34,18 +37,39 @@ export default function VotingAdvisor() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Initialize with chat component
+  // Fetch wards on component mount
   useEffect(() => {
-    if (!currentComponent) {
+    const fetchWards = async () => {
+      try {
+        const wardResult = await getUniqueWards();
+        if (wardResult.success && wardResult.data) {
+          setWards(wardResult.data);
+        }
+      } catch (error) {
+        console.error('Error fetching wards:', error);
+      } finally {
+        setIsLoadingWards(false);
+      }
+    };
+
+    fetchWards();
+  }, []);
+
+  // Initialize with ward selection component
+  useEffect(() => {
+    if (!currentComponent && !isLoadingWards && wards.length > 0) {
+      const options = wards.map(ward => ({ id: ward, label: ward, description: '' }));
       setCurrentComponent({
-        type: 'chat',
+        type: 'multiselect',
         data: {
-          messages: messages,
-          placeholder: 'Tell me about your political preferences...'
+          question: 'Which ward do you live in?',
+          options,
+          maxSelections: 1,
+          questionId: 'ward_selection'
         }
       });
     }
-  }, [currentComponent]);
+  }, [currentComponent, isLoadingWards, wards]);
 
   // Update messages in currentComponent when messages change
   useEffect(() => {
@@ -121,13 +145,27 @@ export default function VotingAdvisor() {
 
   const handleReset = () => {
     clearChat();
-    setCurrentComponent({
-      type: 'chat',
-      data: {
-        messages: [],
-        placeholder: 'Tell me about your political preferences...'
-      }
-    });
+    if (wards.length > 0) {
+      const options = wards.map(ward => ({ id: ward, label: ward, description: '' }));
+      setCurrentComponent({
+        type: 'multiselect',
+        data: {
+          question: 'Which ward do you live in?',
+          options,
+          maxSelections: 1,
+          questionId: 'ward_selection'
+        }
+      });
+    } else {
+      // Fallback to chat if wards not loaded
+      setCurrentComponent({
+        type: 'chat',
+        data: {
+          messages: [],
+          placeholder: 'Tell me about your political preferences...'
+        }
+      });
+    }
     setUserResponses([]);
     setCandidates([]);
     setConfidence(0);
@@ -215,7 +253,12 @@ export default function VotingAdvisor() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {currentComponent && (
+                {isLoadingWards ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading wards...</p>
+                  </div>
+                ) : currentComponent ? (
                   <ComponentRenderer
                     type={currentComponent.type}
                     data={currentComponent.data}
@@ -224,6 +267,10 @@ export default function VotingAdvisor() {
                     isLoading={isLoading}
                     followupQuestion={followupQuestion}
                   />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Loading...</p>
+                  </div>
                 )}
 
               </CardContent>
