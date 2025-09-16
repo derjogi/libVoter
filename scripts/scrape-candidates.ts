@@ -19,8 +19,8 @@ interface CandidateDetails {
   candidate_statement: string;
   key_positions: Record<string, string>;
   why?: string;
-  key_skills?: string[];
-  top_issues?: string[];
+  key_skills?: string;
+  top_issues?: string;
   supporting_links?: string[];
   photo_url?: string;
 }
@@ -93,14 +93,30 @@ async function scrapeCandidateList(page: Page): Promise<Candidate[]> {
 }
 
 async function scrapeCandidateDetails(page: Page, link: string): Promise<CandidateDetails> {
+  // Set shorter timeout to avoid long waits
+  const originalTimeout = 30000; // Default Playwright timeout
+  page.setDefaultTimeout(2000);
+
   try {
     await page.goto(link, { waitUntil: 'networkidle' });
     console.log(`Loaded candidate page: ${link}`);
 
-    const candidateStatement = await page.locator('h4:has-text("Candidate statement") + div p').textContent() || '';
-    const why = await page.locator('h2:has-text("Why I want to be elected") + p').textContent() || undefined;
-    const keySkills = await page.locator('h2:has-text("My key skills and qualities") + p').textContent() || undefined;
-    const topIssues = await page.locator('h2:has-text("My top three key issues") + p').textContent() || undefined;
+    const candidateStatementLocator = page.locator('h4:has-text("Candidate statement") + div p');
+    let candidateStatement = '';
+    if (await candidateStatementLocator.count() > 0) {
+      const allPs = await candidateStatementLocator.all();
+      const texts = await Promise.all(allPs.map(p => p.textContent()));
+      candidateStatement = texts.filter(t => t).join(' ').trim();
+    }
+
+    const whyLocator = page.locator('h2:has-text("Why I want to be elected") + p');
+    const why = (await whyLocator.count() > 0) ? await whyLocator.textContent() : undefined;
+
+    const keySkillsLocator = page.locator('h2:has-text("My key skills and qualities") + p');
+    const keySkills = (await keySkillsLocator.count() > 0) ? await keySkillsLocator.textContent() : undefined;
+
+    const topIssuesLocator = page.locator('h2:has-text("My top three key issues") + p');
+    const topIssues = (await topIssuesLocator.count() > 0) ? await topIssuesLocator.textContent() : undefined;
 
     // Key positions: under h2 "My position on key topics", each li contains h3 and p
     const key_positions: Record<string, string> = {};
@@ -140,6 +156,7 @@ async function scrapeCandidateDetails(page: Page, link: string): Promise<Candida
       }
     }
 
+    page.setDefaultTimeout(originalTimeout);
     return {
       candidate_statement: candidateStatement.trim(),
       key_positions,
@@ -151,6 +168,7 @@ async function scrapeCandidateDetails(page: Page, link: string): Promise<Candida
     };
   } catch (error) {
     console.error('Error scraping details for link:', link, error);
+    page.setDefaultTimeout(originalTimeout);
     return {
       candidate_statement: '',
       key_positions: {},
@@ -220,19 +238,19 @@ async function insertCandidatesToDB(candidates: Candidate[]) {
   const db = getDbClient();
   try {
     for (const candidate of candidates) {
-      await db.insert(schema.candidates).values({
+      await db.insert(schema.candidates).values([{
         name: candidate.name,
         party: null, // Party not scraped
         ward: candidate.ward,
         candidate_statement: candidate.details.candidate_statement,
-        key_positions: candidate.details.key_positions,
-        why: candidate.details.why,
-        key_skills: candidate.details.key_skills,
-        top_issues: candidate.details.top_issues,
-        supporting_links: candidate.details.supporting_links,
-        photo_url: candidate.details.photo_url,
+        key_positions: Object.keys(candidate.details.key_positions).length > 0 ? candidate.details.key_positions : null,
+        why: candidate.details.why || null,
+        key_skills: candidate.details.key_skills || null,
+        top_issues: candidate.details.top_issues || null,
+        supporting_links: candidate.details.supporting_links?.length ? candidate.details.supporting_links : null,
+        photo_url: candidate.details.photo_url || null,
         created_at: new Date(),
-      }).onConflictDoUpdate({
+      }]).onConflictDoUpdate({
         target: [schema.candidates.name, schema.candidates.ward],
         set: {
           candidate_statement: sql`excluded.candidate_statement`,
