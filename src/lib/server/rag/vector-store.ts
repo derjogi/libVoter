@@ -2,10 +2,13 @@
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { DirectoryLoader } from 'langchain/document_loaders/fs/directory';
-import { JSONLoader } from 'langchain/document_loaders/fs/json';
-import { TextLoader } from 'langchain/document_loaders/fs/text';
+import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
+import { JSONLoader } from "langchain/document_loaders/fs/json";
+import { TextLoader } from "langchain/document_loaders/fs/text";
+import { Document } from 'langchain/document';
 import path from 'path';
+import { db } from '../db';
+import { candidates } from '../../db/schema';
 
 class VectorStoreManager {
   private vectorStore: Chroma | null = null;
@@ -37,16 +40,36 @@ class VectorStoreManager {
   }
 
   private async createVectorStore() {
-    const dataDir = path.join(process.cwd(), 'data', 'candidates');
+    let docs: Document[] = [];
+    const dataDir = path.join(process.cwd(), "data", "candidates");
 
     // Load documents from data directory
     const loader = new DirectoryLoader(dataDir, {
-      '.json': (filePath: string) => new JSONLoader(filePath),
-      '.md': (filePath: string) => new TextLoader(filePath),
-      '.txt': (filePath: string) => new TextLoader(filePath)
+      ".json": (filePath: string) => new JSONLoader(filePath),
+      ".md": (filePath: string) => new TextLoader(filePath),
+      ".txt": (filePath: string) => new TextLoader(filePath),
     });
 
-    const docs = await loader.load();
+    docs.push(...(await loader.load()));
+
+    // ... and now also check the database and get all candidates from there:
+    try {
+      const allCandidates = await db.select().from(candidates);
+
+      docs = allCandidates.map(candidate => {
+        const content = `${candidate.name} - ${candidate.party || 'Independent'} - ${candidate.ward}\n\nStatement: ${candidate.candidate_statement || ''}\n\nKey Positions: ${Object.entries(candidate.key_positions || {}).map(([k, v]) => `${k}: ${v}`).join(', ')}\n\nWhy: ${candidate.why || ''}\n\nKey Skills: ${candidate.key_skills || ''}\n\nTop Issues: ${candidate.top_issues || ''}`;
+
+        const metadata = {
+          ward: candidate.ward,
+          party: candidate.party || 'Independent',
+          id: candidate.id.toString()
+        };
+
+        return new Document({ pageContent: content, metadata });
+      });
+    } catch (error) {
+      console.error('Failed to load candidates from database:', error);
+    }
 
     // Split documents into chunks
     const splitter = new RecursiveCharacterTextSplitter({
