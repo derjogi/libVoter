@@ -1,13 +1,21 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 
 export const candidates = sqliteTable('candidates', {
-  id: text('id').primaryKey(),
+  id: integer('id').primaryKey(),
   name: text('name').notNull(),
   party: text('party'),
-  profileData: text('profile_data', { mode: 'json' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
+  ward: text('ward').notNull(),
+  bio: text('bio'),
+  policies: text('policies', { mode: 'json' }).$type<string[]>(),
+  email: text('email'),
+  phone: text('phone'),
+  photo_url: text('photo_url'),
+  website: text('website'),
+  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+}, (table) => ({
+  nameWardUnique: uniqueIndex('name_ward_unique').on(table.name, table.ward),
+}));
 
 export const parties = sqliteTable('parties', {
   id: text('id').primaryKey(),
@@ -21,7 +29,7 @@ export const appSettings = sqliteTable('app_settings', {
   id: text('id').primaryKey(),
   key: text('key').notNull().unique(),
   value: text('value', { mode: 'json' }),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull(),
 });
 
 // Zod schemas for validation
