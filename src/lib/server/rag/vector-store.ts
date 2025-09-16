@@ -1,6 +1,5 @@
 // Server-only: Cannot be imported in client components
 import { Chroma } from '@langchain/community/vectorstores/chroma';
-import { OpenAIEmbeddings } from '@langchain/openai';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
 import { JSONLoader } from "langchain/document_loaders/fs/json";
@@ -9,16 +8,15 @@ import { Document } from 'langchain/document';
 import path from 'path';
 import { db } from '../db';
 import { candidates } from '../../db/schema';
+import { createEmbeddingModel } from '../ai/model-factory';
+import type { EmbeddingModel } from '../ai/model-factory';
 
 class VectorStoreManager {
   private vectorStore: Chroma | null = null;
-  private embeddings: OpenAIEmbeddings;
+  private embeddings: EmbeddingModel;
 
   constructor() {
-    this.embeddings = new OpenAIEmbeddings({
-      apiKey: process.env.OPENAI_API_KEY!,
-      modelName: "text-embedding-3-small",
-    });
+    this.embeddings = createEmbeddingModel();
   }
 
   async initialize() {

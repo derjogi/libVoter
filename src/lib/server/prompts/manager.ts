@@ -1,7 +1,8 @@
 // Server-only prompt manager
-import { ChatOpenAI } from '@langchain/openai';
 import { getPrompt, formatPrompt, type PromptTemplate } from './index';
+import { createChatModel } from '@/lib/server/ai/model-factory';
 import type { ConversationMessage, UserResponse } from '@/types';
+import type { ChatModel } from '@/lib/server/ai/model-factory';
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -16,15 +17,10 @@ export interface PromptExecutionResult {
 }
 
 export class PromptManager {
-  private chatModel: ChatOpenAI;
+  private chatModel: ChatModel;
 
   constructor() {
-    this.chatModel = new ChatOpenAI({
-      modelName: process.env.AI_MODEL_LARGE || 'gpt-4',
-      temperature: 0.5, // Lower temperature for more consistent results
-      maxTokens: parseInt(process.env.AI_MAX_TOKENS || "2000"),
-      apiKey: process.env.OPENAI_API_KEY!
-    });
+    this.chatModel = createChatModel(); // Defaults to small model. For now. Should probably be variable and specified in the prompt...?
   }
 
   async executePrompt(

@@ -186,15 +186,18 @@ export function CandidateList({
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-          {filteredAndSortedCandidates.map((candidate) => (
-            <CandidateCard
-              key={candidate.candidate.id}
-              candidate={candidate}
-              onSelect={onSelectCandidate}
-              confidence={confidence}
-              isLowConfidence={isLowConfidence}
-            />
-          ))}
+            {filteredAndSortedCandidates.map((candidate) => {
+              console.log("Candidate: ", candidate)
+              return (
+                <CandidateCard
+                  key={candidate.candidate.id}
+                  candidate={candidate}
+                  onSelect={onSelectCandidate}
+                  confidence={confidence}
+                  isLowConfidence={isLowConfidence}
+                />
+              )
+            })}
         </div>
       )}
     </div>

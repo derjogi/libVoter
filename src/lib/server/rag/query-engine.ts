@@ -1,7 +1,8 @@
 // Server-only RAG query engine
-import { ChatOpenAI } from '@langchain/openai';
 import { getVectorStoreManager } from './vector-store';
+import { createChatModel } from '@/lib/server/ai/model-factory';
 import type { Candidate, PolicyPosition } from '@/types';
+import type { ChatModel } from '@/lib/server/ai/model-factory';
 
 export interface RAGContext {
   candidates: Candidate[];
@@ -10,14 +11,10 @@ export interface RAGContext {
 }
 
 export class RAGQueryEngine {
-  private llm: ChatOpenAI;
+  llm: ChatModel;
 
   constructor() {
-    this.llm = new ChatOpenAI({
-      modelName: process.env.AI_MODEL_LARGE || "gpt-4",
-      temperature: 0.3,
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
+    this.llm = createChatModel(); // Default model
   }
 
   async queryWithContext(question: string, userContext?: string): Promise<RAGContext> {
@@ -46,7 +43,7 @@ Please provide:
 Format as JSON with candidates, policies, and sources arrays.
 `;
 
-    const response = await this.llm.call([
+    const response = await this.llm.invoke([
       { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
       { role: 'user', content: contextPrompt }
     ]);

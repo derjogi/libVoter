@@ -22,7 +22,7 @@ export async function queryRAGContext(question: string, userContext?: string) {
       data: context
     };
   } catch (error) {
-    console.error('RAG query failed:', error);
+    console.error('RAG query failed:', error, (await getRAGEngine()).llm.model);
     return {
       success: false,
       error: 'Failed to query knowledge base',

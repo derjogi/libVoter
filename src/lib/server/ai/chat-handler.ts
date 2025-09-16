@@ -1,14 +1,13 @@
 // Server-only AI chat processing
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { HumanMessage, AIMessage, SystemMessage } from '@langchain/core/messages';
 import { getAIConfig } from './config';
+import { createChatModel } from './model-factory';
 import { ConfidenceCalculator } from './confidence-calculator';
 import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } from '@/lib/actions/prompts';
 import { getUniqueWards, getCandidatesByWard, getMayorCandidates } from '@/lib/actions/database';
 import { queryRAGContext } from '@/lib/actions/rag';
 import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
-import type { AIModelConfig } from './config';
+import type { ChatModel } from './model-factory';
 
 export interface ChatResponse {
   message: string;
@@ -24,56 +23,13 @@ export interface ChatResponse {
 }
 
 export class AIChatHandler {
-  private chatModel: ChatOpenAI | ChatAnthropic;
+  private chatModel: ChatModel;
 
   constructor() {
     const config = getAIConfig();
     const modelConfig = config.models.small;
 
-    this.chatModel = this.createChatModel(modelConfig);
-  }
-
-  private createChatModel(modelConfig: AIModelConfig): ChatOpenAI | ChatAnthropic {
-    const { provider, model } = modelConfig;
-    const config = getAIConfig();
-
-    switch (provider) {
-      case 'openai':
-        console.log('Using OpenAI model:', model);
-        return new ChatOpenAI({
-          modelName: model,
-          temperature: config.limits.temperature,
-          maxTokens: config.limits.maxTokens,
-          apiKey: process.env.OPENAI_API_KEY!,
-          streaming: false, // Disable streaming to ensure complete responses
-        });
-
-      case 'anthropic':
-        console.log("Using Anthropic model:", model);
-        return new ChatAnthropic({
-          modelName: model,
-          temperature: config.limits.temperature,
-          maxTokens: config.limits.maxTokens,
-          anthropicApiKey: process.env.ANTHROPIC_API_KEY!,
-          streaming: false // Disable streaming to ensure complete responses
-        });
-
-      case 'openrouter':
-        console.log("Using OpenRouter model:", model);
-        return new ChatOpenAI({
-          modelName: model,
-          temperature: config.limits.temperature,
-          maxTokens: config.limits.maxTokens,
-          apiKey: process.env.OPENROUTER_API_KEY!,
-          configuration: {
-            baseURL: 'https://openrouter.ai/api/v1'
-          },
-          streaming: false // Disable streaming to ensure complete responses
-        });
-
-      default:
-        throw new Error(`Unsupported AI provider: ${provider}`);
-    }
+    this.chatModel = createChatModel(modelConfig);
   }
 
   async processMessage(
