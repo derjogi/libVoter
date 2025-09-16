@@ -9,7 +9,7 @@ test.describe('Chat Flow Tests', () => {
     await page.waitForLoadState('networkidle');
 
     // Check basic page structure
-    const heading = page.locator('text=AI Voting Advisor');
+    const heading = page.getByRole('heading', { name: 'AI Voting Advisor' });
     await expect(heading).toBeVisible();
 
     const confidenceBadge = page.locator('text=Confidence: 0%');
@@ -33,7 +33,7 @@ test.describe('Chat Flow Tests', () => {
 
     // Since the UI interaction is complex, let's verify the backend works
     // by making a direct API call to test the chat processing
-    const response = await page.request.post('/api/chat/process', {
+    const response = await page.request.post('http://localhost:3000/api/chat/process', {
       data: {
         message: 'I want to find candidates',
         conversationHistory: [],
@@ -63,14 +63,7 @@ test.describe('Chat Flow Tests', () => {
     await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
 
-    // First send a message to trigger ward selection
-    const chatInput = page.locator('input[type="text"]').first();
-    await chatInput.waitFor({ state: 'visible', timeout: 10000 });
-    await chatInput.fill('I want to find candidates');
-    await chatInput.press('Enter');
-
-    // Wait for ward selection to appear
-    await page.waitForTimeout(5000);
+    // Wait for ward selection to appear (app starts with it)
     const wardQuestion = page.locator('text=Which ward do you live in?');
     await expect(wardQuestion).toBeVisible({ timeout: 10000 });
 

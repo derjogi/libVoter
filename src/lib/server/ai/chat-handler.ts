@@ -44,8 +44,8 @@ export class AIChatHandler {
           modelName: model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          openAIApiKey: process.env.OPENAI_API_KEY!,
-          streaming: false // Disable streaming to ensure complete responses
+          apiKey: process.env.OPENAI_API_KEY!,
+          streaming: false, // Disable streaming to ensure complete responses
         });
 
       case 'anthropic':

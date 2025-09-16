@@ -21,9 +21,9 @@ export class PromptManager {
   constructor() {
     this.chatModel = new ChatOpenAI({
       modelName: process.env.AI_MODEL_LARGE || 'gpt-4',
-      temperature: 0.3, // Lower temperature for more consistent results
-      maxTokens: 2000,
-      openAIApiKey: process.env.OPENAI_API_KEY!
+      temperature: 0.5, // Lower temperature for more consistent results
+      maxTokens: parseInt(process.env.AI_MAX_TOKENS || "2000"),
+      apiKey: process.env.OPENAI_API_KEY!
     });
   }
 
@@ -51,7 +51,7 @@ export class PromptManager {
           promptId: template.id,
           executionTime,
           tokensUsed: this.estimateTokens(formatted.content + response.content),
-          model: process.env.AI_MODEL_LARGE || 'gpt-4'
+          model: this.chatModel.model
         }
       };
     } catch (error) {

@@ -14,9 +14,9 @@ export class RAGQueryEngine {
 
   constructor() {
     this.llm = new ChatOpenAI({
-      modelName: process.env.AI_MODEL_LARGE || 'gpt-4',
+      modelName: process.env.AI_MODEL_LARGE || "gpt-4",
       temperature: 0.3,
-      openAIApiKey: process.env.OPENAI_API_KEY!
+      apiKey: process.env.OPENAI_API_KEY!,
     });
   }
 

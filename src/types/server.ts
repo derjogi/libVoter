@@ -1,6 +1,6 @@
 // Server-only types (cannot be imported in client components)
 export interface ServerConfig {
-  openaiApiKey: string;
+  apiKey: string;
   libsqlUrl: string;
   libsqlAuthToken?: string;
   chromaUrl: string;
