@@ -21,7 +21,7 @@ export const AI_CONFIG = {
     reasoning: parseModelString(process.env.AI_MODEL_REASONING || 'gpt-4-turbo')
   },
   thresholds: {
-    confidence: parseInt(process.env.AI_CONFIDENCE_THRESHOLD || '60'),
+    confidence: parseInt(process.env.AI_CONFIDENCE_THRESHOLD || '50'),
     minInteractions: parseInt(process.env.MIN_INTERACTIONS_BEFORE_RESULTS || '3')
   },
   limits: {

@@ -87,11 +87,15 @@ export class AIChatHandler {
         conversationHistory
       );
 
+      // Always fetch eligible candidates for AI context
+      const candidates = await this.generateCandidateMatches(userResponses);
+
       // Prepare conversation context
       const messages = this.buildConversationContext(
         userMessage,
         conversationHistory,
-        confidenceResult
+        confidenceResult,
+        candidates
       );
 
       // Get AI response with validation
@@ -136,7 +140,7 @@ export class AIChatHandler {
         confidence: confidenceResult.score,
         shouldShowCandidates,
         nextComponent,
-        candidateMatches: shouldShowCandidates ? await this.generateCandidateMatches(userResponses) : undefined,
+        candidateMatches: candidates,
         followupQuestion
       };
 
@@ -174,15 +178,22 @@ export class AIChatHandler {
   private buildConversationContext(
     userMessage: string,
     history: ConversationMessage[],
-    confidence: any
+    confidence: any,
+    candidates: any[]
   ): (HumanMessage | AIMessage | SystemMessage)[] {
     const messages: (HumanMessage | AIMessage | SystemMessage)[] = [];
 
     // System prompt
+    const candidateInfo = candidates.length > 0
+      ? `\n\nAvailable candidates for consideration:\n${candidates.map(c =>
+          `- ${c.name} (${c.party}): ${c.topPolicies.join(', ')}`
+        ).join('\n')}`
+      : '\n\nNo candidates available yet.';
+
     messages.push(new SystemMessage(
       `You are an AI political advisor helping users discover their voting preferences for the upcoming NZ local elections in Auckland.
       Current confidence level: ${confidence.score}/100
-      Reasoning: ${confidence.reasoning}
+      Reasoning: ${confidence.reasoning}${candidateInfo}
 
       Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
       Focus on policy topics and candidate positions.`
