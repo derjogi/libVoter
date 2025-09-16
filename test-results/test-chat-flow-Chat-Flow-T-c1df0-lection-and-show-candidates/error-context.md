@@ -16,197 +16,203 @@
         - generic [ref=e16]: Progress
         - generic [ref=e17]: 0%
       - progressbar [ref=e18]
-      - button "Reset" [ref=e21]:
-        - img
-        - text: Reset
-    - main [ref=e22]:
-      - generic [ref=e25]:
-        - generic [ref=e27]:
-          - generic [ref=e28]: Your Preferences
-          - generic [ref=e29]: 0 responses
-        - generic [ref=e31]:
-          - generic [ref=e32]:
-            - generic [ref=e33]: Which ward do you live in?
-            - generic [ref=e35]: 0/1 selected
-          - generic [ref=e36]:
-            - generic [ref=e37]:
-              - generic [ref=e38]:
-                - checkbox "Albany Ward" [ref=e39]
-                - generic [ref=e41] [cursor=pointer]: Albany Ward
-              - generic [ref=e42]:
-                - checkbox "Albert Eden Local Board Maungawhau Subdivision" [ref=e43]
-                - generic [ref=e45] [cursor=pointer]: Albert Eden Local Board Maungawhau Subdivision
-              - generic [ref=e46]:
-                - checkbox "Albert Eden Local Board Owairaka Subdivision" [ref=e47]
-                - generic [ref=e49] [cursor=pointer]: Albert Eden Local Board Owairaka Subdivision
-              - generic [ref=e50]:
-                - checkbox "Albert Eden Puketapapa Ward" [ref=e51]
-                - generic [ref=e53] [cursor=pointer]: Albert Eden Puketapapa Ward
-              - generic [ref=e54]:
-                - checkbox "Aotea Great Barrier Local Board" [ref=e55]
-                - generic [ref=e57] [cursor=pointer]: Aotea Great Barrier Local Board
-              - generic [ref=e58]:
-                - checkbox "Birkenhead Licensing Trust" [ref=e59]
-                - generic [ref=e61] [cursor=pointer]: Birkenhead Licensing Trust
-              - generic [ref=e62]:
-                - checkbox "Devonport Takapuna Local Board" [ref=e63]
-                - generic [ref=e65] [cursor=pointer]: Devonport Takapuna Local Board
-              - generic [ref=e66]:
-                - checkbox "Franklin Local Board Pukekohe Subdivision" [ref=e67]
-                - generic [ref=e69] [cursor=pointer]: Franklin Local Board Pukekohe Subdivision
-              - generic [ref=e70]:
-                - checkbox "Franklin Local Board Wairoa Subdivision" [ref=e71]
-                - generic [ref=e73] [cursor=pointer]: Franklin Local Board Wairoa Subdivision
-              - generic [ref=e74]:
-                - checkbox "Franklin Local Board Waiuku Subdivision" [ref=e75]
-                - generic [ref=e77] [cursor=pointer]: Franklin Local Board Waiuku Subdivision
-              - generic [ref=e78]:
-                - checkbox "Franklin Ward" [ref=e79]
-                - generic [ref=e81] [cursor=pointer]: Franklin Ward
-              - generic [ref=e82]:
-                - checkbox "Henderson Massey Local Board" [ref=e83]
-                - generic [ref=e85] [cursor=pointer]: Henderson Massey Local Board
-              - generic [ref=e86]:
-                - checkbox "Hibiscus And Bays Local Board East Coast Bays Subdivision" [ref=e87]
-                - generic [ref=e89] [cursor=pointer]: Hibiscus And Bays Local Board East Coast Bays Subdivision
-              - generic [ref=e90]:
-                - checkbox "Hibiscus And Bays Local Board Hibiscus Coast Subdivision" [ref=e91]
-                - generic [ref=e93] [cursor=pointer]: Hibiscus And Bays Local Board Hibiscus Coast Subdivision
-              - generic [ref=e94]:
-                - checkbox "Howick Local Board Botany Subdivision" [ref=e95]
-                - generic [ref=e97] [cursor=pointer]: Howick Local Board Botany Subdivision
-              - generic [ref=e98]:
-                - checkbox "Howick Local Board Flat Bush Subdivision" [ref=e99]
-                - generic [ref=e101] [cursor=pointer]: Howick Local Board Flat Bush Subdivision
-              - generic [ref=e102]:
-                - checkbox "Howick Local Board Howick Subdivision" [ref=e103]
-                - generic [ref=e105] [cursor=pointer]: Howick Local Board Howick Subdivision
-              - generic [ref=e106]:
-                - checkbox "Howick Local Board Pakuranga Subdivision" [ref=e107]
-                - generic [ref=e109] [cursor=pointer]: Howick Local Board Pakuranga Subdivision
-              - generic [ref=e110]:
-                - checkbox "Howick Ward" [ref=e111]
-                - generic [ref=e113] [cursor=pointer]: Howick Ward
-              - generic [ref=e114]:
-                - checkbox "Kaipatiki Local Board" [ref=e115]
-                - generic [ref=e117] [cursor=pointer]: Kaipatiki Local Board
-              - generic [ref=e118]:
-                - checkbox "Mangere Otahuhu Local Board" [ref=e119]
-                - generic [ref=e121] [cursor=pointer]: Mangere Otahuhu Local Board
-              - generic [ref=e122]:
-                - checkbox "Manukau Ward" [ref=e123]
-                - generic [ref=e125] [cursor=pointer]: Manukau Ward
-              - generic [ref=e126]:
-                - checkbox "Manurewa Local Board" [ref=e127]
-                - generic [ref=e129] [cursor=pointer]: Manurewa Local Board
-              - generic [ref=e130]:
-                - checkbox "Manurewa Papakura Ward" [ref=e131]
-                - generic [ref=e133] [cursor=pointer]: Manurewa Papakura Ward
-              - generic [ref=e134]:
-                - checkbox "Maungakiekie Tamaki Local Board Maungakiekie Subdivision" [ref=e135]
-                - generic [ref=e137] [cursor=pointer]: Maungakiekie Tamaki Local Board Maungakiekie Subdivision
-              - generic [ref=e138]:
-                - checkbox "Maungakiekie Tamaki Local Board Tamaki Subdivision" [ref=e139]
-                - generic [ref=e141] [cursor=pointer]: Maungakiekie Tamaki Local Board Tamaki Subdivision
-              - generic [ref=e142]:
-                - checkbox "Maungakiekie Tamaki Ward" [ref=e143]
-                - generic [ref=e145] [cursor=pointer]: Maungakiekie Tamaki Ward
-              - generic [ref=e146]:
-                - checkbox "Mount Wellington Licensing Trust" [ref=e147]
-                - generic [ref=e149] [cursor=pointer]: Mount Wellington Licensing Trust
-              - generic [ref=e150]:
-                - checkbox "North Shore Ward" [ref=e151]
-                - generic [ref=e153] [cursor=pointer]: North Shore Ward
-              - generic [ref=e154]:
-                - checkbox "Orakei Local Board" [ref=e155]
-                - generic [ref=e157] [cursor=pointer]: Orakei Local Board
-              - generic [ref=e158]:
-                - checkbox "Orakei Ward" [ref=e159]
-                - generic [ref=e161] [cursor=pointer]: Orakei Ward
-              - generic [ref=e162]:
-                - checkbox "Otara Papatoetoe Local Board Otara Subdivision" [ref=e163]
-                - generic [ref=e165] [cursor=pointer]: Otara Papatoetoe Local Board Otara Subdivision
-              - generic [ref=e166]:
-                - checkbox "Otara Papatoetoe Local Board Papatoetoe Subdivision" [ref=e167]
-                - generic [ref=e169] [cursor=pointer]: Otara Papatoetoe Local Board Papatoetoe Subdivision
-              - generic [ref=e170]:
-                - checkbox "Papakura Local Board" [ref=e171]
-                - generic [ref=e173] [cursor=pointer]: Papakura Local Board
-              - generic [ref=e174]:
-                - checkbox "Portage Licensing Trust Ward No 1 Auckland City" [ref=e175]
-                - generic [ref=e177] [cursor=pointer]: Portage Licensing Trust Ward No 1 Auckland City
-              - generic [ref=e178]:
-                - checkbox "Portage Licensing Trust Ward No 2 New Lynn" [ref=e179]
-                - generic [ref=e181] [cursor=pointer]: Portage Licensing Trust Ward No 2 New Lynn
-              - generic [ref=e182]:
-                - checkbox "Portage Licensing Trust Ward No 4 Titirangi Green Bay" [ref=e183]
-                - generic [ref=e185] [cursor=pointer]: Portage Licensing Trust Ward No 4 Titirangi Green Bay
-              - generic [ref=e186]:
-                - checkbox "Portage Licensing Trust Ward No 5 Kelston West" [ref=e187]
-                - generic [ref=e189] [cursor=pointer]: Portage Licensing Trust Ward No 5 Kelston West
-              - generic [ref=e190]:
-                - checkbox "Puketapapa Local Board" [ref=e191]
-                - generic [ref=e193] [cursor=pointer]: Puketapapa Local Board
-              - generic [ref=e194]:
-                - checkbox "Rodney Local Board Dairy Flat Subdivision" [ref=e195]
-                - generic [ref=e197] [cursor=pointer]: Rodney Local Board Dairy Flat Subdivision
-              - generic [ref=e198]:
-                - checkbox "Rodney Local Board Kumeu Subdivision" [ref=e199]
-                - generic [ref=e201] [cursor=pointer]: Rodney Local Board Kumeu Subdivision
-              - generic [ref=e202]:
-                - checkbox "Rodney Local Board Northern Rodney Subdivision" [ref=e203]
-                - generic [ref=e205] [cursor=pointer]: Rodney Local Board Northern Rodney Subdivision
-              - generic [ref=e206]:
-                - checkbox "Rodney Local Board Southern Kaipara Subdivision" [ref=e207]
-                - generic [ref=e209] [cursor=pointer]: Rodney Local Board Southern Kaipara Subdivision
-              - generic [ref=e210]:
-                - checkbox "Rodney Local Board Warkworth Subdivision" [ref=e211]
-                - generic [ref=e213] [cursor=pointer]: Rodney Local Board Warkworth Subdivision
-              - generic [ref=e214]:
-                - checkbox "Rodney Ward" [ref=e215]
-                - generic [ref=e217] [cursor=pointer]: Rodney Ward
-              - generic [ref=e218]:
-                - checkbox "Upper Harbour Local Board" [ref=e219]
-                - generic [ref=e221] [cursor=pointer]: Upper Harbour Local Board
-              - generic [ref=e222]:
-                - checkbox "Waiheke Local Board" [ref=e223]
-                - generic [ref=e225] [cursor=pointer]: Waiheke Local Board
-              - generic [ref=e226]:
-                - checkbox "Waitakere Licensing Trust Ward No 1 Te Atatu" [ref=e227]
-                - generic [ref=e229] [cursor=pointer]: Waitakere Licensing Trust Ward No 1 Te Atatu
-              - generic [ref=e230]:
-                - checkbox "Waitakere Licensing Trust Ward No 2 Lincoln" [ref=e231]
-                - generic [ref=e233] [cursor=pointer]: Waitakere Licensing Trust Ward No 2 Lincoln
-              - generic [ref=e234]:
-                - checkbox "Waitakere Licensing Trust Ward No 3 Waitakere" [ref=e235]
-                - generic [ref=e237] [cursor=pointer]: Waitakere Licensing Trust Ward No 3 Waitakere
-              - generic [ref=e238]:
-                - checkbox "Waitakere Ranges Local Board" [ref=e239]
-                - generic [ref=e241] [cursor=pointer]: Waitakere Ranges Local Board
-              - generic [ref=e242]:
-                - checkbox "Waitakere Ward" [ref=e243]
-                - generic [ref=e245] [cursor=pointer]: Waitakere Ward
-              - generic [ref=e246]:
-                - checkbox "Waitemata And Gulf Ward" [ref=e247]
-                - generic [ref=e249] [cursor=pointer]: Waitemata And Gulf Ward
-              - generic [ref=e250]:
-                - checkbox "Waitemata Local Board" [ref=e251]
-                - generic [ref=e253] [cursor=pointer]: Waitemata Local Board
-              - generic [ref=e254]:
-                - checkbox "Whau Local Board" [ref=e255]
-                - generic [ref=e257] [cursor=pointer]: Whau Local Board
-              - generic [ref=e258]:
-                - checkbox "Whau Ward" [ref=e259]
-                - generic [ref=e261] [cursor=pointer]: Whau Ward
-              - generic [ref=e262]:
-                - checkbox "Wiri Licensing Trust" [ref=e263]
-                - generic [ref=e265] [cursor=pointer]: Wiri Licensing Trust
-            - button "Continue (0 selected)" [disabled]
-    - contentinfo [ref=e267]:
-      - generic [ref=e269]:
-        - paragraph [ref=e270]: AI Voting Advisor - Anonymous and secure political preference matching
-        - paragraph [ref=e271]: No personal data collected • Open source and transparent
-  - button "Open Next.js Dev Tools" [ref=e277] [cursor=pointer]:
-    - img [ref=e278] [cursor=pointer]
-  - alert [ref=e281]
+      - generic [ref=e20]:
+        - button "Undo" [ref=e21]:
+          - img
+          - text: Undo
+        - button "Reset" [ref=e22]:
+          - img
+          - text: Reset
+    - main [ref=e23]:
+      - generic [ref=e26]:
+        - generic [ref=e28]:
+          - generic [ref=e29]: Your Preferences
+          - generic [ref=e30]: 1 responses
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]: Which ward do you live in?
+            - generic [ref=e36]: 1/1 selected
+          - generic [ref=e37]:
+            - generic [ref=e38]:
+              - generic [ref=e39]:
+                - checkbox "Albany Ward" [checked] [disabled] [ref=e40]:
+                  - generic:
+                    - img
+                - generic [ref=e42] [cursor=pointer]: Albany Ward
+              - generic [ref=e43]:
+                - checkbox "Albert Eden Local Board Maungawhau Subdivision" [disabled] [ref=e44]
+                - generic [ref=e46] [cursor=pointer]: Albert Eden Local Board Maungawhau Subdivision
+              - generic [ref=e47]:
+                - checkbox "Albert Eden Local Board Owairaka Subdivision" [disabled] [ref=e48]
+                - generic [ref=e50] [cursor=pointer]: Albert Eden Local Board Owairaka Subdivision
+              - generic [ref=e51]:
+                - checkbox "Albert Eden Puketapapa Ward" [disabled] [ref=e52]
+                - generic [ref=e54] [cursor=pointer]: Albert Eden Puketapapa Ward
+              - generic [ref=e55]:
+                - checkbox "Aotea Great Barrier Local Board" [disabled] [ref=e56]
+                - generic [ref=e58] [cursor=pointer]: Aotea Great Barrier Local Board
+              - generic [ref=e59]:
+                - checkbox "Birkenhead Licensing Trust" [disabled] [ref=e60]
+                - generic [ref=e62] [cursor=pointer]: Birkenhead Licensing Trust
+              - generic [ref=e63]:
+                - checkbox "Devonport Takapuna Local Board" [disabled] [ref=e64]
+                - generic [ref=e66] [cursor=pointer]: Devonport Takapuna Local Board
+              - generic [ref=e67]:
+                - checkbox "Franklin Local Board Pukekohe Subdivision" [disabled] [ref=e68]
+                - generic [ref=e70] [cursor=pointer]: Franklin Local Board Pukekohe Subdivision
+              - generic [ref=e71]:
+                - checkbox "Franklin Local Board Wairoa Subdivision" [disabled] [ref=e72]
+                - generic [ref=e74] [cursor=pointer]: Franklin Local Board Wairoa Subdivision
+              - generic [ref=e75]:
+                - checkbox "Franklin Local Board Waiuku Subdivision" [disabled] [ref=e76]
+                - generic [ref=e78] [cursor=pointer]: Franklin Local Board Waiuku Subdivision
+              - generic [ref=e79]:
+                - checkbox "Franklin Ward" [disabled] [ref=e80]
+                - generic [ref=e82] [cursor=pointer]: Franklin Ward
+              - generic [ref=e83]:
+                - checkbox "Henderson Massey Local Board" [disabled] [ref=e84]
+                - generic [ref=e86] [cursor=pointer]: Henderson Massey Local Board
+              - generic [ref=e87]:
+                - checkbox "Hibiscus And Bays Local Board East Coast Bays Subdivision" [disabled] [ref=e88]
+                - generic [ref=e90] [cursor=pointer]: Hibiscus And Bays Local Board East Coast Bays Subdivision
+              - generic [ref=e91]:
+                - checkbox "Hibiscus And Bays Local Board Hibiscus Coast Subdivision" [disabled] [ref=e92]
+                - generic [ref=e94] [cursor=pointer]: Hibiscus And Bays Local Board Hibiscus Coast Subdivision
+              - generic [ref=e95]:
+                - checkbox "Howick Local Board Botany Subdivision" [disabled] [ref=e96]
+                - generic [ref=e98] [cursor=pointer]: Howick Local Board Botany Subdivision
+              - generic [ref=e99]:
+                - checkbox "Howick Local Board Flat Bush Subdivision" [disabled] [ref=e100]
+                - generic [ref=e102] [cursor=pointer]: Howick Local Board Flat Bush Subdivision
+              - generic [ref=e103]:
+                - checkbox "Howick Local Board Howick Subdivision" [disabled] [ref=e104]
+                - generic [ref=e106] [cursor=pointer]: Howick Local Board Howick Subdivision
+              - generic [ref=e107]:
+                - checkbox "Howick Local Board Pakuranga Subdivision" [disabled] [ref=e108]
+                - generic [ref=e110] [cursor=pointer]: Howick Local Board Pakuranga Subdivision
+              - generic [ref=e111]:
+                - checkbox "Howick Ward" [disabled] [ref=e112]
+                - generic [ref=e114] [cursor=pointer]: Howick Ward
+              - generic [ref=e115]:
+                - checkbox "Kaipatiki Local Board" [disabled] [ref=e116]
+                - generic [ref=e118] [cursor=pointer]: Kaipatiki Local Board
+              - generic [ref=e119]:
+                - checkbox "Mangere Otahuhu Local Board" [disabled] [ref=e120]
+                - generic [ref=e122] [cursor=pointer]: Mangere Otahuhu Local Board
+              - generic [ref=e123]:
+                - checkbox "Manukau Ward" [disabled] [ref=e124]
+                - generic [ref=e126] [cursor=pointer]: Manukau Ward
+              - generic [ref=e127]:
+                - checkbox "Manurewa Local Board" [disabled] [ref=e128]
+                - generic [ref=e130] [cursor=pointer]: Manurewa Local Board
+              - generic [ref=e131]:
+                - checkbox "Manurewa Papakura Ward" [disabled] [ref=e132]
+                - generic [ref=e134] [cursor=pointer]: Manurewa Papakura Ward
+              - generic [ref=e135]:
+                - checkbox "Maungakiekie Tamaki Local Board Maungakiekie Subdivision" [disabled] [ref=e136]
+                - generic [ref=e138] [cursor=pointer]: Maungakiekie Tamaki Local Board Maungakiekie Subdivision
+              - generic [ref=e139]:
+                - checkbox "Maungakiekie Tamaki Local Board Tamaki Subdivision" [disabled] [ref=e140]
+                - generic [ref=e142] [cursor=pointer]: Maungakiekie Tamaki Local Board Tamaki Subdivision
+              - generic [ref=e143]:
+                - checkbox "Maungakiekie Tamaki Ward" [disabled] [ref=e144]
+                - generic [ref=e146] [cursor=pointer]: Maungakiekie Tamaki Ward
+              - generic [ref=e147]:
+                - checkbox "Mount Wellington Licensing Trust" [disabled] [ref=e148]
+                - generic [ref=e150] [cursor=pointer]: Mount Wellington Licensing Trust
+              - generic [ref=e151]:
+                - checkbox "North Shore Ward" [disabled] [ref=e152]
+                - generic [ref=e154] [cursor=pointer]: North Shore Ward
+              - generic [ref=e155]:
+                - checkbox "Orakei Local Board" [disabled] [ref=e156]
+                - generic [ref=e158] [cursor=pointer]: Orakei Local Board
+              - generic [ref=e159]:
+                - checkbox "Orakei Ward" [disabled] [ref=e160]
+                - generic [ref=e162] [cursor=pointer]: Orakei Ward
+              - generic [ref=e163]:
+                - checkbox "Otara Papatoetoe Local Board Otara Subdivision" [disabled] [ref=e164]
+                - generic [ref=e166] [cursor=pointer]: Otara Papatoetoe Local Board Otara Subdivision
+              - generic [ref=e167]:
+                - checkbox "Otara Papatoetoe Local Board Papatoetoe Subdivision" [disabled] [ref=e168]
+                - generic [ref=e170] [cursor=pointer]: Otara Papatoetoe Local Board Papatoetoe Subdivision
+              - generic [ref=e171]:
+                - checkbox "Papakura Local Board" [disabled] [ref=e172]
+                - generic [ref=e174] [cursor=pointer]: Papakura Local Board
+              - generic [ref=e175]:
+                - checkbox "Portage Licensing Trust Ward No 1 Auckland City" [disabled] [ref=e176]
+                - generic [ref=e178] [cursor=pointer]: Portage Licensing Trust Ward No 1 Auckland City
+              - generic [ref=e179]:
+                - checkbox "Portage Licensing Trust Ward No 2 New Lynn" [disabled] [ref=e180]
+                - generic [ref=e182] [cursor=pointer]: Portage Licensing Trust Ward No 2 New Lynn
+              - generic [ref=e183]:
+                - checkbox "Portage Licensing Trust Ward No 4 Titirangi Green Bay" [disabled] [ref=e184]
+                - generic [ref=e186] [cursor=pointer]: Portage Licensing Trust Ward No 4 Titirangi Green Bay
+              - generic [ref=e187]:
+                - checkbox "Portage Licensing Trust Ward No 5 Kelston West" [disabled] [ref=e188]
+                - generic [ref=e190] [cursor=pointer]: Portage Licensing Trust Ward No 5 Kelston West
+              - generic [ref=e191]:
+                - checkbox "Puketapapa Local Board" [disabled] [ref=e192]
+                - generic [ref=e194] [cursor=pointer]: Puketapapa Local Board
+              - generic [ref=e195]:
+                - checkbox "Rodney Local Board Dairy Flat Subdivision" [disabled] [ref=e196]
+                - generic [ref=e198] [cursor=pointer]: Rodney Local Board Dairy Flat Subdivision
+              - generic [ref=e199]:
+                - checkbox "Rodney Local Board Kumeu Subdivision" [disabled] [ref=e200]
+                - generic [ref=e202] [cursor=pointer]: Rodney Local Board Kumeu Subdivision
+              - generic [ref=e203]:
+                - checkbox "Rodney Local Board Northern Rodney Subdivision" [disabled] [ref=e204]
+                - generic [ref=e206] [cursor=pointer]: Rodney Local Board Northern Rodney Subdivision
+              - generic [ref=e207]:
+                - checkbox "Rodney Local Board Southern Kaipara Subdivision" [disabled] [ref=e208]
+                - generic [ref=e210] [cursor=pointer]: Rodney Local Board Southern Kaipara Subdivision
+              - generic [ref=e211]:
+                - checkbox "Rodney Local Board Warkworth Subdivision" [disabled] [ref=e212]
+                - generic [ref=e214] [cursor=pointer]: Rodney Local Board Warkworth Subdivision
+              - generic [ref=e215]:
+                - checkbox "Rodney Ward" [disabled] [ref=e216]
+                - generic [ref=e218] [cursor=pointer]: Rodney Ward
+              - generic [ref=e219]:
+                - checkbox "Upper Harbour Local Board" [disabled] [ref=e220]
+                - generic [ref=e222] [cursor=pointer]: Upper Harbour Local Board
+              - generic [ref=e223]:
+                - checkbox "Waiheke Local Board" [disabled] [ref=e224]
+                - generic [ref=e226] [cursor=pointer]: Waiheke Local Board
+              - generic [ref=e227]:
+                - checkbox "Waitakere Licensing Trust Ward No 1 Te Atatu" [disabled] [ref=e228]
+                - generic [ref=e230] [cursor=pointer]: Waitakere Licensing Trust Ward No 1 Te Atatu
+              - generic [ref=e231]:
+                - checkbox "Waitakere Licensing Trust Ward No 2 Lincoln" [disabled] [ref=e232]
+                - generic [ref=e234] [cursor=pointer]: Waitakere Licensing Trust Ward No 2 Lincoln
+              - generic [ref=e235]:
+                - checkbox "Waitakere Licensing Trust Ward No 3 Waitakere" [disabled] [ref=e236]
+                - generic [ref=e238] [cursor=pointer]: Waitakere Licensing Trust Ward No 3 Waitakere
+              - generic [ref=e239]:
+                - checkbox "Waitakere Ranges Local Board" [disabled] [ref=e240]
+                - generic [ref=e242] [cursor=pointer]: Waitakere Ranges Local Board
+              - generic [ref=e243]:
+                - checkbox "Waitakere Ward" [disabled] [ref=e244]
+                - generic [ref=e246] [cursor=pointer]: Waitakere Ward
+              - generic [ref=e247]:
+                - checkbox "Waitemata And Gulf Ward" [disabled] [ref=e248]
+                - generic [ref=e250] [cursor=pointer]: Waitemata And Gulf Ward
+              - generic [ref=e251]:
+                - checkbox "Waitemata Local Board" [disabled] [ref=e252]
+                - generic [ref=e254] [cursor=pointer]: Waitemata Local Board
+              - generic [ref=e255]:
+                - checkbox "Whau Local Board" [disabled] [ref=e256]
+                - generic [ref=e258] [cursor=pointer]: Whau Local Board
+              - generic [ref=e259]:
+                - checkbox "Whau Ward" [disabled] [ref=e260]
+                - generic [ref=e262] [cursor=pointer]: Whau Ward
+              - generic [ref=e263]:
+                - checkbox "Wiri Licensing Trust" [disabled] [ref=e264]
+                - generic [ref=e266] [cursor=pointer]: Wiri Licensing Trust
+            - button "Continue (1 selected)" [disabled]
+    - contentinfo [ref=e268]:
+      - generic [ref=e270]:
+        - paragraph [ref=e271]: AI Voting Advisor - Anonymous and secure political preference matching
+        - paragraph [ref=e272]: No personal data collected • Open source and transparent
+  - button "Open Next.js Dev Tools" [ref=e278] [cursor=pointer]:
+    - img [ref=e279] [cursor=pointer]
+  - alert [ref=e282]
 ```

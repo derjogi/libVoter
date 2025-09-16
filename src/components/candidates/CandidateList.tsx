@@ -89,6 +89,8 @@ export function CandidateList({
     return filtered;
   }, [candidates, searchQuery, sortBy, sortOrder, filterBy]);
 
+  console.log("filtered Candidates: ", JSON.stringify(candidates))
+
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };

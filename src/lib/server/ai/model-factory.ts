@@ -62,7 +62,10 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
  */
 export function createEmbeddingModel(): EmbeddingModel {
   return new OpenAIEmbeddings({
-    apiKey: process.env.OPENAI_API_KEY!,
-    modelName: 'text-embedding-3-small',
+    apiKey: process.env.OPENROUTER_API_KEY!,
+    modelName: "text-embedding-3-small",
+    configuration: {
+      baseURL: "https://openrouter.ai/api/v1",
+    },
   });
 }
