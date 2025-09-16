@@ -27,18 +27,23 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: false,
   },
 
-  // Webpack configuration for better module resolution
-  webpack: (config, { isServer }) => {
-    // Handle server-only imports
-    if (isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@/lib/server': require('path').resolve(__dirname, 'src/lib/server'),
-      };
-    }
-
-    return config;
+  turbopack: {
+    // Enable or disable Turbopack features as needed
+    // Example: experimental features can be toggled here
   },
+
+  // Webpack configuration for better module resolution
+  // webpack: (config, { isServer }) => {
+  //   // Handle server-only imports
+  //   if (isServer) {
+  //     config.resolve.alias = {
+  //       ...config.resolve.alias,
+  //       '@/lib/server': require('path').resolve(__dirname, 'src/lib/server'),
+  //     };
+  //   }
+
+  //   return config;
+  // },
 };
 
 export default nextConfig;
