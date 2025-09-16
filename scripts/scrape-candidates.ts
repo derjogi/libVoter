@@ -4,23 +4,25 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from '../src/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
-import { chromium } from 'playwright-core';
-import { writeFile } from 'fs/promises';
+import { chromium, Page } from 'playwright-core';
+import { writeFile, readFile, access } from 'fs/promises';
 
 const MAIN_URL = 'https://voteauckland.co.nz/en/information-for-voters/candidates-2025-local-elections.html';
 const ROBOTS_URL = 'https://voteauckland.co.nz/robots.txt';
+const CANDIDATE_LIST_JSON = 'data/candidate-list.json';
 const OUTPUT_JSON = 'data/all-candidates.json';
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 const RETRY_ATTEMPTS = 3;
 const DELAY_MS = 2000;
 
 interface CandidateDetails {
-  bio: string;
-  policies: string[];
-  email?: string;
-  phone?: string;
+  candidate_statement: string;
+  key_positions: Record<string, string>;
+  why?: string;
+  key_skills?: string[];
+  top_issues?: string[];
+  supporting_links?: string[];
   photo_url?: string;
-  website?: string;
 }
 
 interface Candidate {
@@ -54,7 +56,7 @@ async function checkRobotsTxt(url: string): Promise<boolean> {
   }
 }
 
-async function scrapeCandidateList(page): Promise<Candidate[]> {
+async function scrapeCandidateList(page: Page): Promise<Candidate[]> {
   const candidates: Candidate[] = [];
   try {
     await page.waitForLoadState('networkidle');
@@ -81,44 +83,87 @@ async function scrapeCandidateList(page): Promise<Candidate[]> {
       // await page.waitForTimeout(DELAY_MS);
     }
     console.log(`Scraped ${candidates.length} candidates from list.`);
+    // Write to candidate list JSON
+    await writeFile(CANDIDATE_LIST_JSON, JSON.stringify(candidates, null, 2));
+    console.log(`Written candidate list to ${CANDIDATE_LIST_JSON}`);
   } catch (error) {
     console.error('Error scraping list:', error);
   }
   return candidates;
 }
 
-async function scrapeCandidateDetails(page, link: string, name: string): Promise<CandidateDetails> {
+async function scrapeCandidateDetails(page: Page, link: string): Promise<CandidateDetails> {
   try {
     await page.goto(link, { waitUntil: 'networkidle' });
     console.log(`Loaded candidate page: ${link}`);
-    // Bio is the first paragraph with candidate statement
-    const bio = await page.locator('p').first().textContent() || '';
-    // Policies are the headings of key topics (Transport, Water, etc.)
-    const policyElements = page.locator('h4');
-    const policies = await policyElements.allTextContents();
-    // Note: Email and phone are general council contact, not candidate specific
-    const email = undefined;
-    const phone = undefined;
-    // Photo is img inside div with class profile-picture
+
+    const candidateStatement = await page.locator('h4:has-text("Candidate statement") + div p').textContent() || '';
+    const why = await page.locator('h2:has-text("Why I want to be elected") + p').textContent() || undefined;
+    const keySkills = await page.locator('h2:has-text("My key skills and qualities") + p').textContent() || undefined;
+    const topIssues = await page.locator('h2:has-text("My top three key issues") + p').textContent() || undefined;
+
+    // Key positions: under h2 "My position on key topics", each li contains h3 and p
+    const key_positions: Record<string, string> = {};
+    const policySection = page.locator('h2:has-text("My position on key topics")');
+    if (await policySection.count() > 0) {
+      // Get all li elements in the policy section (h2 -> div -> ul -> li)
+      const policyLis = page.locator('h2:has-text("My position on key topics") ~ div ul li');
+      const count = await policyLis.count();
+      for (let i = 0; i < count; i++) {
+        const li = policyLis.nth(i);
+        try {
+          const h3Element = li.locator('h3');
+          const pElement = li.locator('p');
+          if (await h3Element.count() > 0 && await pElement.count() > 0) {
+            const h3Text = await h3Element.textContent();
+            const pText = await pElement.textContent();
+            if (h3Text && pText && h3Text.trim() && pText.trim()) {
+              key_positions[h3Text.trim()] = pText.trim();
+            }
+          }
+        } catch (error) {
+          // Skip this li if there's an issue
+          console.log(`Skipping li ${i} due to error:`, error instanceof Error ? error.message : String(error));
+        }
+      }
+    }
+
     const photoUrl = await page.locator('.profile-picture img').getAttribute('src') || undefined;
-    // Website is external social media links
-    const websiteElement = await page.locator('a[href^="http"]').filter({ hasText: /facebook|instagram|linkedin/i }).first().catch(() => null);
-    const website = websiteElement ? await websiteElement.getAttribute('href') : undefined;
+
+    // Supporting links: all external links not from Auckland Council
+    const allLinks = await page.locator('h2:has-text("Candidate\'s supporting links") ~ ul a').all();
+    const supporting_links: string[] = [];
+    for (const linkEl of allLinks) {
+      const href = await linkEl.getAttribute('href');
+      if (href && !href.includes('voteauckland') && !href.includes('aucklandcouncil')) {
+        supporting_links.push(href);
+      }
+    }
+
     return {
-      bio: bio.trim(),
-      policies: policies.map(p => p.trim()).filter(p => p),
-      email,
-      phone,
+      candidate_statement: candidateStatement.trim(),
+      key_positions,
+      why: why?.trim(),
+      key_skills: keySkills?.trim(),
+      top_issues: topIssues?.trim(),
+      supporting_links,
       photo_url: photoUrl,
-      website,
     };
   } catch (error) {
     console.error('Error scraping details for link:', link, error);
-    return { bio: '', policies: [] };
+    return {
+      candidate_statement: '',
+      key_positions: {},
+      why: undefined,
+      key_skills: undefined,
+      top_issues: undefined,
+      supporting_links: undefined,
+      photo_url: undefined,
+    };
   }
 }
 
-async function scrapeCandidates(startIndex: number = 0): Promise<Candidate[]> {
+async function scrapeCandidates(startIndex: number = 0, limit?: number): Promise<Candidate[]> {
   let browser;
   try {
     console.log('Launching browser...');
@@ -132,16 +177,26 @@ async function scrapeCandidates(startIndex: number = 0): Promise<Candidate[]> {
     console.log('Going to main URL...');
     await page.goto(MAIN_URL);
     console.log('Page loaded.');
-    const allCandidates = await scrapeCandidateList(page);
+    let allCandidates: Candidate[];
+    try {
+      await access(CANDIDATE_LIST_JSON);
+      console.log(`Reading candidate list from ${CANDIDATE_LIST_JSON}`);
+      const data = await readFile(CANDIDATE_LIST_JSON, 'utf-8');
+      allCandidates = JSON.parse(data);
+    } catch {
+      console.log(`Candidate list not found, scraping from page...`);
+      allCandidates = await scrapeCandidateList(page);
+    }
     const candidates = allCandidates.slice(startIndex);
-    console.log(`Starting from index ${startIndex}, processing ${candidates.length} candidates.`);
-    for (let i = 0; i < candidates.length; i++) {
+    const toProcess = limit ? Math.min(limit, candidates.length) : candidates.length;
+    console.log(`Starting from index ${startIndex}, processing ${toProcess} candidates.`);
+    for (let i = 0; i < toProcess; i++) {
       const candidate = candidates[i];
       console.log(`Processing ${i + startIndex + 1}/${allCandidates.length}: ${candidate.name}`);
       let attempts = 0;
       while (attempts < RETRY_ATTEMPTS) {
-        candidate.details = await scrapeCandidateDetails(page, candidate.link, candidate.name);
-        if (candidate.details.bio || candidate.details.policies.length > 0) break;
+        candidate.details = await scrapeCandidateDetails(page, candidate.link);
+        if (candidate.details.candidate_statement || Object.keys(candidate.details.key_positions).length > 0) break;
         attempts++;
         await page.waitForTimeout(DELAY_MS);
         console.log(`Retry ${attempts} for ${candidate.name}`);
@@ -169,22 +224,24 @@ async function insertCandidatesToDB(candidates: Candidate[]) {
         name: candidate.name,
         party: null, // Party not scraped
         ward: candidate.ward,
-        bio: candidate.details.bio,
-        policies: candidate.details.policies,
-        email: candidate.details.email,
-        phone: candidate.details.phone,
+        candidate_statement: candidate.details.candidate_statement,
+        key_positions: candidate.details.key_positions,
+        why: candidate.details.why,
+        key_skills: candidate.details.key_skills,
+        top_issues: candidate.details.top_issues,
+        supporting_links: candidate.details.supporting_links,
         photo_url: candidate.details.photo_url,
-        website: candidate.details.website,
         created_at: new Date(),
       }).onConflictDoUpdate({
         target: [schema.candidates.name, schema.candidates.ward],
         set: {
-          bio: sql`excluded.bio`,
-          policies: sql`excluded.policies`,
-          email: sql`excluded.email`,
-          phone: sql`excluded.phone`,
+          candidate_statement: sql`excluded.candidate_statement`,
+          key_positions: sql`excluded.key_positions`,
+          why: sql`excluded.why`,
+          key_skills: sql`excluded.key_skills`,
+          top_issues: sql`excluded.top_issues`,
+          supporting_links: sql`excluded.supporting_links`,
           photo_url: sql`excluded.photo_url`,
-          website: sql`excluded.website`,
         },
       });
     }
@@ -200,12 +257,17 @@ async function main() {
   try {
     const args = process.argv.slice(2);
     let startIndex = 0;
+    let limit: number | undefined;
     const startArg = args.find(arg => arg.startsWith('--start='));
     if (startArg) {
       startIndex = parseInt(startArg.split('=')[1], 10) || 0;
     }
-    console.log("Scraping started from index:", startIndex);
-    const candidates = await scrapeCandidates(startIndex);
+    const limitArg = args.find(arg => arg.startsWith('--limit='));
+    if (limitArg) {
+      limit = parseInt(limitArg.split('=')[1], 10);
+    }
+    console.log("Scraping started from index:", startIndex, limit ? `limit ${limit}` : 'no limit');
+    const candidates = await scrapeCandidates(startIndex, limit);
     // DB insertion is done incrementally, but write JSON again to ensure all are included
     console.log("Scraping complete.");
   } catch (error) {

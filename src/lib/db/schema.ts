@@ -6,16 +6,15 @@ export const candidates = sqliteTable('candidates', {
   name: text('name').notNull(),
   party: text('party'),
   ward: text('ward').notNull(),
-  bio: text('bio'),
-  policies: text('policies', { mode: 'json' }).$type<string[]>(),
-  email: text('email'),
-  phone: text('phone'),
+  candidate_statement: text('candidate_statement'),
+  key_positions: text('key_positions', { mode: 'json' }).$type<Record<string, string>>(),
+  why: text('why'),
+  key_skills: text('key_skills'),
+  top_issues: text('top_issues'),
+  supporting_links: text('supporting_links', { mode: 'json' }).$type<string[]>(),
   photo_url: text('photo_url'),
-  website: text('website'),
   created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
-}, (table) => ({
-  nameWardUnique: uniqueIndex('name_ward_unique').on(table.name, table.ward),
-}));
+});
 
 export const parties = sqliteTable('parties', {
   id: text('id').primaryKey(),
