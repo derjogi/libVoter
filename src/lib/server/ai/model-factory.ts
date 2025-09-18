@@ -4,10 +4,10 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { getAIConfig } from './config';
 import type { AIModelConfig } from './config';
+import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
 
 export type ChatModel = ChatOpenAI | ChatAnthropic;
-export type EmbeddingModel = OpenAIEmbeddings;
-
+export type EmbeddingModel = OpenAIEmbeddings | HuggingFaceTransformersEmbeddings;
 /**
  * Creates a chat model instance based on the provided configuration
  */
@@ -58,14 +58,8 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
 
 /**
  * Creates an embedding model instance
- * Currently only supports OpenAI embeddings
+ * Currently only supports Huggingface embeddings (I don't have credit on OpenAI, and OpenRouter doesn't have embeddingModels)
  */
 export function createEmbeddingModel(): EmbeddingModel {
-  return new OpenAIEmbeddings({
-    apiKey: process.env.OPENROUTER_API_KEY!,
-    modelName: "text-embedding-3-small",
-    configuration: {
-      baseURL: "https://openrouter.ai/api/v1",
-    },
-  });
+  return new HuggingFaceTransformersEmbeddings();
 }

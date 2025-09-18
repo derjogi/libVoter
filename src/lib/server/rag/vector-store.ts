@@ -163,7 +163,7 @@ class VectorStoreManager {
 
     console.log(
       "⚙️ Creating vector store with embedding model: ",
-      this.embeddings.modelName
+      this.embeddings.model
     );
 
     // Create vector store

@@ -3,17 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "bun run chroma & next dev --turbopack",
     "build": "rm -f ./node_modules/@libsql/hrana-client/LICENSE && next build --turbopack",
     "start": "next start",
     "lint": "biome check",
     "format": "biome format --write",
     "setup-env": "bun run scripts/setup-env.ts",
     "validate-env": "bun run scripts/setup-env.ts validate",
-    "scrape:candidates": "bun scripts/scrape-candidates.ts"
+    "scrape:candidates": "bun scripts/scrape-candidates.ts",
+    "chroma": "docker run -p 8000:8000 chromadb/chroma"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@huggingface/transformers": "^3.7.3",
     "@langchain/anthropic": "^0.3.28",
     "@langchain/community": "^0.3.56",
     "@langchain/openai": "^0.6.12",
