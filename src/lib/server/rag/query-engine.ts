@@ -1,6 +1,7 @@
 // Server-only RAG query engine
 import { getVectorStoreManager } from './vector-store';
 import { createChatModel } from '@/lib/server/ai/model-factory';
+import { AIMessage, BaseMessage } from '@langchain/core/messages';
 import type { Candidate, PolicyPosition } from '@/types';
 import type { ChatModel } from '@/lib/server/ai/model-factory';
 
@@ -43,10 +44,33 @@ Please provide:
 Format as JSON with candidates, policies, and sources arrays.
 `;
 
-    const response = await this.llm.invoke([
-      { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
-      { role: 'user', content: contextPrompt }
-    ]);
+    console.time('RAG Query LLM Invoke');
+    // const response = await this.llm.invoke([
+    //   { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
+    //   { role: 'user', content: contextPrompt }
+    // ]);
+
+    const response: BaseMessage = new AIMessage(JSON.stringify({
+      candidates: [
+        {
+          id: "1",
+          name: "John",
+          party: "Red",
+          profileData: {
+            positions: [
+              {
+                topic: "This",
+                stance: "that",
+              }
+            ],
+          },
+          createdAt: Date.now(),
+        }
+      ],
+      policies: [],
+      sources: []
+    }));
+    console.timeEnd('RAG Query LLM Invoke');
 
     try {
       const parsed = JSON.parse(response.content as string);

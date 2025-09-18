@@ -119,7 +119,10 @@ export class AIChatHandler {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         console.log(`AI request attempt ${attempt}/${maxRetries}`);
-        const aiResponse = await this.chatModel.invoke(messages);
+        console.time(`AI Chat Invoke Attempt ${attempt}`);
+        // const aiResponse = await this.chatModel.invoke(messages);
+        const aiResponse = {content: "Test fake value from AIChatHandler"}
+        console.timeEnd(`AI Chat Invoke Attempt ${attempt}`);
         const responseText = aiResponse.content as string;
         return responseText;
       } catch (error) {
@@ -369,22 +372,25 @@ Please select the next component that will best help narrow down the user's poli
         console.warn('No candidates found for matching');
         return [];
       }
-
+      
       // Transform database records to match format and generate explanations
       const matchesWithExplanations = await Promise.all(
         candidates.map(async (candidate) => {
           // Create info summary from candidate data
           const info = this.createCandidateInfoSummary(candidate);
-
+          
           // Generate a simple score (in production, use more sophisticated matching)
           const score = this.calculateCandidateScore(candidate, userResponses);
-
-          // Generate explanation
-          const explanationResult = await explainCandidateMatch(
-            userProfile,
-            info,
-            score
-          );
+          
+          let explanationResult = {success: true, data: "Too many candidates"};
+          if (candidates.length <= 3) {
+            // Generate explanation
+            explanationResult = await explainCandidateMatch(
+              userProfile,
+              info,
+              score
+            );
+          }
 
           // Extract top policies from candidate data
           const topPolicies = this.extractTopPolicies(candidate);

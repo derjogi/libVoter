@@ -32,11 +32,15 @@ export class PromptManager {
     try {
       const template = getPrompt(promptId);
       const formatted = formatPrompt(template, variables);
-
+      console.log("Calling prompt ", promptId)
+      console.time(`Prompt Execution: ${promptId}`);
       const response = await this.chatModel.invoke([
         { role: 'system', content: 'You are a helpful AI assistant. Provide accurate, neutral responses.' },
         { role: 'user', content: formatted.content }
       ]);
+      console.timeEnd(`Prompt Execution: ${promptId}`);
+
+      console.log(`Got response from PromptManager with prompt ${promptId}: \n`, response)
 
       const executionTime = Date.now() - startTime;
 

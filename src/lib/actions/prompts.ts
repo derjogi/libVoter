@@ -168,6 +168,7 @@ export async function explainCandidateMatch(
 ) {
   try {
     const manager = getPromptManager();
+    console.log("Explaining Match...")
     const result = await manager.explainMatch(userProfile, candidateInfo, matchScore);
 
     return {

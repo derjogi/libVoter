@@ -173,7 +173,9 @@ class VectorStoreManager {
     });
 
     console.log("Initiated vector db creation...")
-    this.vectorStore = await vecStorePromise; 
+    console.time('Vector Store Creation');
+    this.vectorStore = await vecStorePromise;
+    console.timeEnd('Vector Store Creation');
 
     console.log(`✅ Created vector store with ${splitDocs.length} documents`);
   }
@@ -183,10 +185,12 @@ class VectorStoreManager {
       throw new Error("Vector store not initialized");
     }
 
+    console.time('Similarity Search');
     const results = await this.vectorStore.similaritySearch(
       question,
       maxResults
     );
+    console.timeEnd('Similarity Search');
 
     if (!results) {
       console.error("❌ similaritySearch returned undefined");
