@@ -60,11 +60,11 @@ export default function VotingAdvisor() {
     if (!currentComponent && !isLoadingWards && wards.length > 0) {
       const options = wards.map(ward => ({ id: ward, label: ward, description: '' }));
       setCurrentComponent({
-        type: 'multiselect',
+        type: 'dropdown',
         data: {
           question: 'Which ward do you live in?',
           options,
-          maxSelections: 1,
+          placeholder: 'Select your ward...',
           questionId: 'ward_selection'
         }
       });
@@ -148,11 +148,11 @@ export default function VotingAdvisor() {
     if (wards.length > 0) {
       const options = wards.map(ward => ({ id: ward, label: ward, description: '' }));
       setCurrentComponent({
-        type: 'multiselect',
+        type: 'dropdown',
         data: {
           question: 'Which ward do you live in?',
           options,
-          maxSelections: 1,
+          placeholder: 'Select your ward...',
           questionId: 'ward_selection'
         }
       });

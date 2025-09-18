@@ -38,9 +38,9 @@ class VectorStoreManager {
       });
 
       docs.push(...(await loader.load()));
-    } catch (error) {
+    } catch (error: any) {
       // Probably the data dir doesn't exist or something like that. Ignore.
-      console.warn(`Failed to load documents from ${dataDir}: `, error);
+      console.warn(`Failed to load documents from ${dataDir}: `, error.Error);
     }
 
     // ... and now also check the database and get all candidates from there:

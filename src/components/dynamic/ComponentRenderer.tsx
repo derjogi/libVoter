@@ -5,6 +5,7 @@ import type { ChatData } from '@/types';
 import { ChatInterface } from './ChatInterface';
 import { YesNoQuestion } from './YesNoQuestion';
 import { MultiSelectChecklist } from './MultiSelectChecklist';
+import { DropdownSelect } from './DropdownSelect';
 import { FreeTextInput } from './FreeTextInput';
 import { QuantitativeSlider } from './QuantitativeSlider';
 
@@ -42,6 +43,15 @@ export function ComponentRenderer({
     case 'multiselect':
       return (
         <MultiSelectChecklist
+          data={data as any}
+          onResponse={onResponse}
+          disabled={disabled}
+        />
+      );
+
+    case 'dropdown':
+      return (
+        <DropdownSelect
           data={data as any}
           onResponse={onResponse}
           disabled={disabled}

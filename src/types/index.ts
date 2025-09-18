@@ -88,6 +88,7 @@ export type ComponentType =
   | 'chat'
   | 'yesno'
   | 'multiselect'
+  | 'dropdown'
   | 'freetext'
   | 'slider';
 
@@ -100,6 +101,7 @@ export type ComponentSpecificData =
   | ChatData
   | YesNoData
   | MultiSelectData
+  | DropdownData
   | FreeTextData
   | SliderData;
 
@@ -119,6 +121,13 @@ export interface MultiSelectData {
   question: string;
   options: SelectOption[];
   maxSelections?: number;
+  questionId?: string;
+}
+
+export interface DropdownData {
+  question: string;
+  options: SelectOption[];
+  placeholder?: string;
   questionId?: string;
 }
 
@@ -201,7 +210,7 @@ export const UserSessionSchema = z.object({
     responses: z.array(z.object({
       id: z.string(),
       questionId: z.string(),
-      componentType: z.enum(['chat', 'yesno', 'multiselect', 'freetext', 'slider']),
+      componentType: z.enum(['chat', 'yesno', 'multiselect', 'dropdown', 'freetext', 'slider']),
       value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.record(z.any(), z.any())]),
       timestamp: z.date(),
       confidence: z.number().min(0).max(100).optional()
