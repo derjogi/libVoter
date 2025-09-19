@@ -265,7 +265,7 @@ export default function VotingAdvisor() {
                     onResponse={handleComponentResponse}
                     disabled={isLoading}
                     isLoading={isLoading}
-                    followupQuestion={followupQuestion}
+                    // followupQuestion={followupQuestion}
                   />
                 ) : (
                   <div className="text-center py-8">
