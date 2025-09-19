@@ -1,6 +1,6 @@
 'use server';
 
-import { getPromptManager } from '@/lib/server/prompts/manager';
+import { getPromptManager } from '@/lib/server/prompts/prompt-manager';
 import type { ConversationMessage, UserResponse } from '@/types';
 
 export async function generateNextQuestion(

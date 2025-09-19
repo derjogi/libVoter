@@ -1,8 +1,10 @@
 // Server-only prompt manager
 import { getPrompt, formatPrompt, type PromptTemplate } from './index';
 import { createChatModel } from '@/lib/server/ai/model-factory';
+import { electionConfig, type ElectionConfig } from '@/lib/config/election';
 import type { ConversationMessage, UserResponse } from '@/types';
 import type { ChatModel } from '@/lib/server/ai/model-factory';
+import { getUniqueWards } from '@/lib/actions/database';
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -18,9 +20,11 @@ export interface PromptExecutionResult {
 
 export class PromptManager {
   private chatModel: ChatModel;
+  private electionConfig: ElectionConfig;
 
-  constructor() {
+  constructor(electionConfigParam: ElectionConfig = electionConfig) {
     this.chatModel = createChatModel(); // Defaults to small model. For now. Should probably be variable and specified in the prompt...?
+    this.electionConfig = electionConfigParam;
   }
 
   async executePrompt(
@@ -31,13 +35,27 @@ export class PromptManager {
 
     try {
       const template = getPrompt(promptId);
-      const formatted = formatPrompt(template, variables);
+
+      // Merge election variables into the provided variables
+      const electionVariables = {
+        electionYear: this.electionConfig.year,
+        electionType: this.electionConfig.type,
+        electionLocation: this.electionConfig.location,
+        electionKeyTopics: this.electionConfig.keyTopics.join(', '),
+        electionDescription: this.electionConfig.description,
+        electionWards: (await getUniqueWards()).data?.join(', ')
+      };
+
+      const allVariables = { ...variables, ...electionVariables };
+      const formatted = formatPrompt(template, allVariables);
       console.log("Calling prompt ", promptId)
       console.time(`Prompt Execution: ${promptId}`);
-      const response = await this.chatModel.invoke([
-        { role: 'system', content: 'You are a helpful AI assistant. Provide accurate, neutral responses.' },
-        { role: 'user', content: formatted.content }
-      ]);
+      const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(', ')}.`;
+      // const response = await this.chatModel.invoke([
+      //   { role: 'system', content: systemMessage },
+      //   { role: 'user', content: formatted.content }
+      // ]);
+      const response = {content: "This is a not so very helpful message"}
       console.timeEnd(`Prompt Execution: ${promptId}`);
 
       console.log(`Got response from PromptManager with prompt ${promptId}: \n`, response)

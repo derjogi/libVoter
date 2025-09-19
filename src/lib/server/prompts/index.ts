@@ -33,7 +33,7 @@ export const PROMPTS: Record<string, PromptTemplate> = {
     id: "candidate_matching",
     name: "Candidate Matching Algorithm",
     category: "matching",
-    template: `You are an AI political advisor helping users find candidates that match their preferences.
+    template: `You are an AI political advisor helping users find candidates that match their preferences for the {electionYear} {electionType} in {electionLocation}.
 
 User Responses Summary:
 {userResponses}
@@ -44,7 +44,7 @@ Available Candidates:
 Task: Calculate match scores (0-100) for each candidate based on policy alignment with user preferences.
 
 Consider:
-- Policy position alignment
+- Policy position alignment on key topics: {electionKeyTopics}
 - Importance weighting of different topics
 - User's stated priorities
 - Consistency of candidate positions
@@ -59,7 +59,7 @@ Return ONLY a JSON array in this exact format:
     "concerns": ["potential issue1", "potential issue2"]
   }
 ]`,
-    variables: ["userResponses", "candidates"],
+    variables: ["userResponses", "candidates", "electionYear", "electionType", "electionLocation", "electionKeyTopics"],
     description:
       "Calculates compatibility scores between user preferences and candidates",
     version: "1.0",
@@ -71,7 +71,7 @@ Return ONLY a JSON array in this exact format:
     id: "next_question_general",
     name: "Generate Next Question - General",
     category: "question_generation",
-    template: `You are guiding a user through discovering their political preferences.
+    template: `You are guiding a user through discovering their political preferences for the {electionYear} {electionType} in {electionLocation}.
 
 Previous conversation:
 {conversationHistory}
@@ -84,10 +84,11 @@ Target question type: {questionType}
 Generate the most valuable next question to understand their political stance better.
 
 Consider:
-- What important topics haven't been covered yet
+- What important topics haven't been covered yet from: {electionKeyTopics}
 - Follow up on interesting responses from previous questions
 - Balance broad topics with specific policy details
 - Keep questions neutral and unbiased
+- Focus on {electionDescription}
 
 Return JSON format:
 {
@@ -96,7 +97,7 @@ Return JSON format:
   "context": "Why this question is important",
   "options": ["option1", "option2"] // if applicable
 }`,
-    variables: ["conversationHistory", "currentPreferences", "questionType"],
+    variables: ["conversationHistory", "currentPreferences", "questionType", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
     description:
       "Generates contextually relevant questions based on conversation history",
     version: "1.0",
@@ -107,13 +108,14 @@ Return JSON format:
     id: "followup_question",
     name: "Generate Follow-up Question",
     category: "question_generation",
-    template: `Based on the user's last response: "{lastResponse}"
+    template: `Based on the user's last response: "{lastResponse}" for the {electionYear} {electionType} in {electionLocation}
 
 Generate a thoughtful follow-up question that:
-- Digs deeper into their reasoning
+- Digs deeper into their reasoning on topics like {electionKeyTopics}
 - Explores related aspects of the topic
 - Helps clarify their position
 - Maintains conversational flow
+- Considers the context of {electionDescription}
 
 Previous context: {context}
 
@@ -123,7 +125,7 @@ Return JSON format:
   "type": "chat",
   "reasoning": "Why this follow-up is valuable"
 }`,
-    variables: ["lastResponse", "context"],
+    variables: ["lastResponse", "context", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
     description: "Creates deeper follow-up questions based on user responses",
     version: "1.0",
     tags: ["followup", "questions", "deepening"],
@@ -134,7 +136,7 @@ Return JSON format:
     id: "component_selector",
     name: "Select Next UI Component with Data Generation",
     category: "component_selection",
-    template: `Analyze the conversation state and determine the best UI component for the next interaction.
+    template: `Analyze the conversation state and determine the best UI component for the next interaction for the {electionYear} {electionType} in {electionLocation}.
 
 Current conversation state:
 {conversationState}
@@ -169,10 +171,11 @@ Available component types and their EXACT data structures:
 
 Consider:
 - User engagement level and conversation flow
-- Complexity of next topic to explore
+- Complexity of next topic to explore from: {electionKeyTopics}
 - Variety in interaction types used so far
 - User's response patterns and depth of answers
-- What would most effectively narrow down their political preferences
+- What would most effectively narrow down their political preferences for {electionDescription}
+- Available wards: {electionWards}
 
 Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
 
@@ -191,7 +194,7 @@ Guidelines for data generation:
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
 - chat: Use empty messages array and a relevant placeholder text
 - freetext: Include a clear prompt, placeholder text, and optional maxLength`,
-    variables: ["conversationState"],
+    variables: ["conversationState", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription", "electionWards"],
     description:
       "Determines optimal UI component for next user interaction and generates component data",
     version: "1.0",
@@ -203,7 +206,7 @@ Guidelines for data generation:
     id: "explain_match",
     name: "Explain Candidate Match",
     category: "analysis",
-    template: `Provide a clear, balanced explanation of why a candidate matches a user's preferences.
+    template: `Provide a clear, balanced explanation of why a candidate matches a user's preferences for the {electionYear} {electionType} in {electionLocation}.
 
 User Profile:
 {userProfile}
@@ -214,14 +217,15 @@ Candidate Information:
 Match Score: {matchScore}%
 
 Create an explanation that:
-- Highlights the strongest alignment areas
+- Highlights the strongest alignment areas on topics like {electionKeyTopics}
 - Acknowledges any potential concerns or misalignments
 - Provides specific policy examples
 - Remains balanced and informative
 - Avoids political bias
+- Considers the context of {electionDescription}
 
 Format as conversational explanation, not a list.`,
-    variables: ["userProfile", "candidateInfo", "matchScore"],
+    variables: ["userProfile", "candidateInfo", "matchScore", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
     description: "Generates human-readable explanations for candidate matches",
     version: "1.0",
     tags: ["explanation", "analysis", "matches"],
@@ -231,19 +235,20 @@ Format as conversational explanation, not a list.`,
     id: "summarize_preferences",
     name: "Summarize User Preferences",
     category: "analysis",
-    template: `Summarize the user's political preferences based on their responses.
+    template: `Summarize the user's political preferences based on their responses for the {electionYear} {electionType} in {electionLocation}.
 
 User responses:
 {allResponses}
 
 Create a clear, organized summary that includes:
-- Top 3-5 priority issues for this user
+- Top 3-5 priority issues for this user from topics like {electionKeyTopics}
 - Their general political leanings (if discernible)
 - Any interesting or nuanced positions
 - Areas where they seem undecided
+- How their preferences relate to {electionDescription}
 
 Keep it neutral and descriptive, not prescriptive.`,
-    variables: ["allResponses"],
+    variables: ["allResponses", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
     description: "Creates readable summaries of user political preferences",
     version: "1.0",
     tags: ["summary", "analysis", "preferences"],

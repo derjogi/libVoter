@@ -36,8 +36,8 @@ export function CandidateList({
     let filtered = candidates.filter(candidate => {
       // Search filter
       const matchesSearch = !searchQuery ||
-        candidate.candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.candidate.party.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        candidate.party.toLowerCase().includes(searchQuery.toLowerCase()) ||
         candidate.topMatchingPolicies.some(policy =>
           policy.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -192,7 +192,7 @@ export function CandidateList({
               console.log("Candidate: ", candidate)
               return (
                 <CandidateCard
-                  key={candidate.candidate.id}
+                  key={candidate.id}
                   candidate={candidate}
                   onSelect={onSelectCandidate}
                   confidence={confidence}

@@ -6,6 +6,7 @@ import { ConfidenceCalculator } from './confidence-calculator';
 import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } from '@/lib/actions/prompts';
 import { getUniqueWards, getCandidatesByWard, getMayorCandidates } from '@/lib/actions/database';
 import { queryRAGContext } from '@/lib/actions/rag';
+import { electionConfig } from '@/lib/config/election';
 import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
 import type { ChatModel } from './model-factory';
 
@@ -216,12 +217,12 @@ export class AIChatHandler {
     const ragInfo = this.formatRAGContext(ragContext, candidates);
 
     messages.push(new SystemMessage(
-      `You are an AI political advisor helping users discover their voting preferences for the upcoming NZ local elections in Auckland.
+      `You are an AI political advisor helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
       Current confidence level: ${confidence.score}/100
       Reasoning: ${confidence.reasoning}${candidateInfo}${ragInfo}
 
       Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
-      Focus on policy topics and candidate positions.`
+      Focus on policy topics including ${electionConfig.keyTopics.join(', ')} and candidate positions.`
     ));
 
     // Add recent conversation history (last 10 messages)

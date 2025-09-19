@@ -12,10 +12,10 @@ export interface RAGContext {
 }
 
 export class RAGQueryEngine {
-  llm: ChatModel;
+  chatModel: ChatModel;
 
   constructor() {
-    this.llm = createChatModel(); // Default model
+    this.chatModel = createChatModel(); // Default model
   }
 
   async queryWithContext(question: string, userContext?: string): Promise<RAGContext> {
@@ -44,8 +44,8 @@ Please provide:
 Format as JSON with candidates, policies, and sources arrays.
 `;
 
-    console.time('RAG Query LLM Invoke');
-    // const response = await this.llm.invoke([
+    console.time('RAG Query ChatModel Invoke');
+    // const response = await this.chatModel.invoke([
     //   { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
     //   { role: 'user', content: contextPrompt }
     // ]);
@@ -70,7 +70,7 @@ Format as JSON with candidates, policies, and sources arrays.
       policies: [],
       sources: []
     }));
-    console.timeEnd('RAG Query LLM Invoke');
+    console.timeEnd("RAG Query ChatModel Invoke");
 
     try {
       const parsed = JSON.parse(response.content as string);
