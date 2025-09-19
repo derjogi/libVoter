@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "sqlite": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "voting-advisor.db"
+      ],
+      "disabled": false,
+      "alwaysAllow": []
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser=",
+        "--headless=",
+        "--viewport-size="
+      ],
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  }
+}
