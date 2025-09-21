@@ -43,33 +43,33 @@ Please provide:
 
 Format as JSON with candidates, policies, and sources arrays.
 `;
-
+    console.log("RAG query started")
     console.time('RAG Query ChatModel Invoke');
-    // const response = await this.chatModel.invoke([
-    //   { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
-    //   { role: 'user', content: contextPrompt }
-    // ]);
+    const response = await this.chatModel.invoke([
+      { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
+      { role: 'user', content: contextPrompt }
+    ]);
 
-    const response: BaseMessage = new AIMessage(JSON.stringify({
-      candidates: [
-        {
-          id: "1",
-          name: "John",
-          party: "Red",
-          profileData: {
-            positions: [
-              {
-                topic: "This",
-                stance: "that",
-              }
-            ],
-          },
-          createdAt: Date.now(),
-        }
-      ],
-      policies: [],
-      sources: []
-    }));
+    // const response: BaseMessage = new AIMessage(JSON.stringify({
+    //   candidates: [
+    //     {
+    //       id: "1",
+    //       name: "John",
+    //       party: "Red",
+    //       profileData: {
+    //         positions: [
+    //           {
+    //             topic: "This",
+    //             stance: "that",
+    //           }
+    //         ],
+    //       },
+    //       createdAt: Date.now(),
+    //     }
+    //   ],
+    //   policies: [],
+    //   sources: []
+    // }));
     console.timeEnd("RAG Query ChatModel Invoke");
 
     try {

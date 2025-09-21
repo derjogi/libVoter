@@ -84,11 +84,6 @@ export default function VotingAdvisor() {
     }
   }, [messages]);
 
-  // Update preference summary when user responses change
-  useEffect(() => {
-    fetchPreferenceSummary(userResponses);
-  }, [userResponses]);
-
   const handleComponentResponse = async (response: any) => {
     try {
       // Handle different response formats based on component type
@@ -178,30 +173,6 @@ export default function VotingAdvisor() {
     // Note: In a real implementation, you'd also remove the last AI message
   };
 
-  const fetchPreferenceSummary = async (responses: UserResponse[]) => {
-    if (responses.length === 0) {
-      setPreferenceSummary('Your Preferences');
-      return;
-    }
-
-    setIsLoadingSummary(true);
-    try {
-      const result = await summarizeUserPreferences(responses);
-
-      if (result.success) {
-        setPreferenceSummary(result.data || 'Your Preferences');
-      } else {
-        console.error('Failed to fetch preference summary:', result.error);
-        setPreferenceSummary('Your Preferences');
-      }
-    } catch (error) {
-      console.error('Error fetching preference summary:', error);
-      setPreferenceSummary('Your Preferences');
-    } finally {
-      setIsLoadingSummary(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -244,9 +215,6 @@ export default function VotingAdvisor() {
             <Card className="h-full">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  <span className={isLoadingSummary ? 'opacity-70' : ''}>
-                    {preferenceSummary}
-                  </span>
                   <Badge variant="outline">
                     {userResponses.length} responses
                   </Badge>

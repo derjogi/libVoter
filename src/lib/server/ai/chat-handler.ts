@@ -121,8 +121,8 @@ export class AIChatHandler {
       try {
         console.log(`AI request attempt ${attempt}/${maxRetries}`);
         console.time(`AI Chat Invoke Attempt ${attempt}`);
-        // const aiResponse = await this.chatModel.invoke(messages);
-        const aiResponse = {content: "Test fake value from AIChatHandler"}
+        const aiResponse = await this.chatModel.invoke(messages);
+        // const aiResponse = {content: "Test fake value from AIChatHandler"}
         console.timeEnd(`AI Chat Invoke Attempt ${attempt}`);
         const responseText = aiResponse.content as string;
         return responseText;
