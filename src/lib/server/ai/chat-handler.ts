@@ -209,7 +209,7 @@ export class AIChatHandler {
     // System prompt
     const candidateInfo = candidates.length > 0
       ? `\n\nAvailable candidates for consideration:\n${candidates.map(c =>
-          `- ${c.name} (${c.party}): ${c.topPolicies.join(', ')}`
+          `- ${c.name} (${c.party}): ${c.topPolicies?.join(', ')}`
         ).join('\n')}`
       : '\n\nNo candidates available yet.';
 
@@ -373,16 +373,16 @@ Please select the next component that will best help narrow down the user's poli
         console.warn('No candidates found for matching');
         return [];
       }
-      
+
       // Transform database records to match format and generate explanations
       const matchesWithExplanations = await Promise.all(
         candidates.map(async (candidate) => {
           // Create info summary from candidate data
           const info = this.createCandidateInfoSummary(candidate);
-          
+
           // Generate a simple score (in production, use more sophisticated matching)
           const score = this.calculateCandidateScore(candidate, userResponses);
-          
+
           let explanationResult = {success: true, data: "Too many candidates"};
           if (candidates.length <= 3) {
             // Generate explanation
@@ -397,12 +397,19 @@ Please select the next component that will best help narrow down the user's poli
           const topPolicies = this.extractTopPolicies(candidate);
 
           return {
-            id: candidate.id.toString(),
-            name: candidate.name,
-            party: candidate.party || 'Independent',
+            candidate: {
+              id: candidate.id.toString(),
+              name: candidate.name,
+              party: candidate.party || 'Independent',
+              profileData: candidate.profileData || {},
+              createdAt: candidate.createdAt || new Date()
+            },
             score,
             reasoning: explanationResult.success ? explanationResult.data : 'Unable to generate explanation',
-            topPolicies
+            pros: [],
+            cons: [],
+            topMatchingPolicies: topPolicies,
+            sources: []
           };
         })
       );
