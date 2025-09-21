@@ -136,7 +136,7 @@ class VectorStoreManager {
       chunkOverlap: 200,
     });
 
-    const splitDocs = await splitter.splitDocuments(docs.slice(0, 3));
+    const splitDocs = await splitter.splitDocuments(docs);
 
     console.log(
       `📄 Loaded and split ${docs.length} documents into ${splitDocs.length} chunks.`

@@ -7,15 +7,16 @@ import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } 
 import { getUniqueWards, getCandidatesByWard, getMayorCandidates } from '@/lib/actions/database';
 import { queryRAGContext } from '@/lib/actions/rag';
 import { electionConfig } from '@/lib/config/election';
-import type { ConversationMessage, UserResponse, ComponentData } from '@/types';
+import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch, PolicyPosition } from '@/types';
 import type { ChatModel } from './model-factory';
+import type { RAGContext } from '../rag/query-engine';
 
 export interface ChatResponse {
   message: string;
   confidence: number;
   shouldShowCandidates: boolean;
   nextComponent?: ComponentData;
-  candidateMatches?: any[];
+  candidateMatches?: CandidateMatch[];
   followupQuestion?: {
     question: string;
     type: string;
@@ -164,7 +165,7 @@ export class AIChatHandler {
     }
   }
 
-  private formatRAGContext(ragContext: any, existingCandidates: any[]): string {
+  private formatRAGContext(ragContext: RAGContext, existingCandidates: CandidateMatch[]): string {
     if (!ragContext || (!ragContext.relevantPolicies?.length && !ragContext.sources?.length)) {
       return '';
     }
@@ -174,17 +175,18 @@ export class AIChatHandler {
     // Add relevant policies that aren't already covered in structured data
     if (ragContext.relevantPolicies?.length > 0) {
       const existingPolicyTopics = new Set(
-        existingCandidates.flatMap(c => c.topPolicies || []).map((p: string) => p.toLowerCase())
+        existingCandidates.flatMap(c => c.topMatchingPolicies || []).map((p: string) => p.toLowerCase())
       );
 
-      const newPolicies = ragContext.relevantPolicies.filter((policy: any) =>
+      const newPolicies = ragContext.relevantPolicies.filter((policy: PolicyPosition) =>
         !existingPolicyTopics.has(policy.topic?.toLowerCase())
       );
 
       if (newPolicies.length > 0) {
         ragInfo += '\nRelevant policy positions:';
         newPolicies.slice(0, 3).forEach((policy: any) => {
-          ragInfo += `\n- ${policy.topic}: ${policy.stance} - ${policy.details.substring(0, 100)}...`;
+          const details = policy.details ? policy.details.substring(0, 100) : 'No details available';
+          ragInfo += `\n- ${policy.topic}: ${policy.stance} - ${details}...`;
         });
       }
     }
@@ -200,16 +202,16 @@ export class AIChatHandler {
   private buildConversationContext(
     userMessage: string,
     history: ConversationMessage[],
-    confidence: any,
-    candidates: any[],
-    ragContext: any
+    confidence: { score: number; reasoning: string },
+    candidates: CandidateMatch[],
+    ragContext: RAGContext
   ): (HumanMessage | AIMessage | SystemMessage)[] {
     const messages: (HumanMessage | AIMessage | SystemMessage)[] = [];
 
     // System prompt
     const candidateInfo = candidates.length > 0
       ? `\n\nAvailable candidates for consideration:\n${candidates.map(c =>
-          `- ${c.name} (${c.party}): ${c.topPolicies?.join(', ')}`
+          `- ${c.candidate.name} (${c.candidate.party}): ${c.topMatchingPolicies?.join(', ')}`
         ).join('\n')}`
       : '\n\nNo candidates available yet.';
 
@@ -244,7 +246,7 @@ export class AIChatHandler {
   private async determineNextComponent(
     userMessage: string,
     aiResponse: string,
-    confidence: any,
+    confidence: { score: number; reasoning: string },
     history: ConversationMessage[],
     userResponses: UserResponse[]
   ): Promise<ComponentData | undefined> {
@@ -343,7 +345,7 @@ Please select the next component that will best help narrow down the user's poli
   }
 
 
-  private async generateCandidateMatches(userResponses: UserResponse[]): Promise<any[]> {
+  private async generateCandidateMatches(userResponses: UserResponse[]): Promise<CandidateMatch[]> {
     // Create user profile summary from responses
     const userProfile = this.createUserProfileSummary(userResponses);
 
