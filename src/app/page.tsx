@@ -227,21 +227,9 @@ export default function VotingAdvisor() {
         </div>
       </header>
 
-      {/* Progress Bar */}
-      <div className="border-b bg-muted/50">
-        <div className="container mx-auto px-4 py-3">
-          <ProgressBar
-            progress={confidence}
-            onReset={handleReset}
-            onUndo={userResponses.length > 0 ? handleUndo : undefined}
-            showUndo={userResponses.length > 0}
-          />
-        </div>
-      </div>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[calc(100vh-18rem)]">
           {/* Left Side - Dynamic Input */}
           <div className={`${isMobile && showCandidates ? 'hidden' : 'block'}`}>
             <Card className="h-full">
