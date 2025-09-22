@@ -20,7 +20,8 @@ export function FreeTextInput({ data, onResponse, disabled = false }: FreeTextIn
 
   const handleSubmit = () => {
     if (text.trim()) {
-      onResponse(text.trim());
+      const formattedResponse = `Prompt: ${data.prompt}\nResponse: ${text.trim()}`;
+      onResponse(formattedResponse);
       setText('');
     }
   };

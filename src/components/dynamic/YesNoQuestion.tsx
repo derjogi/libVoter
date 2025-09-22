@@ -8,7 +8,7 @@ import type { YesNoData } from '@/types';
 
 interface YesNoQuestionProps {
   data: YesNoData;
-  onResponse: (responses: ('agree' | 'disagree' | 'skip')[]) => void;
+  onResponse: (responseString: string) => void;
   disabled?: boolean;
 }
 
@@ -20,9 +20,14 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
   useEffect(() => {
     const allAnswered = responses.every(response => response !== undefined);
     if (allAnswered) {
-      onResponse(responses as ('agree' | 'disagree' | 'skip')[]);
+      const formattedStatements = responses.map((response, index) => {
+        const item = data.statements[index];
+        return `Statement ${index + 1}: "${item.statement}"${item.context ? ` (Context: "${item.context}")` : ''} - Response: ${response}`;
+      }).join('\n');
+      const responseString = `Yes/No Questions:\n${formattedStatements}`;
+      onResponse(responseString);
     }
-  }, [responses, onResponse]);
+  }, [responses, onResponse, data.statements]);
 
   const handleResponse = (index: number, response: 'agree' | 'disagree' | 'skip') => {
     setResponses(prev => {

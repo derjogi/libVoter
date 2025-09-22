@@ -36,7 +36,7 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
       const selectedLabels = selectedIds
         .map((id) => data.options.find((opt) => opt.id === id)?.label)
         .filter((label) => label !== undefined);
-      onResponse(selectedLabels.join('\n'));
+      onResponse(`Question: ${data.question}\nAnswers: ${selectedLabels.join('\n')}`);
     }
   };
 

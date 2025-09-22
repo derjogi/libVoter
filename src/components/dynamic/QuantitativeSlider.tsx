@@ -8,7 +8,7 @@ import type { SliderData } from '@/types';
 
 interface QuantitativeSliderProps {
   data: SliderData;
-  onResponse: (value: number) => void;
+  onResponse: (value: string) => void;
   disabled?: boolean;
 }
 
@@ -16,7 +16,8 @@ export function QuantitativeSlider({ data, onResponse, disabled = false }: Quant
   const [value, setValue] = useState<number>((data.min + data.max) / 2);
 
   const handleSubmit = () => {
-    onResponse(value);
+    const descriptiveString = `Question: ${data.label}\nAnswer: ${value}${data.unit ? ' ' + data.unit : ''}${data.description ? ' (' + data.description + ')' : ''}`;
+    onResponse(descriptiveString);
   };
 
   const percentage = Math.round(((value - data.min) / (data.max - data.min)) * 100);

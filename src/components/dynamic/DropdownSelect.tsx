@@ -8,7 +8,7 @@ import type { DropdownData } from '@/types';
 
 interface DropdownSelectProps {
   data: DropdownData;
-  onResponse: (selectedId: string) => void;
+  onResponse: (selectedLabel: string) => void;
   disabled?: boolean;
 }
 
@@ -21,7 +21,10 @@ export function DropdownSelect({ data, onResponse, disabled = false }: DropdownS
 
   const handleSubmit = () => {
     if (selectedId) {
-      onResponse(selectedId);
+      const selectedOption = data.options.find(option => option.id === selectedId);
+      if (selectedOption) {
+        onResponse(`Question: ${data.question}\nAnswer: ${selectedOption.label}`);
+      }
     }
   };
 
