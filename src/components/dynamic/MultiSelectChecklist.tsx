@@ -9,7 +9,7 @@ import type { MultiSelectData, SelectOption } from '@/types';
 
 interface MultiSelectChecklistProps {
   data: MultiSelectData;
-  onResponse: (selectedIds: string[]) => void;
+  onResponse: (selectedAnswers: string) => void;
   disabled?: boolean;
 }
 
@@ -33,7 +33,10 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
 
   const handleSubmit = () => {
     if (selectedIds.length > 0) {
-      onResponse(selectedIds);
+      onResponse(
+        `User selection: ${selectedIds
+          .map((id) => data.options.find((opt) => opt.id === id)).join("\n\n")}`
+      );
     }
   };
 

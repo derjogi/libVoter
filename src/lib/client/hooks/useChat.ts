@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import type { ConversationMessage, UserResponse } from '@/types';
 import type { ChatResponse } from '@/lib/server/ai/chat-handler';
+import { processChatMessage } from '@/lib/actions/chat';
 
 export function useChat() {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -32,17 +33,7 @@ export function useChat() {
       setMessages(updatedHistory);
 
       // Process with AI
-      const response = await fetch('/api/chat/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message,
-          conversationHistory: updatedHistory,
-          userResponses
-        })
-      });
-
-      const result: ChatResponse = await response.json();
+      const result = await processChatMessage(message, updatedHistory || [], userResponses || []);
 
       if (!result) {
         throw new Error('No response from server');

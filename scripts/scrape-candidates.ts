@@ -6,6 +6,7 @@ import * as schema from '../src/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { chromium, Page } from 'playwright-core';
 import { writeFile, readFile, access } from 'fs/promises';
+import { getVectorStoreManager } from '../src/lib/server/rag/vector-store';
 
 const MAIN_URL = 'https://voteauckland.co.nz/en/information-for-voters/candidates-2025-local-elections.html';
 const ROBOTS_URL = 'https://voteauckland.co.nz/robots.txt';
@@ -270,21 +271,23 @@ async function insertCandidatesToDB(candidates: Candidate[]) {
 
 async function main() {
   try {
-    const args = process.argv.slice(2);
-    let startIndex = 0;
-    let limit: number | undefined;
-    const startArg = args.find(arg => arg.startsWith('--start='));
-    if (startArg) {
-      startIndex = parseInt(startArg.split('=')[1], 10) || 0;
-    }
-    const limitArg = args.find(arg => arg.startsWith('--limit='));
-    if (limitArg) {
-      limit = parseInt(limitArg.split('=')[1], 10);
-    }
-    console.log("Scraping started from index:", startIndex, limit ? `limit ${limit}` : 'no limit');
-    const candidates = await scrapeCandidates(startIndex, limit);
-    // DB insertion is done incrementally, but write JSON again to ensure all are included
-    console.log("Scraping complete.");
+    // const args = process.argv.slice(2);
+    // let startIndex = 0;
+    // let limit: number | undefined;
+    // const startArg = args.find(arg => arg.startsWith('--start='));
+    // if (startArg) {
+    //   startIndex = parseInt(startArg.split('=')[1], 10) || 0;
+    // }
+    // const limitArg = args.find(arg => arg.startsWith('--limit='));
+    // if (limitArg) {
+    //   limit = parseInt(limitArg.split('=')[1], 10);
+    // }
+    // console.log("Scraping started from index:", startIndex, limit ? `limit ${limit}` : 'no limit');
+    // const candidates = await scrapeCandidates(startIndex, limit);
+    // // DB insertion is done incrementally, but write JSON again to ensure all are included
+    // console.log("Scraping complete.");
+    // Initialize vector store once after all documents are added to the database
+    await getVectorStoreManager();
   } catch (error) {
     console.error('Main error:', error);
     process.exit(1);

@@ -8,9 +8,11 @@ import { ComponentRenderer } from '@/components/dynamic/ComponentRenderer';
 import { RightPanel } from '@/components/layout/RightPanel';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useChat } from '@/lib/client/hooks/useChat';
-import { summarizeUserPreferences } from '@/lib/actions/prompts';
-import { getUniqueWards } from '@/lib/actions/database';
-import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch } from '@/types';
+import { selectNextComponent, summarizeUserPreferences } from '@/lib/actions/prompts';
+import { getCandidatesByWard, getUniqueWards } from '@/lib/actions/database';
+import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch, DropdownData } from '@/types';
+import { getPromptManager, PromptManager } from '@/lib/server/prompts/prompt-manager';
+import { date } from 'zod';
 
 export default function VotingAdvisor() {
   const [currentComponent, setCurrentComponent] = useState<ComponentData | null>(null);
@@ -86,6 +88,36 @@ export default function VotingAdvisor() {
 
   const handleComponentResponse = async (response: any) => {
     try {
+      
+      if (
+        currentComponent?.type === "dropdown" &&
+        (currentComponent.data as DropdownData).questionId === "ward_selection"
+      ) {
+        const candidates = (await getCandidatesByWard(response))?.data;
+        const conversationState = `I am voting in ${response}, and the following candidates are running: \n${candidates?.join(
+          "\n"
+        )}\n\nI have not stated any opinion yet, but I want you to help me figure out which of these candidates align best with my yet undisclosed views.`;
+        
+        const componentResult = await selectNextComponent(conversationState);
+
+        if (componentResult.success && componentResult.data) {
+          console.log("Component selection result:", componentResult.data);
+
+          // Convert the result to ComponentData format
+          const componentData: ComponentData = {
+            type: componentResult.data.component,
+            data: componentResult.data.data,
+          };
+
+          setCurrentComponent(componentData);
+        } else {
+          console.warn("Component selection failed; using fallback chat. Error:", componentResult.error);
+          setCurrentComponent({ type: 'chat', data: {prompt: 'Please tell me what is important to you.', placeholder: 'Hey, please let me know some of your views.'}})
+        }
+        return;
+      }
+      
+      
       // Handle different response formats based on component type
       let processedResponse = response;
       let questionId = `question_${Date.now()}`;
@@ -94,7 +126,7 @@ export default function VotingAdvisor() {
         // For yesno components, include the statement index in the question ID
         questionId = `yesno_statement_${response.index}_${Date.now()}`;
         processedResponse = response.response; // Extract the actual response ('agree' | 'disagree' | 'skip')
-      }
+      } 
 
       // Create user response record
       const userResponse: UserResponse = {

@@ -20,12 +20,43 @@ class VectorStoreManager {
   }
 
   async initialize() {
-    // Force recreation to ensure embeddings are properly configured
-    console.log("📝 Recreating vector store with embeddings...");
-    await this.createVectorStore();
+    try {
+      // Try to load existing collection
+      this.vectorStore = await Chroma.fromExistingCollection(this.embeddings, {
+        collectionName: "candidates",
+        url: process.env.CHROMA_URL || "http://localhost:8000",
+      });
+      const count = await this.vectorStore!.collection!.count();
+      if (count === 0) {
+        console.log("📝 Vector store is empty, populating with data...");
+        await this.populateVectorStore();
+      } else {
+        console.log(`✅ Loaded existing vector store with ${count} documents`);
+      }
+    } catch (error) {
+      // Create new collection if it doesn't exist
+      console.log("📝 Creating new vector store...");
+      await this.createVectorStore();
+    }
   }
 
   private async createVectorStore() {
+    console.log(
+      "⚙️ Creating vector store with embedding model: ",
+      this.embeddings.model
+    );
+
+    // Create empty vector store first
+    this.vectorStore = new Chroma(this.embeddings, {
+      collectionName: "candidates",
+      url: process.env.CHROMA_URL || "http://localhost:8000",
+    });
+
+    // Then populate it
+    await this.populateVectorStore();
+  }
+
+  private async populateVectorStore() {
     let docs: Document[] = [];
     const dataDir = path.join(process.cwd(), "data", "candidates");
 
@@ -48,12 +79,27 @@ class VectorStoreManager {
       const allCandidates = await db.select().from(candidates);
       console.log(`📊 Loaded ${allCandidates.length} candidates from database`);
 
-      const validCandidates = allCandidates.filter((candidate) => candidate.name && candidate.ward);
-      console.log(`✅ ${validCandidates.length} candidates passed validation (${allCandidates.length - validCandidates.length} filtered out)`);
+      const validCandidates = allCandidates.filter(
+        (candidate) => candidate.name && candidate.ward
+      );
+      console.log(
+        `✅ ${validCandidates.length} candidates passed validation (${
+          allCandidates.length - validCandidates.length
+        } filtered out)`
+      );
 
       if (allCandidates.length !== validCandidates.length) {
-        const invalidCandidates = allCandidates.filter((candidate) => !candidate.name || !candidate.ward);
-        console.log('❌ Invalid candidates:', invalidCandidates.map(c => ({ id: c.id, name: c.name, ward: c.ward })));
+        const invalidCandidates = allCandidates.filter(
+          (candidate) => !candidate.name || !candidate.ward
+        );
+        console.log(
+          "❌ Invalid candidates:",
+          invalidCandidates.map((c) => ({
+            id: c.id,
+            name: c.name,
+            ward: c.ward,
+          }))
+        );
       }
 
       docs = validCandidates.map((candidate) => {
@@ -70,7 +116,7 @@ class VectorStoreManager {
               `Failed to parse key_positions for candidate ${candidate.id}:`,
               error
             );
-            console.warn('Raw key_positions value:', candidate.key_positions);
+            console.warn("Raw key_positions value:", candidate.key_positions);
           }
         }
 
@@ -114,18 +160,19 @@ class VectorStoreManager {
         return new Document({ pageContent: content, metadata });
       });
 
-      console.log(`📄 Created ${docs.length} documents from database candidates`);
-      
+      console.log(
+        `📄 Created ${docs.length} documents from database candidates`
+      );
+
       // Log first few documents for inspection
-      console.log('🔍 Sample documents:');
+      console.log("🔍 Sample documents:");
       docs.slice(0, 3).forEach((doc, index) => {
         console.log(`  Doc ${index + 1}:`, {
           contentLength: doc.pageContent?.length || 0,
           contentPreview: doc.pageContent?.substring(0, 100),
-          metadata: doc.metadata
+          metadata: doc.metadata,
         });
       });
-
     } catch (error) {
       console.error("Failed to load candidates from database:", error);
     }
@@ -142,13 +189,13 @@ class VectorStoreManager {
       `📄 Loaded and split ${docs.length} documents into ${splitDocs.length} chunks.`
     );
 
-    // Validate splitDocs before creating vector store
-    console.log('🔍 Validating splitDocs...');
+    // Validate splitDocs before adding to vector store
+    console.log("🔍 Validating splitDocs...");
     const invalidDocs = splitDocs.filter((doc, index) => {
       if (!doc.pageContent || doc.pageContent.trim().length === 0) {
         console.error(`Invalid document at index ${index}:`, {
           pageContent: doc.pageContent,
-          metadata: doc.metadata
+          metadata: doc.metadata,
         });
         return true;
       }
@@ -156,28 +203,60 @@ class VectorStoreManager {
     });
 
     if (invalidDocs.length > 0) {
-      console.error(`Found ${invalidDocs.length} invalid documents out of ${splitDocs.length}`);
+      console.error(
+        `Found ${invalidDocs.length} invalid documents out of ${splitDocs.length}`
+      );
     } else {
-      console.log('✅ All splitDocs are valid');
+      console.log("✅ All splitDocs are valid");
     }
 
     console.log(
-      "⚙️ Creating vector store with embedding model: ",
+      "⚙️ Adding documents to vector store with embedding model: ",
       this.embeddings.model
     );
 
-    // Create vector store
-    const vecStorePromise = Chroma.fromDocuments(splitDocs, this.embeddings, {
-      collectionName: "candidates",
-      url: process.env.CHROMA_URL || "http://localhost:8000",
-    });
+    console.log("Initiated adding documents in batches...");
+    console.time("Add Documents");
 
-    console.log("Initiated vector db creation...")
-    console.time('Vector Store Creation');
-    this.vectorStore = await vecStorePromise;
-    console.timeEnd('Vector Store Creation');
+    // Process documents in batches to avoid overwhelming the system
+    const BATCH_SIZE = 50; // Process 50 documents at a time
+    let processedCount = 0;
 
-    console.log(`✅ Created vector store with ${splitDocs.length} documents`);
+    for (let i = 0; i < splitDocs.length; i += BATCH_SIZE) {
+      const batch = splitDocs.slice(i, i + BATCH_SIZE);
+      console.log(
+        `📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(
+          splitDocs.length / BATCH_SIZE
+        )} (${batch.length} documents)`
+      );
+
+      try {
+        await this.vectorStore!.addDocuments(batch);
+        processedCount += batch.length;
+        console.log(
+          `✅ Successfully added batch. Total processed: ${processedCount}/${splitDocs.length}`
+        );
+
+        // Add a small delay between batches to prevent overwhelming the system
+        if (i + BATCH_SIZE < splitDocs.length) {
+          await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
+        }
+      } catch (error) {
+        console.error(
+          `❌ Failed to add batch ${Math.floor(i / BATCH_SIZE) + 1}:`,
+          error
+        );
+        console.error(
+          `   Batch contained ${batch.length} documents starting from index ${i}`
+        );
+        // Continue with the next batch instead of failing entirely
+      }
+    }
+
+    console.timeEnd("Add Documents");
+    console.log(
+      `✅ Added ${processedCount}/${splitDocs.length} documents to vector store`
+    );
   }
 
   async query(question: string, maxResults: number = 5) {
@@ -185,18 +264,19 @@ class VectorStoreManager {
       throw new Error("Vector store not initialized");
     }
 
-    console.time('Similarity Search');
+    console.time("Similarity Search");
     const results = await this.vectorStore.similaritySearch(
       question,
       maxResults
     );
-    console.timeEnd('Similarity Search');
+    console.timeEnd("Similarity Search");
 
     if (!results) {
       console.error("❌ similaritySearch returned undefined");
       return [];
     }
 
+    console.log("Found RAG results: ", JSON.stringify(results));
     return results.map((doc) => ({
       content: doc.pageContent,
       metadata: doc.metadata,
@@ -218,6 +298,7 @@ let vectorStoreManager: VectorStoreManager | null = null;
 
 export async function getVectorStoreManager() {
   if (!vectorStoreManager) {
+    console.log("Creating new VectorStoreManager");
     vectorStoreManager = new VectorStoreManager();
     await vectorStoreManager.initialize();
   }
