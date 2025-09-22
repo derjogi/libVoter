@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/server/db';
 import { candidates, parties, appSettings } from '@/lib/db/schema';
-import { eq, like, or, ne } from 'drizzle-orm';
+import { eq, like, or, ne, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import type { Candidate, CandidateMatch } from '@/types';
 
@@ -143,5 +143,25 @@ export async function getMayorCandidates() {
   } catch (error) {
     console.error('Error loading mayor candidates:', error);
     return { success: false, error: 'Failed to load mayor candidates' };
+  }
+}
+
+// Get candidates by IDs
+export async function getCandidatesByIds(ids: string[]) {
+  try {
+    if (ids.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    const data = await db
+      .select()
+      .from(candidates)
+      .where(inArray(candidates.id, ids.map(id => parseInt(id))))
+      .orderBy(candidates.name);
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error loading candidates by IDs:', error);
+    return { success: false, error: 'Failed to load candidates by IDs' };
   }
 }

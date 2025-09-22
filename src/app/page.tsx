@@ -6,13 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ComponentRenderer } from '@/components/dynamic/ComponentRenderer';
 import { RightPanel } from '@/components/layout/RightPanel';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useChat } from '@/lib/client/hooks/useChat';
-import { selectNextComponent, summarizeUserPreferences } from '@/lib/actions/prompts';
+import { selectNextComponent } from '@/lib/actions/prompts';
 import { getCandidatesByWard, getUniqueWards } from '@/lib/actions/database';
-import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch, DropdownData } from '@/types';
-import { getPromptManager, PromptManager } from '@/lib/server/prompts/prompt-manager';
-import { date } from 'zod';
+import type { UserResponse, ComponentData, CandidateMatch, DropdownData } from '@/types';
 
 export default function VotingAdvisor() {
   const [currentComponent, setCurrentComponent] = useState<ComponentData | null>(null);

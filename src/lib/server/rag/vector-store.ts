@@ -265,22 +265,22 @@ class VectorStoreManager {
     }
 
     console.time("Time for: Similarity Search");
-    const results = await this.vectorStore.similaritySearch(
+    const results = await this.vectorStore.similaritySearchWithScore(
       question,
       maxResults
     );
     console.timeEnd("Time for: Similarity Search");
 
     if (!results) {
-      console.error("❌ similaritySearch returned undefined");
+      console.error("❌ similaritySearchWithScore returned undefined");
       return [];
     }
 
-    console.log("Found RAG results: ", JSON.stringify(results));
-    return results.map((doc) => ({
+    console.log("Found RAG results with scores: ", JSON.stringify(results));
+    return results.map(([doc, score]) => ({
       content: doc.pageContent,
       metadata: doc.metadata,
-      score: 0, // Chroma doesn't return scores by default
+      score: score, // Now using actual similarity score
     }));
   }
 

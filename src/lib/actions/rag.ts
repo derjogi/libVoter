@@ -1,6 +1,7 @@
 'use server';
 
 import { RAGQueryEngine, type RAGContext } from '@/lib/server/rag/query-engine';
+import { getCandidatesByIds } from '@/lib/actions/database';
 import type { Candidate, PolicyPosition } from '@/types';
 
 let ragEngine: RAGQueryEngine | null = null;
@@ -27,47 +28,10 @@ export async function queryRAGContext(question: string, userContext?: string) {
       success: false,
       error: 'Failed to query knowledge base',
       fallback: {
-        candidates: [],
+        rankedCandidates: [],
         relevantPolicies: [],
         sources: []
       }
-    };
-  }
-}
-
-export async function getCandidateContext(candidateId: string) {
-  try {
-    const engine = await getRAGEngine();
-
-    // Query for specific candidate information
-    const context = await engine.queryWithContext(
-      `Tell me about candidate with ID ${candidateId}`,
-      'Looking for detailed candidate information'
-    );
-
-    // Find the specific candidate
-    const candidate = context.candidates.find(c => c.id === candidateId);
-
-    if (!candidate) {
-      return {
-        success: false,
-        error: 'Candidate not found'
-      };
-    }
-
-    return {
-      success: true,
-      data: {
-        candidate,
-        relatedPolicies: context.relevantPolicies,
-        sources: context.sources
-      }
-    };
-  } catch (error) {
-    console.error('Candidate context query failed:', error);
-    return {
-      success: false,
-      error: 'Failed to get candidate information'
     };
   }
 }
@@ -84,7 +48,7 @@ export async function searchPolicies(topic: string) {
       success: true,
       data: {
         policies: context.relevantPolicies,
-        candidates: context.candidates,
+        rankedCandidates: context.rankedCandidates,
         sources: context.sources
       }
     };

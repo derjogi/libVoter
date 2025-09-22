@@ -4,7 +4,7 @@ import { getAIConfig } from './config';
 import { createChatModel } from './model-factory';
 import { ConfidenceCalculator } from './confidence-calculator';
 import { selectNextComponent, explainCandidateMatch, generateFollowupQuestion } from '@/lib/actions/prompts';
-import { getUniqueWards, getCandidatesByWard, getMayorCandidates } from '@/lib/actions/database';
+import { getUniqueWards, getCandidatesByWard, getMayorCandidates, getCandidatesByIds } from '@/lib/actions/database';
 import { queryRAGContext } from '@/lib/actions/rag';
 import { electionConfig } from '@/lib/config/election';
 import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch, PolicyPosition } from '@/types';
@@ -53,13 +53,18 @@ export class AIChatHandler {
       const userContext = this.createUserProfileSummary(userResponses);
       const ragContext = await this.queryRAGContext(userMessage, userContext);
 
+      // Fetch full candidate data for RAG-ranked candidates
+      const ragCandidateIds = ragContext.rankedCandidates?.map(rc => rc.candidateId) || [];
+      const ragCandidates: CandidateMatch[] = ragCandidateIds.length > 0 ? await this.fetchCandidatesByIds(ragCandidateIds) : [];
+
       // Prepare conversation context
       const messages = this.buildConversationContext(
         userMessage,
         conversationHistory,
         confidenceResult,
         candidates,
-        ragContext
+        ragContext,
+        ragCandidates
       );
 
       // Get AI response with validation
@@ -150,7 +155,7 @@ export class AIChatHandler {
       } else {
         console.warn('RAG query failed, falling back to database-only context:', result.error);
         return {
-          candidates: [],
+          rankedCandidates: [],
           relevantPolicies: [],
           sources: []
         };
@@ -158,19 +163,81 @@ export class AIChatHandler {
     } catch (error) {
       console.error('Error querying RAG context:', error);
       return {
-        candidates: [],
+        rankedCandidates: [],
         relevantPolicies: [],
         sources: []
       };
     }
   }
 
-  private formatRAGContext(ragContext: RAGContext, existingCandidates: CandidateMatch[]): string {
-    if (!ragContext || (!ragContext.relevantPolicies?.length && !ragContext.sources?.length)) {
+  private async fetchCandidatesByIds(ids: string[]): Promise<CandidateMatch[]> {
+    try {
+      const result = await getCandidatesByIds(ids);
+      if (!result.success || !result.data) {
+        return [];
+      }
+
+      // Transform to CandidateMatch format
+      return result.data.map(candidate => ({
+        candidate: {
+          id: candidate.id.toString(),
+          name: candidate.name,
+          party: candidate.party || 'Independent',
+          profileData: {
+            positions: [], // Will be populated from candidate data
+            biography: candidate.candidate_statement || undefined
+          },
+          createdAt: candidate.created_at || new Date()
+        },
+        score: 75, // Default score for RAG-fetched candidates
+        reasoning: 'Identified through semantic search',
+        pros: [],
+        cons: [],
+        topMatchingPolicies: this.extractTopPolicies(candidate),
+        sources: []
+      }));
+    } catch (error) {
+      console.error('Error fetching candidates by IDs:', error);
+      return [];
+    }
+  }
+
+  private formatRAGContext(ragContext: RAGContext, existingCandidates: CandidateMatch[], ragCandidates: CandidateMatch[]): string {
+    if (!ragContext || (!ragContext.relevantPolicies?.length && !ragContext.sources?.length && !ragContext.rankedCandidates?.length)) {
       return '';
     }
 
     let ragInfo = '\n\nAdditional context from knowledge base:';
+
+    // Add semantically ranked candidates that aren't already in structured data
+    if (ragContext.rankedCandidates?.length > 0) {
+      const existingCandidateIds = new Set(
+        existingCandidates.map(c => c.candidate.id)
+      );
+
+      const ragCandidateMap = new Map(
+        ragCandidates.map(c => [c.candidate.id, c.candidate])
+      );
+
+      const newRankedCandidates = ragContext.rankedCandidates.filter(rc =>
+        !existingCandidateIds.has(rc.candidateId) && ragCandidateMap.has(rc.candidateId)
+      );
+
+      if (newRankedCandidates.length > 0) {
+        ragInfo += '\nSemantically relevant candidates:';
+        newRankedCandidates.slice(0, 3).forEach((rankedCandidate, index) => {
+          const candidate = ragCandidateMap.get(rankedCandidate.candidateId);
+          if (candidate) {
+            const relevancePercent = Math.round(rankedCandidate.relevanceScore * 100);
+            ragInfo += `\n${index + 1}. ${candidate.name} (${candidate.party}) - ${relevancePercent}% relevance`;
+            if (rankedCandidate.matchedContent) {
+              const preview = rankedCandidate.matchedContent.substring(0, 80);
+              ragInfo += ` - "${preview}..."`;
+            }
+          }
+        });
+      }
+    }
 
     // Add relevant policies that aren't already covered in structured data
     if (ragContext.relevantPolicies?.length > 0) {
@@ -204,7 +271,8 @@ export class AIChatHandler {
     history: ConversationMessage[],
     confidence: { score: number; reasoning: string },
     candidates: CandidateMatch[],
-    ragContext: RAGContext
+    ragContext: RAGContext,
+    ragCandidates: CandidateMatch[]
   ): (HumanMessage | AIMessage | SystemMessage)[] {
     const messages: (HumanMessage | AIMessage | SystemMessage)[] = [];
 
@@ -216,7 +284,7 @@ export class AIChatHandler {
       : '\n\nNo candidates available yet.';
 
     // Add RAG-enhanced context without duplicating structured data
-    const ragInfo = this.formatRAGContext(ragContext, candidates);
+    const ragInfo = this.formatRAGContext(ragContext, candidates, ragCandidates);
 
     messages.push(new SystemMessage(
       `You are an AI political advisor helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
@@ -224,7 +292,8 @@ export class AIChatHandler {
       Reasoning: ${confidence.reasoning}${candidateInfo}${ragInfo}
 
       Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
-      Focus on policy topics including ${electionConfig.keyTopics.join(', ')} and candidate positions.`
+      Focus on policy topics including ${electionConfig.keyTopics.join(', ')} and candidate positions.
+      Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.`
     ));
 
     // Add recent conversation history (last 10 messages)

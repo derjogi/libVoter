@@ -22,44 +22,6 @@ test.describe('Chat Flow Tests', () => {
     console.log('App loaded successfully with expected structure');
   });
 
-  test('should verify chat handler logic for ward selection', async ({ page }) => {
-    // This test verifies the backend logic rather than UI interaction
-    // Navigate to the app
-    await page.goto('http://localhost:3000');
-    await page.waitForLoadState('networkidle');
-
-    // Check if the page has loaded without JavaScript errors
-    const body = page.locator('body');
-    await expect(body).toBeVisible();
-
-    // Since the UI interaction is complex, let's verify the backend works
-    // by making a direct API call to test the chat processing
-    const response = await page.request.post('http://localhost:3000/api/chat/process', {
-      data: {
-        message: 'I want to find candidates',
-        conversationHistory: [],
-        userResponses: []
-      }
-    });
-
-    expect(response.ok()).toBe(true);
-    const result = await response.json();
-
-    // Verify the response structure
-    expect(result).toHaveProperty('message');
-    expect(result).toHaveProperty('confidence');
-    expect(result).toHaveProperty('shouldShowCandidates');
-    expect(result).toHaveProperty('nextComponent');
-
-    // Check if ward selection is suggested as next component
-    if (result.nextComponent && result.nextComponent.type === 'multiselect') {
-      expect(result.nextComponent.data.question).toContain('ward');
-      console.log('Ward selection correctly suggested as first question');
-    } else {
-      console.log('Next component:', result.nextComponent);
-    }
-  });
-
   test('should handle ward selection and show candidates', async ({ page }) => {
     await page.goto('http://localhost:3000');
     await page.waitForLoadState('networkidle');
@@ -187,41 +149,6 @@ test.describe('Chat Flow Tests', () => {
         console.log('Error message found:', await errorMessage.textContent());
       }
     }
-  });
-
-  test('should handle RAG queries without undefined property errors', async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    await page.waitForLoadState('networkidle');
-
-    // Test RAG query that previously caused "Cannot read properties of undefined" error
-    const response = await page.request.post('http://localhost:3000/api/chat/process', {
-      data: {
-        message: 'I need someone who is good for the environment',
-        conversationHistory: [],
-        userResponses: []
-      }
-    });
-
-    expect(response.ok()).toBe(true);
-    const result = await response.json();
-
-    // Verify the response structure
-    expect(result).toHaveProperty('message');
-    expect(result).toHaveProperty('confidence');
-
-    // Check that the response doesn't contain error messages about undefined properties
-    const responseText = JSON.stringify(result).toLowerCase();
-    expect(responseText).not.toContain('cannot read properties of undefined');
-    expect(responseText).not.toContain('reading \'0\'');
-    expect(responseText).not.toContain('similaritysearch returned undefined');
-
-    // Verify that RAG context was attempted (either succeeded or fell back gracefully)
-    const hasRagSuccess = responseText.includes('rag') || responseText.includes('knowledge') || responseText.includes('context');
-    const hasFallback = responseText.includes('fallback') || responseText.includes('database');
-
-    expect(hasRagSuccess || hasFallback).toBe(true);
-
-    console.log('RAG query test passed - no undefined property errors detected');
   });
 
   test('should validate vector store initialization', async ({ page }) => {

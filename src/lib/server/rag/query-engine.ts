@@ -5,8 +5,15 @@ import { AIMessage, BaseMessage } from '@langchain/core/messages';
 import type { Candidate, PolicyPosition } from '@/types';
 import type { ChatModel } from '@/lib/server/ai/model-factory';
 
+export interface RankedCandidate {
+  candidateId: string;
+  similarityScore: number;
+  relevanceScore: number;
+  matchedContent: string;
+}
+
 export interface RAGContext {
-  candidates: Candidate[];
+  rankedCandidates: RankedCandidate[];
   relevantPolicies: PolicyPosition[];
   sources: string[];
 }
@@ -22,9 +29,11 @@ export class RAGQueryEngine {
     const vectorStore = await getVectorStoreManager();
     const relevantDocs = await vectorStore.query(question, 10);
 
-    // Extract candidate and policy information from relevant documents
-    const candidates = this.extractCandidatesFromDocs(relevantDocs);
+    // Extract policy information from relevant documents (candidates will be fetched from DB using IDs)
     const policies = this.extractPoliciesFromDocs(relevantDocs);
+
+    // Generate ranked candidates based on semantic similarity (returns candidate IDs)
+    const rankedCandidates = this.rankCandidatesBySemanticSimilarity(relevantDocs, question, userContext);
 
     // Generate contextual response
     const contextPrompt = `
@@ -75,46 +84,20 @@ Format as JSON with candidates, policies, and sources arrays.
     try {
       const parsed = JSON.parse(response.content as string);
       return {
-        candidates: parsed.candidates || candidates,
+        rankedCandidates,
         relevantPolicies: parsed.policies || policies,
         sources: parsed.sources || relevantDocs.map(doc => doc.metadata.source || 'Unknown')
       };
     } catch (error) {
       // Fallback if JSON parsing fails
       return {
-        candidates,
+        rankedCandidates,
         relevantPolicies: policies,
         sources: relevantDocs.map(doc => doc.metadata.source || 'Unknown')
       };
     }
   }
 
-  private extractCandidatesFromDocs(docs: any[]): Candidate[] {
-    // Extract candidate information from document content
-    const candidates: Candidate[] = [];
-
-    for (const doc of docs) {
-      const content = doc.content.toLowerCase();
-
-      // Simple extraction - in production, use more sophisticated NLP
-      if (content.includes('candidate') || content.includes('running for')) {
-        // This is a simplified extraction - you'd want more robust parsing
-        const candidate: Candidate = {
-          id: `candidate_${candidates.length}`,
-          name: this.extractName(content),
-          party: this.extractParty(content),
-          profileData: {
-            positions: [],
-            biography: doc.content.substring(0, 200) + '...'
-          },
-          createdAt: new Date()
-        };
-        candidates.push(candidate);
-      }
-    }
-
-    return candidates;
-  }
 
   private extractPoliciesFromDocs(docs: any[]): PolicyPosition[] {
     // Extract policy positions from documents
@@ -185,5 +168,180 @@ Format as JSON with candidates, policies, and sources arrays.
     if (content.toLowerCase().includes('favor')) return 'Favors';
 
     return 'Neutral';
+  }
+
+  private rankCandidatesBySemanticSimilarity(
+    docs: any[],
+    question: string,
+    userContext?: string
+  ): RankedCandidate[] {
+    const rankedCandidates: RankedCandidate[] = [];
+
+    // Group documents by candidate ID to aggregate scores
+    const candidateDocs = new Map<string, { docs: any[], totalScore: number, content: string[] }>();
+
+    for (const doc of docs) {
+      const candidateId = doc.metadata.id;
+      if (!candidateId) continue;
+
+      if (!candidateDocs.has(candidateId)) {
+        candidateDocs.set(candidateId, { docs: [], totalScore: 0, content: [] });
+      }
+
+      const candidateData = candidateDocs.get(candidateId)!;
+      candidateData.docs.push(doc);
+      candidateData.totalScore += doc.score || 0;
+      candidateData.content.push(doc.content);
+    }
+
+    // Create ranked candidates from aggregated data
+    for (const [candidateId, data] of candidateDocs.entries()) {
+      // Calculate relevance score based on similarity and content quality
+      const similarityScore = data.totalScore / data.docs.length; // Average similarity score
+      const relevanceScore = this.calculateRelevanceScore(similarityScore, data.content.join(' '), question, userContext);
+
+      rankedCandidates.push({
+        candidateId: candidateId,
+        similarityScore,
+        relevanceScore,
+        matchedContent: data.content.slice(0, 3).join(' ').substring(0, 500) + '...' // Top 3 matches, truncated
+      });
+    }
+
+    // Sort by relevance score (highest first)
+    return rankedCandidates.sort((a, b) => b.relevanceScore - a.relevanceScore);
+  }
+
+
+  private calculateRelevanceScore(
+    similarityScore: number,
+    content: string,
+    question: string,
+    userContext?: string
+  ): number {
+    let score = similarityScore;
+
+    // Boost score based on content quality indicators
+    const qualityIndicators = [
+      'policy', 'position', 'stance', 'candidate', 'election',
+      'experience', 'background', 'statement', 'platform'
+    ];
+
+    let qualityBoost = 0;
+    for (const indicator of qualityIndicators) {
+      if (content.toLowerCase().includes(indicator)) {
+        qualityBoost += 0.1;
+      }
+    }
+    score += Math.min(qualityBoost, 0.5); // Cap quality boost
+
+    // Boost score if content directly addresses question keywords
+    const questionWords = question.toLowerCase().split(/\s+/);
+    let questionMatchBoost = 0;
+    for (const word of questionWords) {
+      if (word.length > 3 && content.toLowerCase().includes(word)) {
+        questionMatchBoost += 0.05;
+      }
+    }
+    score += Math.min(questionMatchBoost, 0.3); // Cap question match boost
+
+    // Consider user context if provided
+    if (userContext) {
+      const contextWords = userContext.toLowerCase().split(/\s+/);
+      let contextMatchBoost = 0;
+      for (const word of contextWords) {
+        if (word.length > 3 && content.toLowerCase().includes(word)) {
+          contextMatchBoost += 0.02;
+        }
+      }
+      score += Math.min(contextMatchBoost, 0.2); // Cap context match boost
+    }
+
+    // Normalize to 0-1 range
+    return Math.min(Math.max(score, 0), 1);
+  }
+
+  /**
+   * Get prioritized candidate lists based on semantic similarity to user queries
+   * Returns candidates ranked by relevance alongside relevant policy information
+   */
+  async getPrioritizedCandidates(
+    question: string,
+    userContext?: string,
+    maxCandidates: number = 5
+  ): Promise<{
+    prioritizedCandidates: RankedCandidate[];
+    relevantPolicies: PolicyPosition[];
+    sources: string[];
+  }> {
+    const vectorStore = await getVectorStoreManager();
+    const relevantDocs = await vectorStore.query(question, Math.max(maxCandidates * 2, 10)); // Get more docs for better ranking
+
+    // Generate ranked candidates
+    const rankedCandidates = this.rankCandidatesBySemanticSimilarity(relevantDocs, question, userContext);
+
+    // Extract relevant policies from top-ranked candidate documents
+    const topCandidateDocs = rankedCandidates
+      .slice(0, maxCandidates)
+      .flatMap(rc => rc.matchedContent.split('...')[0]) // Get content snippets
+      .join(' ');
+
+    const policies = this.extractPoliciesFromText(topCandidateDocs, question);
+
+    return {
+      prioritizedCandidates: rankedCandidates.slice(0, maxCandidates),
+      relevantPolicies: policies,
+      sources: relevantDocs.map(doc => doc.metadata.source || 'Unknown').filter((s, i, arr) => arr.indexOf(s) === i) // Unique sources
+    };
+  }
+
+  private extractPoliciesFromText(text: string, question: string): PolicyPosition[] {
+    const policies: PolicyPosition[] = [];
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+
+    for (const sentence of sentences) {
+      const policyKeywords = ['policy', 'position', 'stance', 'supports', 'opposes', 'favors', 'believes'];
+      const hasPolicyKeyword = policyKeywords.some(keyword =>
+        sentence.toLowerCase().includes(keyword)
+      );
+
+      if (hasPolicyKeyword) {
+        const topic = this.extractTopic(sentence) || this.inferTopicFromQuestion(question);
+        const stance = this.extractStance(sentence);
+
+        // Avoid duplicates
+        const existingPolicy = policies.find(p => p.topic === topic && p.stance === stance);
+        if (!existingPolicy) {
+          policies.push({
+            topic,
+            stance,
+            details: sentence.trim(),
+            sources: ['RAG Analysis']
+          });
+        }
+      }
+    }
+
+    return policies.slice(0, 5); // Limit to top 5 policies
+  }
+
+  private inferTopicFromQuestion(question: string): string {
+    const topicKeywords = {
+      'economy': ['economy', 'economic', 'jobs', 'employment', 'tax', 'budget', 'finance'],
+      'healthcare': ['health', 'medical', 'hospital', 'doctor', 'insurance'],
+      'education': ['education', 'school', 'student', 'teacher', 'learning'],
+      'environment': ['environment', 'climate', 'green', 'sustainability', 'pollution'],
+      'housing': ['housing', 'home', 'rent', 'property', 'affordable'],
+      'transportation': ['transport', 'traffic', 'road', 'public transit', 'bike'],
+      'social': ['social', 'equality', 'justice', 'rights', 'community']
+    };
+
+    for (const [topic, keywords] of Object.entries(topicKeywords)) {
+      if (keywords.some(keyword => question.toLowerCase().includes(keyword))) {
+        return topic.charAt(0).toUpperCase() + topic.slice(1);
+      }
+    }
+
+    return 'General Policy';
   }
 }

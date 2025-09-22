@@ -530,17 +530,11 @@ export function useChat() {
       setMessages(updatedHistory);
 
       // Process with AI
-      const response = await fetch('/api/chat/process', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const result: ChatResponse = await processResponse({
           message,
           conversationHistory: updatedHistory,
           userResponses
-        })
       });
-
-      const result: ChatResponse = await response.json();
 
       if (!result) {
         throw new Error('No response from server');
@@ -587,36 +581,6 @@ export function useChat() {
     sendMessage,
     clearChat
   };
-}
-```
-
-### 6. Create API Route for Chat
-**File: `voting-advisor/src/app/api/chat/process/route.ts`**
-```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { processChatMessage } from '@/lib/actions/chat';
-
-export async function POST(request: NextRequest) {
-  try {
-    const { message, conversationHistory, userResponses } = await request.json();
-
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json(
-        { error: 'Message is required' },
-        { status: 400 }
-      );
-    }
-
-    const result = await processChatMessage(message, conversationHistory || [], userResponses || []);
-
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('Chat API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', message: 'Failed to process chat message' },
-      { status: 500 }
-    );
-  }
 }
 ```
 
