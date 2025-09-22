@@ -33,10 +33,10 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
 
   const handleSubmit = () => {
     if (selectedIds.length > 0) {
-      onResponse(
-        `User selection: ${selectedIds
-          .map((id) => data.options.find((opt) => opt.id === id)).join("\n\n")}`
-      );
+      const selectedLabels = selectedIds
+        .map((id) => data.options.find((opt) => opt.id === id)?.label)
+        .filter((label) => label !== undefined);
+      onResponse(selectedLabels.join('\n'));
     }
   };
 

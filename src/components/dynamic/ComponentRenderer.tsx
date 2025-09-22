@@ -35,7 +35,7 @@ export function ComponentRenderer({
       return (
         <YesNoQuestion
           data={data as any}
-          onResponse={(index, response) => onResponse({ index, response })}
+          onResponse={onResponse}
           disabled={disabled}
         />
       );

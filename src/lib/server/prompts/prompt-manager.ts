@@ -49,14 +49,14 @@ export class PromptManager {
       const allVariables = { ...variables, ...electionVariables };
       const formatted = formatPrompt(template, allVariables);
       console.log("Calling prompt ", promptId)
-      console.time(`Prompt Execution: ${promptId}`);
+      console.time(`Time for: Prompt Execution: ${promptId}`);
       const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(', ')}.`;
       const response = await this.chatModel.invoke([
         { role: 'system', content: systemMessage },
         { role: 'user', content: formatted.content }
       ]);
       // const response = {content: "This is a not so very helpful message"}
-      console.timeEnd(`Prompt Execution: ${promptId}`);
+      console.timeEnd(`Time for: Prompt Execution: ${promptId}`);
 
       console.log(`Got response from PromptManager with prompt ${promptId}: \n`, response)
 

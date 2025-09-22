@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
@@ -7,11 +8,30 @@ import type { YesNoData } from '@/types';
 
 interface YesNoQuestionProps {
   data: YesNoData;
-  onResponse: (index: number, response: 'agree' | 'disagree' | 'skip') => void;
+  onResponse: (responses: ('agree' | 'disagree' | 'skip')[]) => void;
   disabled?: boolean;
 }
 
 export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuestionProps) {
+  const [responses, setResponses] = useState<('agree' | 'disagree' | 'skip' | undefined)[]>(
+    new Array(data.statements.length).fill(undefined)
+  );
+
+  useEffect(() => {
+    const allAnswered = responses.every(response => response !== undefined);
+    if (allAnswered) {
+      onResponse(responses as ('agree' | 'disagree' | 'skip')[]);
+    }
+  }, [responses, onResponse]);
+
+  const handleResponse = (index: number, response: 'agree' | 'disagree' | 'skip') => {
+    setResponses(prev => {
+      const newResponses = [...prev];
+      newResponses[index] = response;
+      return newResponses;
+    });
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4 max-h-96 overflow-y-auto">
       {data.statements.map((item, index) => (
@@ -29,8 +49,8 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Button
-                onClick={() => onResponse(index, 'agree')}
-                disabled={disabled}
+                onClick={() => handleResponse(index, 'agree')}
+                disabled={disabled || responses[index] !== undefined}
                 className="flex-1 h-12"
                 variant="default"
               >
@@ -39,8 +59,8 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
               </Button>
 
               <Button
-                onClick={() => onResponse(index, 'disagree')}
-                disabled={disabled}
+                onClick={() => handleResponse(index, 'disagree')}
+                disabled={disabled || responses[index] !== undefined}
                 className="flex-1 h-12"
                 variant="outline"
               >
@@ -50,8 +70,8 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
             </div>
 
             <Button
-              onClick={() => onResponse(index, 'skip')}
-              disabled={disabled}
+              onClick={() => handleResponse(index, 'skip')}
+              disabled={disabled || responses[index] !== undefined}
               variant="ghost"
               className="w-full"
             >

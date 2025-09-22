@@ -216,7 +216,7 @@ class VectorStoreManager {
     );
 
     console.log("Initiated adding documents in batches...");
-    console.time("Add Documents");
+    console.time("Time for: Add Documents");
 
     // Process documents in batches to avoid overwhelming the system
     const BATCH_SIZE = 50; // Process 50 documents at a time
@@ -253,7 +253,7 @@ class VectorStoreManager {
       }
     }
 
-    console.timeEnd("Add Documents");
+    console.timeEnd("Time for: Add Documents");
     console.log(
       `✅ Added ${processedCount}/${splitDocs.length} documents to vector store`
     );
@@ -264,12 +264,12 @@ class VectorStoreManager {
       throw new Error("Vector store not initialized");
     }
 
-    console.time("Similarity Search");
+    console.time("Time for: Similarity Search");
     const results = await this.vectorStore.similaritySearch(
       question,
       maxResults
     );
-    console.timeEnd("Similarity Search");
+    console.timeEnd("Time for: Similarity Search");
 
     if (!results) {
       console.error("❌ similaritySearch returned undefined");

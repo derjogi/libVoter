@@ -44,7 +44,7 @@ Please provide:
 Format as JSON with candidates, policies, and sources arrays.
 `;
     console.log("RAG query started for contextPrompt: \n\n", contextPrompt)
-    console.time('RAG Query ChatModel Invoke');
+    console.time("Time for: RAG Query ChatModel Invoke");
     const response = await this.chatModel.invoke([
       { role: 'system', content: 'You are a political analysis expert. Provide accurate, neutral information.' },
       { role: 'user', content: contextPrompt }
@@ -70,7 +70,7 @@ Format as JSON with candidates, policies, and sources arrays.
     //   policies: [],
     //   sources: []
     // }));
-    console.timeEnd("RAG Query ChatModel Invoke");
+    console.timeEnd("Time for: RAG Query ChatModel Invoke");
 
     try {
       const parsed = JSON.parse(response.content as string);
