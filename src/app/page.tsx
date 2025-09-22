@@ -8,8 +8,9 @@ import { ComponentRenderer } from '@/components/dynamic/ComponentRenderer';
 import { RightPanel } from '@/components/layout/RightPanel';
 import { useChat } from '@/lib/client/hooks/useChat';
 import { selectNextComponent } from '@/lib/actions/prompts';
-import { getCandidatesByWard, getUniqueWards } from '@/lib/actions/database';
+import { getCandidatesByWard, getUniqueWards, getMayorCandidates } from '@/lib/actions/database';
 import type { UserResponse, ComponentData, CandidateMatch, DropdownData } from '@/types';
+import type { Candidate } from '@/lib/db/schema';
 
 export default function VotingAdvisor() {
   const [currentComponent, setCurrentComponent] = useState<ComponentData | null>(null);
@@ -22,6 +23,7 @@ export default function VotingAdvisor() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [wards, setWards] = useState<string[]>([]);
   const [isLoadingWards, setIsLoadingWards] = useState(true);
+  const [availableCandidates, setAvailableCandidates] = useState<Candidate[]>([]);
 
   const { messages, isLoading, sendMessage, clearChat, followupQuestion } = useChat();
 
@@ -90,11 +92,23 @@ export default function VotingAdvisor() {
         currentComponent?.type === "dropdown" &&
         (currentComponent.data as DropdownData).questionId === "ward_selection"
       ) {
-        const candidates = (await getCandidatesByWard(response))?.data;
-        const conversationState = `I am voting in ${response}, and the following candidates are running: \n${candidates?.join(
+        // Fetch mayor candidates
+        const mayorResult = await getMayorCandidates();
+        const mayorCandidates = mayorResult.success ? mayorResult.data || [] : [];
+
+        // Fetch ward candidates
+        const wardResult = await getCandidatesByWard(response);
+        const wardCandidates = wardResult.success ? wardResult.data || [] : [];
+
+        // Combine and store available candidates
+        const allCandidates = [...mayorCandidates, ...wardCandidates];
+        setAvailableCandidates(allCandidates);
+
+        const candidateNames = allCandidates.map(c => c.name);
+        const conversationState = `I am voting in ${response}, and the following candidates are running: \n${candidateNames?.join(
           "\n"
-        )}\n\nI have not stated any opinion yet, but I want you to help me figure out which of these candidates align best with my yet undisclosed views.`;
-        
+        )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
+
         const componentResult = await selectNextComponent(conversationState);
 
         if (componentResult.success && componentResult.data) {
@@ -111,6 +125,7 @@ export default function VotingAdvisor() {
           console.warn("Component selection failed; using fallback chat. Error:", componentResult.error);
           setCurrentComponent({ type: 'chat', data: {prompt: 'Please tell me what is important to you.', placeholder: 'Hey, please let me know some of your views.'}})
         }
+        // We don't need any additional AI questions after the initial ward selection.
         return;
       }
       
@@ -140,7 +155,8 @@ export default function VotingAdvisor() {
       // Send message to AI and get response
       const aiResponse = await sendMessage(
         typeof processedResponse === 'string' ? processedResponse : JSON.stringify(processedResponse),
-        userResponses
+        userResponses,
+        availableCandidates
       );
 
       if (aiResponse) {
@@ -226,7 +242,7 @@ export default function VotingAdvisor() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-[calc(100vh-18rem)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-15rem)]">
           {/* Left Side - Dynamic Input */}
           <div className={`${isMobile && showCandidates ? 'hidden' : 'block'}`}>
             <Card className="h-full">
@@ -300,7 +316,7 @@ export default function VotingAdvisor() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-muted/50 mt-12">
+      <footer className="border-t bg-muted/50">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
             <p>AI Voting Advisor - Anonymous and secure political preference matching</p>

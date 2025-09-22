@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import type { ConversationMessage, UserResponse } from '@/types';
 import type { ChatResponse } from '@/lib/server/ai/chat-handler';
+import type { Candidate } from '@/lib/db/schema';
 import { processChatMessage } from '@/lib/actions/chat';
 
 export function useChat() {
@@ -15,7 +16,8 @@ export function useChat() {
 
   const sendMessage = useCallback(async (
     message: string,
-    userResponses: UserResponse[]
+    userResponses: UserResponse[],
+    availableCandidates: Candidate[]
   ) => {
     setIsLoading(true);
     setError(null);
@@ -33,7 +35,7 @@ export function useChat() {
       setMessages(updatedHistory);
 
       // Process with AI
-      const result = await processChatMessage(message, updatedHistory || [], userResponses || []);
+      const result = await processChatMessage(message, updatedHistory || [], userResponses || [], availableCandidates);
 
       if (!result) {
         throw new Error('No response from server');

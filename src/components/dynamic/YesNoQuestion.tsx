@@ -38,7 +38,7 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-4 max-h-96 overflow-y-auto">
+    <div className="w-full max-w-2xl mx-auto space-y-4 overflow-y-auto">
       {data.statements.map((item, index) => (
         <Card key={index} className="w-full">
           <CardHeader>

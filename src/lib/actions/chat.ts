@@ -2,6 +2,7 @@
 
 import { AIChatHandler, type ChatResponse } from '@/lib/server/ai/chat-handler';
 import type { ConversationMessage, UserResponse } from '@/types';
+import type { Candidate } from '@/lib/db/schema';
 
 let chatHandler: AIChatHandler | null = null;
 
@@ -15,12 +16,13 @@ function getChatHandler() {
 export async function processChatMessage(
   message: string,
   conversationHistory: ConversationMessage[],
-  userResponses: UserResponse[]
+  userResponses: UserResponse[],
+  availableCandidates: Candidate[]
 ): Promise<ChatResponse> {
   try {
     const handler = getChatHandler();
     console.log('processChatMessage: \n', message);
-    const response = await handler.processMessage(message, conversationHistory, userResponses);
+    const response = await handler.processMessage(message, conversationHistory, userResponses, availableCandidates);
 
     return response;
   } catch (error) {

@@ -16,8 +16,8 @@ test.describe('Chat Flow Tests', () => {
     const confidenceBadge = page.locator('text=Confidence: 0%');
     await expect(confidenceBadge).toBeVisible();
 
-    const preferencesSection = page.locator('text=Your Preferences');
-    await expect(preferencesSection).toBeVisible();
+    const wardQuestion = page.locator('text=Which ward do you live in?');
+    await expect(wardQuestion).toBeVisible();
 
     console.log('App loaded successfully with expected structure');
   });
@@ -30,12 +30,14 @@ test.describe('Chat Flow Tests', () => {
     const wardQuestion = page.locator('text=Which ward do you live in?');
     await expect(wardQuestion).toBeVisible({ timeout: 10000 });
 
-    // Select a ward (first checkbox) - using click() for more realistic interaction
-    // Note: The checkbox is actually a button element from Radix UI
-    const firstWardCheckbox = page.locator('[data-slot="checkbox"]').first();
-    await firstWardCheckbox.click();
-    // Check if it has the checked state by looking for the data-state attribute
-    await expect(firstWardCheckbox).toHaveAttribute('data-state', 'checked');
+    // Select a ward using the dropdown
+    const selectTrigger = page.locator('button').filter({ hasText: 'Select your ward...' }).first();
+    await selectTrigger.click();
+
+    // Wait for dropdown options to appear and select the first one
+    await page.waitForTimeout(500);
+    const firstWardOption = page.locator('div[role="option"]').first();
+    await firstWardOption.click();
 
     // Submit the selection by clicking Continue button
     const submitButton = page.locator('button').filter({ hasText: 'Continue' }).first();
@@ -44,15 +46,15 @@ test.describe('Chat Flow Tests', () => {
     // Wait for response and check loading state
     await page.waitForTimeout(20000); // This might take long, because AI.
 
-    // Check if candidates are shown or next question appears
+    // Check if candidates are shown or next component appears (checkboxes for issues)
     const candidatesSection = page.locator('text=candidate, text=Candidate');
-    const nextQuestion = page.locator('text=Which of these issues matter most to you?');
+    const checkboxes = page.locator('[data-slot="checkbox"]');
 
-    // Either candidates should appear or next question
+    // Either candidates should appear or checkboxes for next question
     const hasCandidates = await candidatesSection.isVisible().catch(() => false);
-    const hasNextQuestion = await nextQuestion.isVisible().catch(() => false);
+    const hasCheckboxes = (await checkboxes.count()) > 0;
 
-    expect(hasCandidates || hasNextQuestion).toBe(true);
+    expect(hasCandidates || hasCheckboxes).toBe(true);
   });
 
   test('should complete full user flow', async ({ page }) => {
@@ -63,13 +65,14 @@ test.describe('Chat Flow Tests', () => {
     const wardQuestion = page.locator('text=Which ward do you live in?');
     await expect(wardQuestion).toBeVisible({ timeout: 3000 });
 
-    // Click on a ward checkbox
-    const wardCheckboxes = page.locator('[data-slot="checkbox"]');
-  
-    // Select a ward (random between 0 and 2, or just use first if fewer available)
-    const checkboxCount = await wardCheckboxes.count();
-    const randomIndex = Math.min(randomInt(0, Math.max(1, checkboxCount - 1)), checkboxCount - 1);
-    await wardCheckboxes.nth(randomIndex).click();
+    // Select a ward using the dropdown
+    const selectTrigger = page.locator('button').filter({ hasText: 'Select your ward...' }).first();
+    await selectTrigger.click();
+
+    // Wait for dropdown options to appear and select the first one
+    await page.waitForTimeout(500);
+    const firstWardOption = page.locator('div[role="option"]').first();
+    await firstWardOption.click();
 
     // Click Continue to proceed
     const continueButton = page.locator('button').filter({ hasText: 'Continue' });
@@ -188,8 +191,13 @@ test.describe('Chat Flow Tests', () => {
     await page.waitForLoadState('networkidle');
 
     // Pattern 1: Double-click prevention (wait for state changes)
-    const firstCheckbox = page.locator('[data-slot="checkbox"]').first();
-    await firstCheckbox.click();
+    const selectTrigger = page.locator('button').filter({ hasText: 'Select your ward...' }).first();
+    await selectTrigger.click();
+
+    // Wait for dropdown options to appear and select the first one
+    await page.waitForTimeout(500);
+    const firstWardOption = page.locator('div[role="option"]').first();
+    await firstWardOption.click();
     await page.waitForTimeout(500); // Prevent double-clicking
 
     // Pattern 2: Click and verify state change
@@ -228,8 +236,13 @@ test.describe('Chat Flow Tests', () => {
     await page.waitForLoadState('networkidle');
 
     // Step 1: Select ward
-    const wardCheckboxes = page.locator('[data-slot="checkbox"]');
-    await wardCheckboxes.first().click();
+    const selectTrigger = page.locator('button').filter({ hasText: 'Select your ward...' }).first();
+    await selectTrigger.click();
+
+    // Wait for dropdown options to appear and select the first one
+    await page.waitForTimeout(500);
+    const firstWardOption = page.locator('div[role="option"]').first();
+    await firstWardOption.click();
 
     // Click continue and wait for transition
     const continueButton = page.locator('button').filter({ hasText: 'Continue' });

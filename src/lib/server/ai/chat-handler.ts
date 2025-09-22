@@ -10,6 +10,7 @@ import { electionConfig } from '@/lib/config/election';
 import type { ConversationMessage, UserResponse, ComponentData, CandidateMatch, PolicyPosition } from '@/types';
 import type { ChatModel } from './model-factory';
 import type { RAGContext } from '../rag/query-engine';
+import type { Candidate } from '@/lib/db/schema';
 
 export interface ChatResponse {
   message: string;
@@ -37,7 +38,8 @@ export class AIChatHandler {
   async processMessage(
     userMessage: string,
     conversationHistory: ConversationMessage[],
-    userResponses: UserResponse[]
+    userResponses: UserResponse[],
+    availableCandidates: Candidate[]
   ): Promise<ChatResponse> {
     try {
       // Calculate current confidence
@@ -47,7 +49,7 @@ export class AIChatHandler {
       );
 
       // Always fetch eligible candidates for AI context
-      const candidates = await this.generateCandidateMatches(userResponses);
+      const candidates = await this.generateCandidateMatches(userResponses, availableCandidates);
 
       // Query RAG for semantically relevant candidate information
       const userContext = this.createUserProfileSummary(userResponses);
@@ -55,7 +57,7 @@ export class AIChatHandler {
 
       // Fetch full candidate data for RAG-ranked candidates
       const ragCandidateIds = ragContext.rankedCandidates?.map(rc => rc.candidateId) || [];
-      const ragCandidates: CandidateMatch[] = ragCandidateIds.length > 0 ? await this.fetchCandidatesByIds(ragCandidateIds) : [];
+      const ragCandidates: CandidateMatch[] = ragCandidateIds.length > 0 && availableCandidates ? this.filterAndTransformCandidates(ragCandidateIds, availableCandidates) : [];
 
       // Prepare conversation context
       const messages = this.buildConversationContext(
@@ -200,6 +202,33 @@ export class AIChatHandler {
       console.error('Error fetching candidates by IDs:', error);
       return [];
     }
+  }
+
+  private filterAndTransformCandidates(ids: string[], candidates: Candidate[]): CandidateMatch[] {
+    // Filter candidates based on RAG-ranked IDs
+    const filteredCandidates = candidates.filter(candidate =>
+      ids.includes(candidate.id.toString())
+    );
+
+    // Transform to CandidateMatch format
+    return filteredCandidates.map(candidate => ({
+      candidate: {
+        id: candidate.id.toString(),
+        name: candidate.name,
+        party: candidate.party || 'Independent',
+        profileData: {
+          positions: [], // Will be populated from candidate data
+          biography: candidate.candidate_statement || undefined
+        },
+        createdAt: candidate.created_at || new Date()
+      },
+      score: 75, // Default score for RAG-fetched candidates
+      reasoning: 'Identified through semantic search',
+      pros: [],
+      cons: [],
+      topMatchingPolicies: this.extractTopPolicies(candidate),
+      sources: []
+    }));
   }
 
   private formatRAGContext(ragContext: RAGContext, existingCandidates: CandidateMatch[], ragCandidates: CandidateMatch[]): string {
@@ -414,32 +443,12 @@ Please select the next component that will best help narrow down the user's poli
   }
 
 
-  private async generateCandidateMatches(userResponses: UserResponse[]): Promise<CandidateMatch[]> {
+  private async generateCandidateMatches(userResponses: UserResponse[], availableCandidates: Candidate[]): Promise<CandidateMatch[]> {
     // Create user profile summary from responses
     const userProfile = this.createUserProfileSummary(userResponses);
 
-    // Extract selected ward from user responses
-    const wardResponse = userResponses.find(r => r.questionId === 'ward_selection');
-    const selectedWard = wardResponse ? this.extractTextFromResponse(wardResponse) : null;
-
-    let candidates: any[] = [];
-
     try {
-      // Always fetch mayor candidates
-      const mayorResult = await getMayorCandidates();
-      if (mayorResult.success && mayorResult.data) {
-        candidates = candidates.concat(mayorResult.data);
-      }
-
-      // Fetch ward candidates if ward is selected
-      if (selectedWard) {
-        const wardResult = await getCandidatesByWard(selectedWard);
-        if (wardResult.success && wardResult.data) {
-          candidates = candidates.concat(wardResult.data);
-        }
-      }
-
-      // If no candidates found, return empty array
+      const candidates: Candidate[] = availableCandidates;
       if (candidates.length === 0) {
         console.warn('No candidates found for matching');
         return [];
