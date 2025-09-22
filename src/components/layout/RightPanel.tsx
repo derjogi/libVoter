@@ -10,6 +10,8 @@ import { ComparisonView } from '@/components/candidates/ComparisonView';
 import { TrendingUp, Users, User } from 'lucide-react';
 import { summarizeUserPreferences } from '@/lib/actions/prompts';
 import type { CandidateMatch, UserResponse } from '@/types';
+import { success } from 'zod';
+import { error } from 'console';
 
 interface RightPanelProps {
   candidates: CandidateMatch[];
@@ -64,8 +66,8 @@ export function RightPanel({
 
     setIsLoadingSummary(true);
     try {
-      const result = await summarizeUserPreferences(responses);
-
+      // const result = await summarizeUserPreferences(responses);
+      const result = { success: true, data: "Fake Summary", error: ""}
       if (result.success) {
         setPreferenceSummary(result.data || '');
       } else {

@@ -120,7 +120,7 @@ export class AIChatHandler {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`AI request attempt ${attempt}/${maxRetries}`);
+        console.log(`getValidatedAIResponse: \n`, messages);
         console.time(`Time for: AI Chat Invoke Attempt ${attempt}`);
         const aiResponse = await this.chatModel.invoke(messages);
         // const aiResponse = {content: "Test fake value from AIChatHandler"}

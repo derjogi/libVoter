@@ -19,6 +19,7 @@ export async function processChatMessage(
 ): Promise<ChatResponse> {
   try {
     const handler = getChatHandler();
+    console.log('processChatMessage: \n', message);
     const response = await handler.processMessage(message, conversationHistory, userResponses);
 
     return response;
