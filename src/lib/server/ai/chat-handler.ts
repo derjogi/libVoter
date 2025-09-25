@@ -48,6 +48,9 @@ export class AIChatHandler {
         conversationHistory
       );
 
+      // Calculate available wards from available candidates
+      const availableWards = [...new Set(availableCandidates.map(c => c.ward))];
+
       // Always fetch eligible candidates for AI context
       const candidates = await this.generateCandidateMatches(userResponses, availableCandidates);
 
@@ -79,7 +82,8 @@ export class AIChatHandler {
         responseText,
         confidenceResult,
         conversationHistory,
-        userResponses
+        userResponses,
+        availableWards
       );
       console.log('Next component:', JSON.stringify(nextComponent));
       // Check if we should show candidates
@@ -93,7 +97,7 @@ export class AIChatHandler {
       if (confidenceResult.score < 70) {
         try {
           const context = `AI Response: ${responseText}\nConfidence: ${confidenceResult.score}/100\nReasoning: ${confidenceResult.reasoning}`;
-          const followupResult = await generateFollowupQuestion(userMessage, context);
+          const followupResult = await generateFollowupQuestion(userMessage, context, availableWards);
           if (followupResult.success && followupResult.data) {
             followupQuestion = {
               question: followupResult.data.question,
@@ -346,7 +350,8 @@ export class AIChatHandler {
     aiResponse: string,
     confidence: { score: number; reasoning: string },
     history: ConversationMessage[],
-    userResponses: UserResponse[]
+    userResponses: UserResponse[],
+    availableWards: string[]
   ): Promise<ComponentData | undefined> {
     const config = getAIConfig();
 
@@ -377,7 +382,7 @@ Please select the next component that will best help narrow down the user's poli
 
     try {
       console.log('Calling selectNextComponent with conversation state');
-      const result = await selectNextComponent(conversationState);
+      const result = await selectNextComponent(conversationState, availableWards);
 
       if (result.success && result.data) {
         console.log('Component selection result:', result.data);
@@ -401,9 +406,8 @@ Please select the next component that will best help narrow down the user's poli
 
     // Check if ward has been selected
     if (!userResponses.some(r => r.questionId === 'ward_selection')) {
-      const wardResult = await getUniqueWards();
-      if (wardResult.success && wardResult.data && wardResult.data.length > 0) {
-        const options = wardResult.data.map(ward => ({ id: ward, label: ward, description: '' }));
+      if (availableWards.length > 0) {
+        const options = availableWards.map(ward => ({ id: ward, label: ward, description: '' }));
         return {
           type: 'multiselect',
           data: {

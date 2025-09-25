@@ -60,11 +60,12 @@ export async function generateNextQuestion(
 
 export async function generateFollowupQuestion(
   lastResponse: string,
-  context: string
+  context: string,
+  availableWards?: string[]
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.generateFollowupQuestion(lastResponse, context);
+    const result = await manager.generateFollowupQuestion(lastResponse, context, availableWards);
 
     if (!result.success) {
       return {
@@ -111,11 +112,12 @@ export async function generateFollowupQuestion(
 }
 
 export async function selectNextComponent(
-  conversationState: string
+  conversationState: string,
+  availableWards?: string[]
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.selectComponent(conversationState);
+    const result = await manager.selectComponent(conversationState, availableWards);
 
     if (!result.success) {
       return {

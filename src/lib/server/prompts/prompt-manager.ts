@@ -43,7 +43,7 @@ export class PromptManager {
         electionLocation: this.electionConfig.location,
         electionKeyTopics: this.electionConfig.keyTopics.join(', '),
         electionDescription: this.electionConfig.description,
-        electionWards: (await getUniqueWards()).data?.join(', ')
+        electionWards: variables.electionWards || (await getUniqueWards()).data?.join(', ')
       };
 
       const allVariables = { ...variables, ...electionVariables };
@@ -110,19 +110,23 @@ export class PromptManager {
 
   async generateFollowupQuestion(
     lastResponse: string,
-    context: string
+    context: string,
+    availableWards?: string[]
   ): Promise<PromptExecutionResult> {
     return this.executePrompt('FOLLOWUP_QUESTION', {
       lastResponse,
-      context
+      context,
+      electionWards: availableWards?.join(', ')
     });
   }
 
   async selectComponent(
-    conversationState: string
+    conversationState: string,
+    availableWards?: string[]
   ): Promise<PromptExecutionResult> {
     return this.executePrompt('COMPONENT_SELECTOR', {
-      conversationState
+      conversationState,
+      electionWards: availableWards?.join(', ')
     });
   }
 
