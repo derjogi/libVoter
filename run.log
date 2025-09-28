@@ -1,0 +1,1230 @@
+Using OpenRouter chat model: openai/gpt-5-nano
+processChatMessage: 
+ Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+Using OpenRouter chat model: openai/gpt-5-nano
+Creating new VectorStoreManager
+The 'path' argument is deprecated. Please use 'ssl', 'host', and 'port' instead
+No embedding function configuration found for collection candidates. 'add' and 'query' will fail unless you provide them embeddings directly.
+✅ Loaded existing vector store with 3415 documents
+dtype not specified for "model". Using the default dtype (fp32) for this device (cpu).
+Time for: Similarity Search: 818.788ms
+Found RAG results with scores:  [[{"pageContent":"Top Issues: I am running for the Waitakere Ward to ensure your concerns are not only heard but acted upon. My priorities are clear:\n\n•\tCap council rates to keep living affordable for all Aucklanders\n•\tEliminate wasteful spending on non-core council business\n•\tPrioritise essential services: roads, rubbish, water, parks, and transport, and protect our Waitakere ranges.","metadata":{"id":"79","party":"Independent","ward":"Waitakere Ward","loc":{"lines":{"from":18,"to":22}}},"id":"1d0eaaa3-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.7440373],[{"pageContent":"Statement: A fresh face for Waitākere, but no stranger to council. I’ve been asked by friends and colleagues to bring my wealth of governance experience and excellent track record to our ward. \nI’ve worked in both private and public sectors across education, housing, and conservation. On council, I've led portfolios across transport, environment, and community development, where I’ve championed integration of climate action into decision making. From how we plan our neighbourhoods to how we strengthen local resilience. \nIf elected, I’ll make sure your rates deliver you value.  I’ll defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa), support the Dark Sky initiative and making our beaches swim-safe. I’ll advocate for better upkeep of our roads and cheaper transport options for everyone. \nWith your support, I’ll be your voice for a Waitākere that’s safer, more equitable, and genuinely great for all who live here. Vote for me and the Future West team.","metadata":{"id":"438","party":"Independent","ward":"Waitakere Ranges Local Board","loc":{"lines":{"from":3,"to":6}}},"id":"77df433c-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.82183516],[{"pageContent":"Key Positions: Transport: Our public transport and roads must serve communities better.\n\n1. Public transport must be reliable and accessible. I will advocate for lower fares, timely buses, and quicker development of transport hubs and stops.\n\n2. Roads must be safe and efficient. I support fast responses to issues like potholes or a need for lights. I am for long-term planning, especially in growing neighbourhoods.\n\n3. More and safer walkways and cycleways should be actioned. We should be able to get around without a car., Water: Our water systems should be adequate for our neighbourhoods.\n\n1. Strengthening resilience to flooding. Upgrading infrastructure to ensure we are well protected in case of extreme weather.\n\n2. Build wastewater, stormwater, and drinking water infrastructure that stands for generations.","metadata":{"ward":"Upper Harbour Local Board","id":"401","party":"Independent","loc":{"lines":{"from":10,"to":20}}},"id":"6d330633-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.8435836],[{"pageContent":"Top Issues: Cost-of-living, housing, health dominate polls–Govt issues but your Local Board can deliver real wins. Priorities:\n    1. Wellbeing: free pools, longer library hours, arts & culture connecting young & old, thriving local economy\n    2. Water & Resilience: flood protection so homes & families are safe\n    3. Environment & Transport: cut waste & pollution, more trees, influence smarter planning, the right public transport\n\nSafe homes, strong communities & a cleaner, connected future matter for all","metadata":{"party":"Independent","ward":"Mangere Otahuhu Local Board","id":"264","loc":{"lines":{"from":20,"to":25}}},"id":"4e2531e2-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.8581403],[{"pageContent":"Key Positions: Transport: I want to ensure that advocacy for all modes is catered for, with focus on ensuring that people can park close to where they need to be, there is sufficient mobility parking available & our public transport is reliable and works in conjunction with other modes, Water: Water Care is the best organisation to deliver our water solutions, Healthy Waters is best placed to manage our storm water requirements. As local board it is our role to ensure they have the best information from us to ensure the work to the best of their abilities., Built environment: I am passionate about stopping urban sprawl and retaining our unique rural feel. The urban/rural boundary is a key focus of mine to ensure we build up and not out - where appropriate.","metadata":{"party":"Independent","id":"141","ward":"Franklin Local Board Pukekohe Subdivision","loc":{"lines":{"from":5,"to":5}}},"id":"2a45b16b-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.8640877],[{"pageContent":"Key Positions: Transport: I will prioritise safer, well-maintained roads, better traffic flow, and improved public transport options that are reliable and affordable. I support expanding safe walking and cycling paths to connect neighbourhoods, reduce congestion, and promote healthier travel choices for all residents., Water: I support securing a sustainable water supply, maintaining high drinking water quality, and upgrading stormwater and wastewater systems to prevent flooding and pollution. Careful planning and investment are essential to safeguard our environment for future generations. Increasing in housing development in the area is pressurizing a need to ensure sufficient planning is done with the Services to ensure the current infrastructure able to sustain growth., Built environment: I support balanced urban development that delivers quality, affordable housing while protecting our heritage and green spaces. Investment in infrastructure must keep pace with growth, ensuring","metadata":{"id":"343","ward":"Otara Papatoetoe Local Board Papatoetoe Subdivision","party":"Independent","loc":{"lines":{"from":8,"to":8}}},"id":"5f07b47d-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.865234],[{"pageContent":"Key Positions: Transport: Waitematā can have safe, affordable, and reliable transport. I’ll advocate for better public transport, safe cycling routes, and walkable streets, reduce traffic in residential areas, enforce safe speeds around schools, and make it easier for students, workers, and families to move around the city every day., Water: I’ll advocate for safe, sustainable water supply and effective wastewater management. We must protect our beaches and the Hauraki Gulf, invest in stormwater systems to prevent flooding, and ensure Waitematā’s water infrastructure is resilient and reliable., Built environment: I support more homes near where people work, study, and play, with well-planned, livable development that meets community needs. I back Council’s Housing First approach to reduce homelessness, and I will enhance and protect heritage, especially Māori heritage, while keeping our communities liveable, connected, and vibrant., Natural environment: I’ll work to expand green","metadata":{"id":"461","party":"Independent","ward":"Waitemata Local Board","loc":{"lines":{"from":8,"to":8}}},"id":"7ca9c39e-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.87063086],[{"pageContent":"Key Positions: Transport: My priorities are reliable, frequent public transport that serves working people; safe, connected cycleways that link neighborhoods and key destinations; and well-maintained walking tracks that support active lifestyles. I’ll push for smarter routes, better infrastructure, and planning that reflects how people actually move through our community., Water: My priorities for water infrastructure include upgrading aging systems to handle growth and climate impacts, improving stormwater management to reduce flooding, and expanding green solutions like rain gardens and wetlands. I support better coordination between council and communities, and promoting conservation through education and smart tools., Built environment: My priorities are balanced urban development that meets growth without losing character, affordable housing through smart planning and stronger protections, resilient infrastructure that supports future needs, and heritage protection that respects","metadata":{"id":"160","ward":"Henderson Massey Local Board","party":"Independent","loc":{"lines":{"from":5,"to":5}}},"id":"2f6815b6-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.87714756],[{"pageContent":"Key Positions: Transport: “In Waitākere, we will work with Auckland Transport, iwi, Pasifika, and local communities to fix roads, improve buses and trains, and make public transport safer. We’ll create better walking and cycling links to schools, shops, and parks, with safe crossings, footpaths, and cycle lanes. These changes will cut congestion, protect our environment, and make travel safe, easy, and fair for everyone.” I am not for politics but for people, serving communities., Water: I will ensure Auckland’s water is safe, clean, and resilient. I’ll modernize wastewater and stormwater systems sustainably, protect our waterways and environment, and promote climate-resilient infrastructure. I will engage communities with education on water conservation and pollution prevention, working with local groups and iwi to ensure inclusive, responsible planning while building a modern, environmentally safe water system for all Aucklanders., Built environment: Auckland’s urban development","metadata":{"ward":"Waitakere Ward","id":"75","party":"Independent","loc":{"lines":{"from":9,"to":9}}},"id":"1b66c6fb-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.8817184],[{"pageContent":"Why: Like all candidates I adore my home city. My family and I have lived in Westmere for 30 years, but I have stood back politically. Now, I want to work to make it the most future-capable, arts-positive, climate-resilient, infrastructurally able place to reside, travel, work and play. I want to ensure the Waitematā is clean, protected and valued, our waterways unpolluted and beaches swimmable. I will advocate for motorcycling and two wheeled transport as well as a fully integrated PT system.","metadata":{"id":"447","ward":"Waitemata Local Board","party":"Independent","loc":{"lines":{"from":12,"to":12}}},"id":"79571641-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.8838912]]
+RAG query started for contextPrompt: 
+
+ 
+Based on the following relevant information about candidates and their policies:
+
+Top Issues: I am running for the Waitakere Ward to ensure your concerns are not only heard but acted upon. My priorities are clear:
+
+•       Cap council rates to keep living affordable for all Aucklanders
+•       Eliminate wasteful spending on non-core council business
+•       Prioritise essential services: roads, rubbish, water, parks, and transport, and protect our Waitakere ranges.
+
+Statement: A fresh face for Waitākere, but no stranger to council. I’ve been asked by friends and colleagues to bring my wealth of governance experience and excellent track record to our ward. 
+I’ve worked in both private and public sectors across education, housing, and conservation. On council, I've led portfolios across transport, environment, and community development, where I’ve championed integration of climate action into decision making. From how we plan our neighbourhoods to how we strengthen local resilience. 
+If elected, I’ll make sure your rates deliver you value.  I’ll defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa), support the Dark Sky initiative and making our beaches swim-safe. I’ll advocate for better upkeep of our roads and cheaper transport options for everyone. 
+With your support, I’ll be your voice for a Waitākere that’s safer, more equitable, and genuinely great for all who live here. Vote for me and the Future West team.
+
+Key Positions: Transport: Our public transport and roads must serve communities better.
+
+1. Public transport must be reliable and accessible. I will advocate for lower fares, timely buses, and quicker development of transport hubs and stops.
+
+2. Roads must be safe and efficient. I support fast responses to issues like potholes or a need for lights. I am for long-term planning, especially in growing neighbourhoods.
+
+3. More and safer walkways and cycleways should be actioned. We should be able to get around without a car., Water: Our water systems should be adequate for our neighbourhoods.
+
+1. Strengthening resilience to flooding. Upgrading infrastructure to ensure we are well protected in case of extreme weather.
+
+2. Build wastewater, stormwater, and drinking water infrastructure that stands for generations.
+
+Top Issues: Cost-of-living, housing, health dominate polls–Govt issues but your Local Board can deliver real wins. Priorities:
+    1. Wellbeing: free pools, longer library hours, arts & culture connecting young & old, thriving local economy
+    2. Water & Resilience: flood protection so homes & families are safe
+    3. Environment & Transport: cut waste & pollution, more trees, influence smarter planning, the right public transport
+
+Safe homes, strong communities & a cleaner, connected future matter for all
+
+Key Positions: Transport: I want to ensure that advocacy for all modes is catered for, with focus on ensuring that people can park close to where they need to be, there is sufficient mobility parking available & our public transport is reliable and works in conjunction with other modes, Water: Water Care is the best organisation to deliver our water solutions, Healthy Waters is best placed to manage our storm water requirements. As local board it is our role to ensure they have the best information from us to ensure the work to the best of their abilities., Built environment: I am passionate about stopping urban sprawl and retaining our unique rural feel. The urban/rural boundary is a key focus of mine to ensure we build up and not out - where appropriate.
+
+Key Positions: Transport: I will prioritise safer, well-maintained roads, better traffic flow, and improved public transport options that are reliable and affordable. I support expanding safe walking and cycling paths to connect neighbourhoods, reduce congestion, and promote healthier travel choices for all residents., Water: I support securing a sustainable water supply, maintaining high drinking water quality, and upgrading stormwater and wastewater systems to prevent flooding and pollution. Careful planning and investment are essential to safeguard our environment for future generations. Increasing in housing development in the area is pressurizing a need to ensure sufficient planning is done with the Services to ensure the current infrastructure able to sustain growth., Built environment: I support balanced urban development that delivers quality, affordable housing while protecting our heritage and green spaces. Investment in infrastructure must keep pace with growth, ensuring
+
+Key Positions: Transport: Waitematā can have safe, affordable, and reliable transport. I’ll advocate for better public transport, safe cycling routes, and walkable streets, reduce traffic in residential areas, enforce safe speeds around schools, and make it easier for students, workers, and families to move around the city every day., Water: I’ll advocate for safe, sustainable water supply and effective wastewater management. We must protect our beaches and the Hauraki Gulf, invest in stormwater systems to prevent flooding, and ensure Waitematā’s water infrastructure is resilient and reliable., Built environment: I support more homes near where people work, study, and play, with well-planned, livable development that meets community needs. I back Council’s Housing First approach to reduce homelessness, and I will enhance and protect heritage, especially Māori heritage, while keeping our communities liveable, connected, and vibrant., Natural environment: I’ll work to expand green
+
+Key Positions: Transport: My priorities are reliable, frequent public transport that serves working people; safe, connected cycleways that link neighborhoods and key destinations; and well-maintained walking tracks that support active lifestyles. I’ll push for smarter routes, better infrastructure, and planning that reflects how people actually move through our community., Water: My priorities for water infrastructure include upgrading aging systems to handle growth and climate impacts, improving stormwater management to reduce flooding, and expanding green solutions like rain gardens and wetlands. I support better coordination between council and communities, and promoting conservation through education and smart tools., Built environment: My priorities are balanced urban development that meets growth without losing character, affordable housing through smart planning and stronger protections, resilient infrastructure that supports future needs, and heritage protection that respects
+
+Key Positions: Transport: “In Waitākere, we will work with Auckland Transport, iwi, Pasifika, and local communities to fix roads, improve buses and trains, and make public transport safer. We’ll create better walking and cycling links to schools, shops, and parks, with safe crossings, footpaths, and cycle lanes. These changes will cut congestion, protect our environment, and make travel safe, easy, and fair for everyone.” I am not for politics but for people, serving communities., Water: I will ensure Auckland’s water is safe, clean, and resilient. I’ll modernize wastewater and stormwater systems sustainably, protect our waterways and environment, and promote climate-resilient infrastructure. I will engage communities with education on water conservation and pollution prevention, working with local groups and iwi to ensure inclusive, responsible planning while building a modern, environmentally safe water system for all Aucklanders., Built environment: Auckland’s urban development
+
+Why: Like all candidates I adore my home city. My family and I have lived in Westmere for 30 years, but I have stood back politically. Now, I want to work to make it the most future-capable, arts-positive, climate-resilient, infrastructurally able place to reside, travel, work and play. I want to ensure the Waitematā is clean, protected and valued, our waterways unpolluted and beaches swimmable. I will advocate for motorcycling and two wheeled transport as well as a fully integrated PT system.
+
+User context: User responses summary:
+question_1759088595893: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+
+Question: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+
+Please provide:
+1. List of relevant candidates with their key positions
+2. Specific policy details that address the question
+3. Sources for the information
+
+Format as JSON with candidates, policies, and sources arrays.
+
+Time for: RAG Query ChatModel Invoke: 46.408s
+RAG response: 
+
+ {
+  candidates: [
+    {
+      id: 'c1',
+      name: 'Future West candidate',
+      ward: 'Waitākere Ward',
+      notes: 'A fresh face for Waitākere with governance experience; emphasizes rate affordability, reducing wasteful council spending, and prioritising essential services, transport and water resilience.'
+    }
+  ],
+  policies: [
+    {
+      candidate_id: 'c1',
+      area: 'Environment and climate resilience',
+      details: [Array]
+    },
+    { candidate_id: 'c1', area: 'Transport', details: [Array] },
+    {
+      candidate_id: 'c1',
+      area: 'Water and resilience',
+      details: [Array]
+    },
+    {
+      candidate_id: 'c1',
+      area: 'Cost/Finance and local economy',
+      details: [Array]
+    }
+  ],
+  sources: [
+    'User-provided Waitākere Ward candidate statements (Future West). Top Issues include cap rates, eliminating wasteful spending, prioritising essential services, and specific transport, water, and environmental protections.'
+  ]
+}
+Processing message with AI model
+getValidatedAIResponse: 
+ [
+  SystemMessage {
+    "content": "You are an AI political advisor helping users discover their voting preferences for the 2025 Local Council Elections in Auckland, New Zealand.\n      Current confidence level: 48/100\n      Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Need more responses for accurate assessment.\n\nAvailable candidates for consideration:\n- ALCOCK, John Ronald (null): Transport, Water, Built environment\n- BROWN, Wayne (null): Transport, Water, Built environment\n- CHUAH, Eric Boon Leong (null): Transport, Water, Built environment\n- COOTE, Michael (null): Transport, Water, Built environment\n- JOHNSTON, Ted (null): Transport, Water, Built environment\n- LEONI, Kerrin Bianca Melinda (null): Transport, Water, Built environment\n- MCNEIL, Rob (null): Transport, Water, Built environment\n- PAUSINA, Ryan Earl (null): Transport, Water, Built environment\n- PIETERSE, Jason (null): Transport, Water, Built environment\n- STAM, Simon (null): Transport, Water, Built environment\n- WAKEMAN, Peter (null): Transport, Water, Built environment\n- WIDDISON, Denise (null): Transport, Water, Built environment\n\nAdditional context from knowledge base:\nRelevant policy positions:\n- undefined: undefined - Championed integration of climate action into decision making, shaping how neighbourhoods are planned and how local resilience is strengthened.,Defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa).,Support the Dark Sky initiative.,Advocate for protection of beaches and related swim-safety initiatives....\n- undefined: undefined - Public transport must be reliable and accessible: advocate for lower fares, timely buses, and quicker development of transport hubs and stops.,Roads must be safe and efficient: support fast responses to potholes or lighting needs; long-term planning for growing neighbourhoods.,More and safer walkways and cycleways to enable movement without a car....\n- undefined: undefined - Strengthening resilience to flooding.,Upgrading wastewater, stormwater, and drinking water infrastructure that stands for generations....\nSources: User-provided Waitākere Ward candidate statements (Future West). Top Issues include cap rates, eliminating wasteful spending, prioritising essential services, and specific transport, water, and environmental protections.\n\n      Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.\n      Focus on policy topics including Housing, Transport, Environment, Economy, Infrastructure, Community Services and candidate positions.\n      Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  }
+]
+Time for: AI Chat Invoke Attempt 1: 19.007s
+AI response: Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:
+
+- Environment and climate resilience
+  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience
+
+- Local economy and jobs
+  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs
+
+- Infrastructure and utilities
+  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth
+
+Which three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas.
+Calling selectNextComponent with conversation state
+Using OpenRouter chat model: openai/gpt-5-nano
+Calling prompt  COMPONENT_SELECTOR
+full prompt:  Analyze the conversation state and determine the best UI component for the next interaction for the 2025 Local Council Elections in Auckland, New Zealand.
+
+Current conversation state:
+
+Current confidence: 48/100
+Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Need more responses for accurate assessment.
+
+Recent conversation:
+user: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+user: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+
+Latest user message: "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities"
+AI response: "Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:
+
+- Environment and climate resilience
+  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience
+
+- Local economy and jobs
+  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs
+
+- Infrastructure and utilities
+  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth
+
+Which three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas."
+
+Please select the next component that will best help narrow down the user's political preferences.
+
+Available component types and their EXACT data structures:
+
+1. chat: Continue conversational interaction
+   Data structure: { "messages": ConversationMessage[], "placeholder": string }
+
+2. yesno: Ask a yes/no question about multiple statements
+    Data structure: { "statements": [{ "statement": string, "context": string }, ...] }
+
+3. multiselect: Allow user to select multiple options from a list
+   Data structure: {
+     "question": string,
+     "options": [{ "id": string, "label": string, "description": string }],
+     "maxSelections": number
+   }
+
+4. freetext: Ask for open-ended text response
+   Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
+
+5. slider: Use a slider for quantitative responses
+   Data structure: {
+     "label": string,
+     "min": number,
+     "max": number,
+     "step": number,
+     "unit": string,
+     "description": string
+   }
+
+Consider:
+- User engagement level and conversation flow
+- Complexity of next topic to explore from: Housing, Transport, Environment, Economy, Infrastructure, Community Services
+- Variety in interaction types used so far
+- User's response patterns and depth of answers
+- What would most effectively narrow down their political preferences for Auckland Council local elections for mayor and ward representatives
+- Available wards: Mayor
+
+Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
+
+Return JSON format:
+{
+  "component": "chat|yesno|multiselect|freetext|slider",
+  "reasoning": "Why this component fits best for narrowing preferences",
+  "data": {
+    // Use the exact structure for the chosen component type - no extra fields
+  }
+}
+
+Guidelines for data generation:
+- multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
+- yesno: Generate up to 10 relevant political statements as an array of objects with statement and optional context
+- slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
+- chat: Use empty messages array and a relevant placeholder text
+- freetext: Include a clear prompt, placeholder text, and optional maxLength
+Time for: Prompt Execution: COMPONENT_SELECTOR: 18.441s
+Got response from PromptManager with prompt COMPONENT_SELECTOR: 
+ AIMessage {
+  "id": "gen-1759090703-I3raw7hpC4QO2ciHGVeC",
+  "content": "{\n  \"component\": \"freetext\",\n  \"reasoning\": \"The user has already identified three key policy areas and may have nuanced concerns within them. A free-form response allows them to articulate specific priorities, worries, or questions in their own words, enabling a more precise mapping to waitakere ward policy discussions and candidates.\",\n  \"data\": {\n    \"prompt\": \"Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.\",\n    \"placeholder\": \"e.g., coastal flooding risk, housing affordability, transport reliability, support for local businesses, water infrastructure upgrades, pothole repairs\",\n    \"maxLength\": 1000\n  }\n}",
+  "additional_kwargs": {},
+  "response_metadata": {
+    "tokenUsage": {
+      "promptTokens": 951,
+      "completionTokens": 1389,
+      "totalTokens": 2340
+    },
+    "finish_reason": "stop",
+    "model_name": "openai/gpt-5-nano"
+  },
+  "tool_calls": [],
+  "invalid_tool_calls": [],
+  "usage_metadata": {
+    "output_tokens": 1389,
+    "input_tokens": 951,
+    "total_tokens": 2340,
+    "input_token_details": {},
+    "output_token_details": {}
+  }
+}
+Component selection result: {
+  component: 'freetext',
+  reasoning: 'The user has already identified three key policy areas and may have nuanced concerns within them. A free-form response allows them to articulate specific priorities, worries, or questions in their own words, enabling a more precise mapping to waitakere ward policy discussions and candidates.',
+  data: {
+    prompt: 'Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.',
+    placeholder: 'e.g., coastal flooding risk, housing affordability, transport reliability, support for local businesses, water infrastructure upgrades, pothole repairs',
+    maxLength: 1000
+  }
+}
+Next component: {"type":"freetext","data":{"prompt":"Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.","placeholder":"e.g., coastal flooding risk, housing affordability, transport reliability, support for local businesses, water infrastructure upgrades, pothole repairs","maxLength":1000}}
+Calling prompt  FOLLOWUP_QUESTION
+full prompt:  Based on the user's last response: "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities" for the 2025 Local Council Elections in Auckland, New Zealand
+
+Generate a thoughtful follow-up question that:
+- Digs deeper into their reasoning on topics like Housing, Transport, Environment, Economy, Infrastructure, Community Services
+- Explores related aspects of the topic
+- Helps clarify their position
+- Maintains conversational flow
+- Considers the context of Auckland Council local elections for mayor and ward representatives
+
+Previous context: AI Response: Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:
+
+- Environment and climate resilience
+  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience
+
+- Local economy and jobs
+  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs
+
+- Infrastructure and utilities
+  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth
+
+Which three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas.
+Confidence: 48/100
+Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Need more responses for accurate assessment.
+
+Return JSON format:
+{
+  "question": "Follow-up question text",
+  "type": "chat",
+  "reasoning": "Why this follow-up is valuable"
+}
+Time for: Prompt Execution: FOLLOWUP_QUESTION: 20.349s
+Got response from PromptManager with prompt FOLLOWUP_QUESTION: 
+ AIMessage {
+  "id": "gen-1759090721-skyuvVZi2qUeFwpUnTCP",
+  "content": "{\n  \"question\": \"Thanks for sharing your top three priorities: Environment and climate resilience; Local economy and jobs; Infrastructure and utilities. To help map these priorities to Waitakere Ward and the wider Auckland Council, could you tell me more about how housing, transport, and community services fit with them? Specifically: 1) Housing — what are your main concerns (affordability, supply, quality, access) and how should council actions balance growth with climate resilience and local job creation? 2) Transport — which improvements would most improve your daily life (reliable public transport, road safety, cycling/walking networks, connections to key hubs), and how should they be funded and sequenced alongside other infrastructure? 3) Environment — what climate risks (coastal flooding, sea-level rise, extreme weather) matter most, and how should housing and transport decisions address resilience? 4) Economy and jobs — what local opportunities or supports would you want from the council to boost jobs while protecting housing and transport needs? 5) Community services — are there libraries, parks, community hubs, or youth services you’d prioritise? And would your priorities differ if you were voting for a ward councillor versus the mayor?\",\n  \"type\": \"chat\",\n  \"reasoning\": \"This follow-up asks the user to connect their chosen priorities to concrete policy areas (Housing, Transport, Environment, Economy, Community Services) and to consider how these intersect at both ward and mayoral levels. It encourages nuanced reasoning about trade-offs, local vs regional actions, and specific local issues, helping to better map candidate proposals to the user’s values.\"\n}",
+  "additional_kwargs": {},
+  "response_metadata": {
+    "tokenUsage": {
+      "promptTokens": 430,
+      "completionTokens": 2514,
+      "totalTokens": 2944
+    },
+    "finish_reason": "stop",
+    "model_name": "openai/gpt-5-nano"
+  },
+  "tool_calls": [],
+  "invalid_tool_calls": [],
+  "usage_metadata": {
+    "output_tokens": 2514,
+    "input_tokens": 430,
+    "total_tokens": 2944,
+    "input_token_details": {},
+    "output_token_details": {}
+  }
+}
+ POST / 200 in 115951ms
+processChatMessage: 
+ Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).
+Time for: Similarity Search: 176.069ms
+Found RAG results with scores:  [[{"pageContent":"The other issues mentioned here appear outside the scope of the local board.\n\nWhy: If elected: I will advocate for tree planting and green infrastructure to keep our streets pleasant and more flood resistant. I’ll support smart, sustainable urban growth focused on public transport and walkability over traffic-inducing sprawl. I'll focus on finding ways to support our existing local small business and helping them grow, rather than importing failed big box models to compete with them.\n\nKey Skills: I bring experience in education, research, and writing, with a strong focus on listening and problem-solving. Since 2015, I’ve volunteered in a global online community, collaborating across cultures and time zones.\nMy approach is practical: understand what people want, study the best solutions, and build something that works. I’ll bring that same approach to local issues; inclusive, evidence-based decision-making.","metadata":{"party":"Independent","ward":"Henderson Massey Local Board","id":"181","loc":{"lines":{"from":34,"to":39}}},"id":"34dae3ff-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.5948287],[{"pageContent":"while enhancing biodiversity with more native planting and pest control. I’d push for stronger stormwater management to protect our streams & harbours and invest in green spaces.  We need to protect our beaches, and have strong and long terms plans in place, including our key community stakeholder groups., Community: Strong communities start with listening & education. I want to make sure people feel heard and connected, through better local events community led, supporting sports and arts, and providing safe welcoming public spaces. We must invest in facilities families actually use,  parks, libraries, transport links, and maintain them properly. Community wellbeing also means supporting local businesses & volunteers, making it easier for people to contribute, feel proud of where they live and connected, Economic and cultural development: Economic growth starts locally. I’ll push to prioritise local procurement,  this drives competitive pricing while supporting our own local &","metadata":{"party":"Independent","ward":"Howick Ward","id":"33","loc":{"lines":{"from":12,"to":12}}},"id":"12e3ab7b-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.66599166],[{"pageContent":"stormwater systems, and preventing flooding to build real climate resilience. Native planting and habitat restoration should target biodiversity hotspots. Parks and green spaces must be maintained for community use, while balancing conservation with accessibility., Community: I will work to make local boards a true voice for residents, not a rubber stamp. This means listening directly to communities, supporting grassroots initiatives, and ensuring council spending delivers visible benefits. I’ll prioritize maintaining and upgrading local facilities, parks, and libraries, and back events that bring people together. Reducing red tape for community projects and supporting local businesses will strengthen connections and improve overall wellbeing., Economic and cultural development: I will cut red tape and reduce compliance costs so local businesses can thrive, creating jobs and boosting economic growth. Council should work with, not against, entrepreneurs. I’ll promote Auckland’s","metadata":{"party":"Independent","id":"27","ward":"Albert Eden Puketapapa Ward","loc":{"lines":{"from":7,"to":7}}},"id":"1151e7ec-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.6855858],[{"pageContent":"waterways while enhancing biodiversity with more native planting and pest control. I’d push for stronger stormwater management to protect our streams & harbour and invest in green spaces.  We need to protect our beaches, and have strong and long terms plans in place, including our key community stakeholder groups., Community: Strong communities start with listening & education. I want to make sure people feel heard and connected, through better local events community led, supporting sports and arts, and providing safe welcoming public spaces. We must invest in facilities families actually use,  parks, libraries, transport links, and maintain them properly. Community wellbeing also means supporting local businesses & volunteers, making it easier for people to contribute, feel proud of where they live and connected, Economic and cultural development: Economic growth starts locally. I’ll push for to prioritise local procurement,  this drives competitive pricing while supporting our own","metadata":{"party":"Independent","id":"227","ward":"Howick Local Board Howick Subdivision","loc":{"lines":{"from":11,"to":11}}},"id":"4152e08d-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.6903294],[{"pageContent":"land, careful planning needs to ensure that we can feed our region.  Housing intensification, infrastructure and heritage protection need a careful lens otherwise we run the risk of becoming just another concrete city laden with housing towers and very little of our beautiful heritage preserved., Natural environment: I would like to see the retention of the current Natural Environment Targeted Rate (NETR) that supports projects aimed at protecting and enhancing the natural environment that also includes the marine environment.   I would see more money spent on our biodiversity as it is vital as to who we are not only as a region but also a country.  Alternative energy and better education around climate resilience would be beneficial., Community: Funding is key to assisting community wellbeing.  This enables community groups and organizations to do the good work they do., Economic and cultural development: Being aware of your community's businesses and the role they play helps you","metadata":{"id":"115","ward":"Aotea Great Barrier Local Board","party":"Independent","loc":{"lines":{"from":6,"to":6}}},"id":"24f9a4da-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.69349617],[{"pageContent":"Top Issues: Strong community voice in decision-making - I believe local people know what works best for their neighbourhoods. My approach is flexible and responsive - if new information arises or residents clearly express their priorities.\nResponsive growth and development - Our area is growing quickly and with that comes both opportunities and challenges. I want to see development that is well-planned sustainable and in balance with what the residents value most about living here.\nFiscal responsibility","metadata":{"party":"Independent","ward":"Hibiscus And Bays Local Board Hibiscus Coast Subdivision","id":"211","loc":{"lines":{"from":19,"to":21}}},"id":"3d046df8-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.70712],[{"pageContent":"Top Issues: I help our communities prepare for emergencies, waste less, plan better, and enjoy life more. Let’s have the hard conversations and collaborate to deliver meaningful results for Climate, Community and Council. We need meaningful large scale local climate action to protect what we care most about; pest control, preparation for emergencies, planting, more support for local community and environmental groups, youth and Māori outcomes, disability, diversity, inclusive democracy, strong local economy","metadata":{"ward":"Albany Ward","id":"18","party":"Independent","loc":{"lines":{"from":22,"to":22}}},"id":"0f8c4309-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.7111873],[{"pageContent":"our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we","metadata":{"ward":"Maungakiekie Tamaki Ward","id":"60","party":"Independent","loc":{"lines":{"from":7,"to":7}}},"id":"17e05f74-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.7111993],[{"pageContent":"our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we","metadata":{"ward":"Maungakiekie Tamaki Local Board Tamaki Subdivision","id":"298","party":"Independent","loc":{"lines":{"from":7,"to":7}}},"id":"551bba12-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.7111993],[{"pageContent":"I have degrees in both business and anthropology, and I’m a certified project manager. And I’ve self-built a low-energy ecohome with my husband and I’m really passionate about people and community.\n\nTop Issues: With climate action at the centre, my top three priorities are bold, but not out of reach:\n \nFix congestion and lower emissions, getting the city moving smarter, cheaper and healthier.\nProtect people and nature, through planning, design, education and forethought. \nSecure funding to empower communities to lead in the areas they know best.","metadata":{"ward":"Waitakere Ranges Local Board","party":"Independent","id":"438","loc":{"lines":{"from":32,"to":38}}},"id":"77df4342-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.72402924]]
+RAG query started for contextPrompt: 
+
+ 
+Based on the following relevant information about candidates and their policies:
+
+The other issues mentioned here appear outside the scope of the local board.
+
+Why: If elected: I will advocate for tree planting and green infrastructure to keep our streets pleasant and more flood resistant. I’ll support smart, sustainable urban growth focused on public transport and walkability over traffic-inducing sprawl. I'll focus on finding ways to support our existing local small business and helping them grow, rather than importing failed big box models to compete with them.
+
+Key Skills: I bring experience in education, research, and writing, with a strong focus on listening and problem-solving. Since 2015, I’ve volunteered in a global online community, collaborating across cultures and time zones.
+My approach is practical: understand what people want, study the best solutions, and build something that works. I’ll bring that same approach to local issues; inclusive, evidence-based decision-making.
+
+while enhancing biodiversity with more native planting and pest control. I’d push for stronger stormwater management to protect our streams & harbours and invest in green spaces.  We need to protect our beaches, and have strong and long terms plans in place, including our key community stakeholder groups., Community: Strong communities start with listening & education. I want to make sure people feel heard and connected, through better local events community led, supporting sports and arts, and providing safe welcoming public spaces. We must invest in facilities families actually use,  parks, libraries, transport links, and maintain them properly. Community wellbeing also means supporting local businesses & volunteers, making it easier for people to contribute, feel proud of where they live and connected, Economic and cultural development: Economic growth starts locally. I’ll push to prioritise local procurement,  this drives competitive pricing while supporting our own local &
+
+stormwater systems, and preventing flooding to build real climate resilience. Native planting and habitat restoration should target biodiversity hotspots. Parks and green spaces must be maintained for community use, while balancing conservation with accessibility., Community: I will work to make local boards a true voice for residents, not a rubber stamp. This means listening directly to communities, supporting grassroots initiatives, and ensuring council spending delivers visible benefits. I’ll prioritize maintaining and upgrading local facilities, parks, and libraries, and back events that bring people together. Reducing red tape for community projects and supporting local businesses will strengthen connections and improve overall wellbeing., Economic and cultural development: I will cut red tape and reduce compliance costs so local businesses can thrive, creating jobs and boosting economic growth. Council should work with, not against, entrepreneurs. I’ll promote Auckland’s
+
+waterways while enhancing biodiversity with more native planting and pest control. I’d push for stronger stormwater management to protect our streams & harbour and invest in green spaces.  We need to protect our beaches, and have strong and long terms plans in place, including our key community stakeholder groups., Community: Strong communities start with listening & education. I want to make sure people feel heard and connected, through better local events community led, supporting sports and arts, and providing safe welcoming public spaces. We must invest in facilities families actually use,  parks, libraries, transport links, and maintain them properly. Community wellbeing also means supporting local businesses & volunteers, making it easier for people to contribute, feel proud of where they live and connected, Economic and cultural development: Economic growth starts locally. I’ll push for to prioritise local procurement,  this drives competitive pricing while supporting our own
+
+land, careful planning needs to ensure that we can feed our region.  Housing intensification, infrastructure and heritage protection need a careful lens otherwise we run the risk of becoming just another concrete city laden with housing towers and very little of our beautiful heritage preserved., Natural environment: I would like to see the retention of the current Natural Environment Targeted Rate (NETR) that supports projects aimed at protecting and enhancing the natural environment that also includes the marine environment.   I would see more money spent on our biodiversity as it is vital as to who we are not only as a region but also a country.  Alternative energy and better education around climate resilience would be beneficial., Community: Funding is key to assisting community wellbeing.  This enables community groups and organizations to do the good work they do., Economic and cultural development: Being aware of your community's businesses and the role they play helps you
+
+Top Issues: Strong community voice in decision-making - I believe local people know what works best for their neighbourhoods. My approach is flexible and responsive - if new information arises or residents clearly express their priorities.
+Responsive growth and development - Our area is growing quickly and with that comes both opportunities and challenges. I want to see development that is well-planned sustainable and in balance with what the residents value most about living here.
+Fiscal responsibility
+
+Top Issues: I help our communities prepare for emergencies, waste less, plan better, and enjoy life more. Let’s have the hard conversations and collaborate to deliver meaningful results for Climate, Community and Council. We need meaningful large scale local climate action to protect what we care most about; pest control, preparation for emergencies, planting, more support for local community and environmental groups, youth and Māori outcomes, disability, diversity, inclusive democracy, strong local economy
+
+our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we
+
+our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we
+
+I have degrees in both business and anthropology, and I’m a certified project manager. And I’ve self-built a low-energy ecohome with my husband and I’m really passionate about people and community.
+
+Top Issues: With climate action at the centre, my top three priorities are bold, but not out of reach:
+ 
+Fix congestion and lower emissions, getting the city moving smarter, cheaper and healthier.
+Protect people and nature, through planning, design, education and forethought. 
+Secure funding to empower communities to lead in the areas they know best.
+
+User context: User responses summary:
+question_1759088595893: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+question_1759090625818: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+
+Question: Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).
+
+Please provide:
+1. List of relevant candidates with their key positions
+2. Specific policy details that address the question
+3. Sources for the information
+
+Format as JSON with candidates, policies, and sources arrays.
+
+Time for: RAG Query ChatModel Invoke: 51.388s
+RAG response: 
+
+ {
+  candidates: [
+    {
+      id: 'Candidate 1',
+      name: null,
+      key_positions: [Array],
+      policy_details: [Array]
+    },
+    {
+      id: 'Candidate 2',
+      name: null,
+      key_positions: [Array],
+      policy_details: [Array]
+    },
+    {
+      id: 'Candidate 3',
+      name: null,
+      key_positions: [Array],
+      policy_details: [Array]
+    },
+    {
+      id: 'Candidate 4',
+      name: null,
+      key_positions: [Array],
+      policy_details: [Array]
+    }
+  ],
+  sources: [
+    'User-provided prompt containing multiple candidate statements and policy positions related to Waitakere Ward, including environment/climate resilience, local economy, and infrastructure themes.',
+    'Question context describing preferred policy areas and the desire for local governance that supports community empowerment and technology-enabled participatory decision-making.'
+  ]
+}
+Processing message with AI model
+getValidatedAIResponse: 
+ [
+  SystemMessage {
+    "content": "You are an AI political advisor helping users discover their voting preferences for the 2025 Local Council Elections in Auckland, New Zealand.\n      Current confidence level: 65/100\n      Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Consistent focus on related topics. Need more responses for accurate assessment.\n\nAvailable candidates for consideration:\n- ALCOCK, John Ronald (null): Transport, Water, Built environment\n- BROWN, Wayne (null): Transport, Water, Built environment\n- CHUAH, Eric Boon Leong (null): Transport, Water, Built environment\n- COOTE, Michael (null): Transport, Water, Built environment\n- JOHNSTON, Ted (null): Transport, Water, Built environment\n- LEONI, Kerrin Bianca Melinda (null): Transport, Water, Built environment\n- MCNEIL, Rob (null): Transport, Water, Built environment\n- PAUSINA, Ryan Earl (null): Transport, Water, Built environment\n- PIETERSE, Jason (null): Transport, Water, Built environment\n- STAM, Simon (null): Transport, Water, Built environment\n- WAKEMAN, Peter (null): Transport, Water, Built environment\n- WIDDISON, Denise (null): Transport, Water, Built environment\n\nAdditional context from knowledge base:\nRelevant policy positions:\n- education: Supports - land, careful planning needs to ensure that we can feed our region.  Housing intensification, infrastructure and heritage protection need a careful lens otherwise we run the risk of becoming just another concrete city laden with housing towers and very little of our beautiful heritage preserved., Na......\n- environment: Supports - our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. ......\n- environment: Supports - our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. ......\nSources: User-provided prompt containing multiple candidate statements and policy positions related to Waitakere Ward, including environment/climate resilience, local economy, and infrastructure themes., Question context describing preferred policy areas and the desire for local governance that supports community empowerment and technology-enabled participatory decision-making.\n\n      Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.\n      Focus on policy topics including Housing, Transport, Environment, Economy, Infrastructure, Community Services and candidate positions.\n      Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  AIMessage {
+    "content": "Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:\n\n- Environment and climate resilience\n  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience\n\n- Local economy and jobs\n  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs\n\n- Infrastructure and utilities\n  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth\n\nWhich three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas.",
+    "additional_kwargs": {},
+    "response_metadata": {},
+    "tool_calls": [],
+    "invalid_tool_calls": []
+  },
+  HumanMessage {
+    "content": "Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.\nResponse: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... \nHaving said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. \nSo, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.\nResponse: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... \nHaving said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. \nSo, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  }
+]
+Time for: AI Chat Invoke Attempt 1: 20.949s
+AI response: Thanks for sharing your broader context. Here’s a structured way to describe your concerns and turn them into concrete priorities and questions for candidates in Waitakere Ward.
+
+ overall perspective
+- You value global action on climate, but want local governance that empowers communities and experiments with new ways of decision-making.
+- You’re open to progressive, not-conservative approaches that emphasize responsible growth, or even green/de-growth pathways, rather than pursuing growth at all costs.
+- You’re curious about technology-enabled participation and local currencies or MMT-inspired policies to boost local resilience and autonomy, while keeping a careful eye on budgets and practical implementation.
+
+Environment and climate resilience
+Priorities
+- Strong alignment with national/international climate action while ensuring local Waitakere resilience (coastlines, flood risk, storms, sea-level rise).
+- Support for climate-positive planning that protects natural areas and biodiversity, with budget-responsible approaches.
+- Interest in using technology to enable community input and real-time monitoring of climate and resilience projects.
+
+Questions to ask candidates
+- How would you collaborate with national government and regional partners to advance climate resilience in Waitakere, and what funding or policy changes would you seek?
+- What concrete steps would you take to protect beaches, waterways, and natural areas while preparing for climate-related risks (flooding, storms) at a local level?
+- Would you support pilots or programs that use technology to enable citizen input on climate projects (e.g., digital dashboards, participatory budgeting for resilience projects)?
+- Do you support exploring green growth or de-growth approaches in local policy, and how would you measure the environmental and social outcomes?
+- How would you balance climate resilience investments with maintaining a balanced council budget?
+
+Local economy and jobs
+Priorities
+- Interest in empowering local economic initiatives (potentially including local currencies) and applying MMT-inspired thinking to strengthen local resilience and decision-making.
+- Emphasis on “responsible” growth that prioritizes community needs, affordability, and sustainability over unchecked expansion.
+- Willingness to embrace technology-enabled processes to coordinate local economic projects and assess their community value.
+
+Questions to ask candidates
+- What is your stance on experimenting with local currencies or community-supported economic models? under what safeguards would you implement them?
+- How would you apply MMT-informed principles to local budgeting and financing for community projects while ensuring fiscal responsibility?
+- How can Waitakere support local businesses, job creation, and affordable housing without compromising environmental and social goals?
+- Would you back participatory budgeting or community referenda for major economic projects? How would you ensure inclusivity and transparency?
+- What criteria would you use to decide between “growth” projects and projects that prioritize quality of life, affordability, and sustainability?
+
+Infrastructure and utilities
+Priorities
+- Focus on reliable essential services (water, wastewater, roads, transport) with a climate-resilient lens.
+- Interest in leveraging technology to plan, monitor, and evaluate infrastructure projects, ensuring they meet community needs and environmental goals.
+- Openness to integrating participatory decision-making into infrastructure planning and project selection.
+
+Questions to ask candidates
+- What are your priorities for Waitakere’s water and wastewater infrastructure, and how will you fund and deliver these projects in a changing climate?
+- How would you incorporate climate risk into long-term infrastructure planning (e.g., flood protection, stormwater, resilient roads and transport hubs)?
+- Are you open to using digital tools or dashboards that show project proposals, environmental impact, cost, and community feedback in real time? How would you protect privacy and ensure accessibility?
+- How would you balance infrastructure investments with other community priorities (housing affordability, local business support) within a tight budget?
+- Would you support pilots of community-driven infrastructure decisions or participatory governance to test whether a project is “positive” for the community?
+
+How to use this when evaluating candidates
+- Look for openness to national collaboration on climate policy, and a clear plan for Waitakere-specific resilience.
+- Check for demonstrated interest in innovative governance tools (participatory budgeting, digital dashboards, citizen panels) and, if relevant, willingness to explore local economic experiments (local currencies, MMT-informed budgeting).
+- Prioritize candidates who articulate a balanced approach to growth—embracing green growth or even de-growth where appropriate—without sacrificing essential services and fiscal prudence.
+- Ask exactly the questions above (in your own words) during interviews or candidate forums to compare approaches side by side.
+
+If you’d like, I can tailor these questions into a short questionnaire you can use in conversations with candidates or in online surveys. Or share any specific local concerns (e.g., coastal erosion, public transport reliability, housing affordability) and I’ll map them to these three policy areas with tailored questions.
+Calling selectNextComponent with conversation state
+Calling prompt  COMPONENT_SELECTOR
+full prompt:  Analyze the conversation state and determine the best UI component for the next interaction for the 2025 Local Council Elections in Auckland, New Zealand.
+
+Current conversation state:
+
+Current confidence: 65/100
+Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Consistent focus on related topics. Need more responses for accurate assessment.
+
+Recent conversation:
+user: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+user: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+assistant: Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:
+
+- Environment and climate resilience
+  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience
+
+- Local economy and jobs
+  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs
+
+- Infrastructure and utilities
+  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth
+
+Which three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas.
+user: Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).
+
+Latest user message: "Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth)."
+AI response: "Thanks for sharing your broader context. Here’s a structured way to describe your concerns and turn them into concrete priorities and questions for candidates in Waitakere Ward.
+
+ overall perspective
+- You value global action on climate, but want local governance that empowers communities and experiments with new ways of decision-making.
+- You’re open to progressive, not-conservative approaches that emphasize responsible growth, or even green/de-growth pathways, rather than pursuing growth at all costs.
+- You’re curious about technology-enabled participation and local currencies or MMT-inspired policies to boost local resilience and autonomy, while keeping a careful eye on budgets and practical implementation.
+
+Environment and climate resilience
+Priorities
+- Strong alignment with national/international climate action while ensuring local Waitakere resilience (coastlines, flood risk, storms, sea-level rise).
+- Support for climate-positive planning that protects natural areas and biodiversity, with budget-responsible approaches.
+- Interest in using technology to enable community input and real-time monitoring of climate and resilience projects.
+
+Questions to ask candidates
+- How would you collaborate with national government and regional partners to advance climate resilience in Waitakere, and what funding or policy changes would you seek?
+- What concrete steps would you take to protect beaches, waterways, and natural areas while preparing for climate-related risks (flooding, storms) at a local level?
+- Would you support pilots or programs that use technology to enable citizen input on climate projects (e.g., digital dashboards, participatory budgeting for resilience projects)?
+- Do you support exploring green growth or de-growth approaches in local policy, and how would you measure the environmental and social outcomes?
+- How would you balance climate resilience investments with maintaining a balanced council budget?
+
+Local economy and jobs
+Priorities
+- Interest in empowering local economic initiatives (potentially including local currencies) and applying MMT-inspired thinking to strengthen local resilience and decision-making.
+- Emphasis on “responsible” growth that prioritizes community needs, affordability, and sustainability over unchecked expansion.
+- Willingness to embrace technology-enabled processes to coordinate local economic projects and assess their community value.
+
+Questions to ask candidates
+- What is your stance on experimenting with local currencies or community-supported economic models? under what safeguards would you implement them?
+- How would you apply MMT-informed principles to local budgeting and financing for community projects while ensuring fiscal responsibility?
+- How can Waitakere support local businesses, job creation, and affordable housing without compromising environmental and social goals?
+- Would you back participatory budgeting or community referenda for major economic projects? How would you ensure inclusivity and transparency?
+- What criteria would you use to decide between “growth” projects and projects that prioritize quality of life, affordability, and sustainability?
+
+Infrastructure and utilities
+Priorities
+- Focus on reliable essential services (water, wastewater, roads, transport) with a climate-resilient lens.
+- Interest in leveraging technology to plan, monitor, and evaluate infrastructure projects, ensuring they meet community needs and environmental goals.
+- Openness to integrating participatory decision-making into infrastructure planning and project selection.
+
+Questions to ask candidates
+- What are your priorities for Waitakere’s water and wastewater infrastructure, and how will you fund and deliver these projects in a changing climate?
+- How would you incorporate climate risk into long-term infrastructure planning (e.g., flood protection, stormwater, resilient roads and transport hubs)?
+- Are you open to using digital tools or dashboards that show project proposals, environmental impact, cost, and community feedback in real time? How would you protect privacy and ensure accessibility?
+- How would you balance infrastructure investments with other community priorities (housing affordability, local business support) within a tight budget?
+- Would you support pilots of community-driven infrastructure decisions or participatory governance to test whether a project is “positive” for the community?
+
+How to use this when evaluating candidates
+- Look for openness to national collaboration on climate policy, and a clear plan for Waitakere-specific resilience.
+- Check for demonstrated interest in innovative governance tools (participatory budgeting, digital dashboards, citizen panels) and, if relevant, willingness to explore local economic experiments (local currencies, MMT-informed budgeting).
+- Prioritize candidates who articulate a balanced approach to growth—embracing green growth or even de-growth where appropriate—without sacrificing essential services and fiscal prudence.
+- Ask exactly the questions above (in your own words) during interviews or candidate forums to compare approaches side by side.
+
+If you’d like, I can tailor these questions into a short questionnaire you can use in conversations with candidates or in online surveys. Or share any specific local concerns (e.g., coastal erosion, public transport reliability, housing affordability) and I’ll map them to these three policy areas with tailored questions."
+
+Please select the next component that will best help narrow down the user's political preferences.
+
+Available component types and their EXACT data structures:
+
+1. chat: Continue conversational interaction
+   Data structure: { "messages": ConversationMessage[], "placeholder": string }
+
+2. yesno: Ask a yes/no question about multiple statements
+    Data structure: { "statements": [{ "statement": string, "context": string }, ...] }
+
+3. multiselect: Allow user to select multiple options from a list
+   Data structure: {
+     "question": string,
+     "options": [{ "id": string, "label": string, "description": string }],
+     "maxSelections": number
+   }
+
+4. freetext: Ask for open-ended text response
+   Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
+
+5. slider: Use a slider for quantitative responses
+   Data structure: {
+     "label": string,
+     "min": number,
+     "max": number,
+     "step": number,
+     "unit": string,
+     "description": string
+   }
+
+Consider:
+- User engagement level and conversation flow
+- Complexity of next topic to explore from: Housing, Transport, Environment, Economy, Infrastructure, Community Services
+- Variety in interaction types used so far
+- User's response patterns and depth of answers
+- What would most effectively narrow down their political preferences for Auckland Council local elections for mayor and ward representatives
+- Available wards: Mayor
+
+Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
+
+Return JSON format:
+{
+  "component": "chat|yesno|multiselect|freetext|slider",
+  "reasoning": "Why this component fits best for narrowing preferences",
+  "data": {
+    // Use the exact structure for the chosen component type - no extra fields
+  }
+}
+
+Guidelines for data generation:
+- multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
+- yesno: Generate up to 10 relevant political statements as an array of objects with statement and optional context
+- slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
+- chat: Use empty messages array and a relevant placeholder text
+- freetext: Include a clear prompt, placeholder text, and optional maxLength
+Time for: Prompt Execution: COMPONENT_SELECTOR: 22.273s
+Got response from PromptManager with prompt COMPONENT_SELECTOR: 
+ AIMessage {
+  "id": "gen-1759091119-4bciOMUGAP6NCbKmGTGx",
+  "content": "{\n  \"component\": \"multiselect\",\n  \"reasoning\": \"The user has shown interest in governance experimentation (local currencies, MMT-inspired budgeting, participatory approaches, tech-enabled transparency). A multi-select allows them to express a nuanced stance across innovative policy tools within the three policy areas, helping to quickly map their preferred governance models without requiring long narratives.\",\n  \"data\": {\n    \"question\": \"Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.\",\n    \"options\": [\n      {\n        \"id\": \"opt_local_currency\",\n        \"label\": \"Local currencies to boost local resilience\",\n        \"description\": \"Using community-issued currencies to support local businesses and projects.\"\n      },\n      {\n        \"id\": \"opt_MMT_budgeting\",\n        \"label\": \"MMT-inspired budgeting for community projects\",\n        \"description\": \"Applying Modern Monetary Theory concepts at the local level to prioritize projects with fiscal prudence.\"\n      },\n      {\n        \"id\": \"opt_participatory_budgeting\",\n        \"label\": \"Participatory budgeting and citizen juries for major projects\",\n        \"description\": \"Direct community input on funding decisions for significant initiatives.\"\n      },\n      {\n        \"id\": \"opt_digital_dashboards\",\n        \"label\": \"Digital dashboards for project proposals, impacts, and budgets\",\n        \"description\": \"Real-time transparency and feedback mechanisms for residents.\"\n      },\n      {\n        \"id\": \"opt_green_growth\",\n        \"label\": \"Green growth with strong environmental safeguards\",\n        \"description\": \"Growth that is environmentally responsible and low-carbon.\"\n      },\n      {\n        \"id\": \"opt_degrowth\",\n        \"label\": \"Degrowth or steady-state policies to prioritize quality of life\",\n        \"description\": \"Emphasize well-being, ecological limits, and community resilience over scale.\"\n      },\n      {\n        \"id\": \"opt_public_private_partnerships\",\n        \"label\": \"Public-private partnerships with strong community oversight\",\n        \"description\": \"Leverage private capital with robust accountability and local input.\"\n      },\n      {\n        \"id\": \"opt_climate_adaptation\",\n        \"label\": \"Climate adaptation and resilience funding\",\n        \"description\": \"Explicitly allocate resources to adapt to climate risks in infrastructure and services.\"\n      },\n      {\n        \"id\": \"opt_community_owned_projects\",\n        \"label\": \"Community-owned or co-owned infrastructure projects\",\n        \"description\": \"Models where communities have ownership or shared stewardship.\"\n      },\n      {\n        \"id\": \"opt_local_revenue_tools\",\n        \"label\": \"Local revenue tools to fund essential services\",\n        \"description\": \"Local tax/fee reforms or rates adjustments to fund services sustainably.\"\n      }\n    ],\n    \"maxSelections\": 6\n  }\n}",
+  "additional_kwargs": {},
+  "response_metadata": {
+    "tokenUsage": {
+      "promptTokens": 2299,
+      "completionTokens": 2320,
+      "totalTokens": 4619
+    },
+    "finish_reason": "stop",
+    "model_name": "openai/gpt-5-nano"
+  },
+  "tool_calls": [],
+  "invalid_tool_calls": [],
+  "usage_metadata": {
+    "output_tokens": 2320,
+    "input_tokens": 2299,
+    "total_tokens": 4619,
+    "input_token_details": {},
+    "output_token_details": {}
+  }
+}
+Component selection result: {
+  component: 'multiselect',
+  reasoning: 'The user has shown interest in governance experimentation (local currencies, MMT-inspired budgeting, participatory approaches, tech-enabled transparency). A multi-select allows them to express a nuanced stance across innovative policy tools within the three policy areas, helping to quickly map their preferred governance models without requiring long narratives.',
+  data: {
+    question: 'Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.',
+    options: [
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object]
+    ],
+    maxSelections: 6
+  }
+}
+Next component: {"type":"multiselect","data":{"question":"Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.","options":[{"id":"opt_local_currency","label":"Local currencies to boost local resilience","description":"Using community-issued currencies to support local businesses and projects."},{"id":"opt_MMT_budgeting","label":"MMT-inspired budgeting for community projects","description":"Applying Modern Monetary Theory concepts at the local level to prioritize projects with fiscal prudence."},{"id":"opt_participatory_budgeting","label":"Participatory budgeting and citizen juries for major projects","description":"Direct community input on funding decisions for significant initiatives."},{"id":"opt_digital_dashboards","label":"Digital dashboards for project proposals, impacts, and budgets","description":"Real-time transparency and feedback mechanisms for residents."},{"id":"opt_green_growth","label":"Green growth with strong environmental safeguards","description":"Growth that is environmentally responsible and low-carbon."},{"id":"opt_degrowth","label":"Degrowth or steady-state policies to prioritize quality of life","description":"Emphasize well-being, ecological limits, and community resilience over scale."},{"id":"opt_public_private_partnerships","label":"Public-private partnerships with strong community oversight","description":"Leverage private capital with robust accountability and local input."},{"id":"opt_climate_adaptation","label":"Climate adaptation and resilience funding","description":"Explicitly allocate resources to adapt to climate risks in infrastructure and services."},{"id":"opt_community_owned_projects","label":"Community-owned or co-owned infrastructure projects","description":"Models where communities have ownership or shared stewardship."},{"id":"opt_local_revenue_tools","label":"Local revenue tools to fund essential services","description":"Local tax/fee reforms or rates adjustments to fund services sustainably."}],"maxSelections":6}}
+Calling prompt  FOLLOWUP_QUESTION
+full prompt:  Based on the user's last response: "Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth)." for the 2025 Local Council Elections in Auckland, New Zealand
+
+Generate a thoughtful follow-up question that:
+- Digs deeper into their reasoning on topics like Housing, Transport, Environment, Economy, Infrastructure, Community Services
+- Explores related aspects of the topic
+- Helps clarify their position
+- Maintains conversational flow
+- Considers the context of Auckland Council local elections for mayor and ward representatives
+
+Previous context: AI Response: Thanks for sharing your broader context. Here’s a structured way to describe your concerns and turn them into concrete priorities and questions for candidates in Waitakere Ward.
+
+ overall perspective
+- You value global action on climate, but want local governance that empowers communities and experiments with new ways of decision-making.
+- You’re open to progressive, not-conservative approaches that emphasize responsible growth, or even green/de-growth pathways, rather than pursuing growth at all costs.
+- You’re curious about technology-enabled participation and local currencies or MMT-inspired policies to boost local resilience and autonomy, while keeping a careful eye on budgets and practical implementation.
+
+Environment and climate resilience
+Priorities
+- Strong alignment with national/international climate action while ensuring local Waitakere resilience (coastlines, flood risk, storms, sea-level rise).
+- Support for climate-positive planning that protects natural areas and biodiversity, with budget-responsible approaches.
+- Interest in using technology to enable community input and real-time monitoring of climate and resilience projects.
+
+Questions to ask candidates
+- How would you collaborate with national government and regional partners to advance climate resilience in Waitakere, and what funding or policy changes would you seek?
+- What concrete steps would you take to protect beaches, waterways, and natural areas while preparing for climate-related risks (flooding, storms) at a local level?
+- Would you support pilots or programs that use technology to enable citizen input on climate projects (e.g., digital dashboards, participatory budgeting for resilience projects)?
+- Do you support exploring green growth or de-growth approaches in local policy, and how would you measure the environmental and social outcomes?
+- How would you balance climate resilience investments with maintaining a balanced council budget?
+
+Local economy and jobs
+Priorities
+- Interest in empowering local economic initiatives (potentially including local currencies) and applying MMT-inspired thinking to strengthen local resilience and decision-making.
+- Emphasis on “responsible” growth that prioritizes community needs, affordability, and sustainability over unchecked expansion.
+- Willingness to embrace technology-enabled processes to coordinate local economic projects and assess their community value.
+
+Questions to ask candidates
+- What is your stance on experimenting with local currencies or community-supported economic models? under what safeguards would you implement them?
+- How would you apply MMT-informed principles to local budgeting and financing for community projects while ensuring fiscal responsibility?
+- How can Waitakere support local businesses, job creation, and affordable housing without compromising environmental and social goals?
+- Would you back participatory budgeting or community referenda for major economic projects? How would you ensure inclusivity and transparency?
+- What criteria would you use to decide between “growth” projects and projects that prioritize quality of life, affordability, and sustainability?
+
+Infrastructure and utilities
+Priorities
+- Focus on reliable essential services (water, wastewater, roads, transport) with a climate-resilient lens.
+- Interest in leveraging technology to plan, monitor, and evaluate infrastructure projects, ensuring they meet community needs and environmental goals.
+- Openness to integrating participatory decision-making into infrastructure planning and project selection.
+
+Questions to ask candidates
+- What are your priorities for Waitakere’s water and wastewater infrastructure, and how will you fund and deliver these projects in a changing climate?
+- How would you incorporate climate risk into long-term infrastructure planning (e.g., flood protection, stormwater, resilient roads and transport hubs)?
+- Are you open to using digital tools or dashboards that show project proposals, environmental impact, cost, and community feedback in real time? How would you protect privacy and ensure accessibility?
+- How would you balance infrastructure investments with other community priorities (housing affordability, local business support) within a tight budget?
+- Would you support pilots of community-driven infrastructure decisions or participatory governance to test whether a project is “positive” for the community?
+
+How to use this when evaluating candidates
+- Look for openness to national collaboration on climate policy, and a clear plan for Waitakere-specific resilience.
+- Check for demonstrated interest in innovative governance tools (participatory budgeting, digital dashboards, citizen panels) and, if relevant, willingness to explore local economic experiments (local currencies, MMT-informed budgeting).
+- Prioritize candidates who articulate a balanced approach to growth—embracing green growth or even de-growth where appropriate—without sacrificing essential services and fiscal prudence.
+- Ask exactly the questions above (in your own words) during interviews or candidate forums to compare approaches side by side.
+
+If you’d like, I can tailor these questions into a short questionnaire you can use in conversations with candidates or in online surveys. Or share any specific local concerns (e.g., coastal erosion, public transport reliability, housing affordability) and I’ll map them to these three policy areas with tailored questions.
+Confidence: 65/100
+Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Consistent focus on related topics. Need more responses for accurate assessment.
+
+Return JSON format:
+{
+  "question": "Follow-up question text",
+  "type": "chat",
+  "reasoning": "Why this follow-up is valuable"
+}
+Time for: Prompt Execution: FOLLOWUP_QUESTION: 20.956s
+Got response from PromptManager with prompt FOLLOWUP_QUESTION: 
+ AIMessage {
+  "id": "gen-1759091142-ojf8HDcKBwxT2qQeiC4t",
+  "content": "{\n  \"question\": \"Given your interest in tech-enabled community participation and local, potentially currency-based economic tools, along with a progressive, responsible-growth stance, please describe, in concrete terms, how you would translate these principles into Waitakere policy across housing, transport, environment, infrastructure, and community services, and how you'd manage budgeting openly and participatorily as part of Auckland Council governance (mayor and ward reps). Specifically, outline: housing — zoning changes, partnerships, and affordability measures; transport — projects to reduce car dependence and improve resilience within budget; environment — balancing coastlines, biodiversity, and development pressures; infrastructure — financing, monitoring, and potential pilots of participatory budgeting or local currency experiments; governance — how you'd collaborate with the Mayor and other wards to implement these ideas and ensure accountability. How would you measure success and guard against inequities?\"\n  ,\n  \"type\": \"chat\",\n  \"reasoning\": \"This multi-faceted follow-up invites the user to translate their broader ideas (tech-enabled participation, local currencies, MMT-inspired budgeting, responsible growth) into concrete, Waitakere-specific policies. It touches on Housing, Transport, Environment, Infrastructure, and Community Services, and asks how budgeting and governance would work in practice with the Mayor and other wards, clarifying priorities, trade-offs, and accountability.\"\n}",
+  "additional_kwargs": {},
+  "response_metadata": {
+    "tokenUsage": {
+      "promptTokens": 1390,
+      "completionTokens": 1877,
+      "totalTokens": 3267
+    },
+    "finish_reason": "stop",
+    "model_name": "openai/gpt-5-nano"
+  },
+  "tool_calls": [],
+  "invalid_tool_calls": [],
+  "usage_metadata": {
+    "output_tokens": 1877,
+    "input_tokens": 1390,
+    "total_tokens": 3267,
+    "input_token_details": {},
+    "output_token_details": {}
+  }
+}
+ POST / 200 in 115850ms
+processChatMessage: 
+ Question: Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.
+Answers: Local currencies to boost local resilience
+MMT-inspired budgeting for community projects
+Participatory budgeting and citizen juries for major projects
+Digital dashboards for project proposals, impacts, and budgets
+Community-owned or co-owned infrastructure projects
+Public-private partnerships with strong community oversight
+Time for: Similarity Search: 54.623ms
+Found RAG results with scores:  [[{"pageContent":"Top Issues: I am running for the Waitakere Ward to ensure your concerns are not only heard but acted upon. My priorities are clear:\n\n•\tCap council rates to keep living affordable for all Aucklanders\n•\tEliminate wasteful spending on non-core council business\n•\tPrioritise essential services: roads, rubbish, water, parks, and transport, and protect our Waitakere ranges.","metadata":{"party":"Independent","ward":"Waitakere Ward","id":"79","loc":{"lines":{"from":18,"to":22}}},"id":"1d0eaaa3-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.66701317],[{"pageContent":"our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we","metadata":{"id":"60","party":"Independent","ward":"Maungakiekie Tamaki Ward","loc":{"lines":{"from":7,"to":7}}},"id":"17e05f74-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.6715323],[{"pageContent":"our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we","metadata":{"id":"298","party":"Independent","ward":"Maungakiekie Tamaki Local Board Tamaki Subdivision","loc":{"lines":{"from":7,"to":7}}},"id":"551bba12-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.6715323],[{"pageContent":"to any issues involving the Council or any other Agencies to ensure everyone is accountable to uphold their services to ensure the communities are cared for in the Ward., Economic and cultural development: I wish to work closely with the Local Business Community and the  residents to see that Papatoetoe Ward improves their lives by ensuring we work with Agencies to help homeless and reduce crime in the Area. Support ALL communities and help introduce  community programmes to assist with economic growth and preserve cultural Heritage., Well-managed local government and outcomes for Māori: I believe we provide funding and grants for Projects with  ALL the communities in mind and introduce community based funding to help with community projects to cater for needs which will benefit ALL  residents and improve lifestyle.","metadata":{"party":"Independent","id":"341","ward":"Otara Papatoetoe Local Board Papatoetoe Subdivision","loc":{"lines":{"from":10,"to":10}}},"id":"5f07b470-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.6846918],[{"pageContent":"Key Positions: Transport: Access for everyone on our roads - share the space., Water: We need to ensure the safety and availability of our drinking water supply.  We need to protect our harbour and ensure wastewater and sewerage are properly dealt with., Built environment: We need to plan for population growth by ensuring that the appropriate infrastructure is in place and, at the same time, protect the heritage of our special character areas., Natural environment: It is important to protect our waterways, encourage riparian planting and reforestation of areas, where suitable, with native trees, e.g. the Western Springs Urban Native Forest., Community: I support the provision of libraries and community centres to provide essential services to our community. Also, I support community groups that foster cultural and community connections., Economic and cultural development: I support the business improvement districts (BIDS) within the Waitemata Local Board area as a means of ensuring","metadata":{"party":"Independent","ward":"Waitemata Local Board","id":"454","loc":{"lines":{"from":9,"to":9}}},"id":"7af276b4-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.69295764],[{"pageContent":"Statement: A fresh face for Waitākere, but no stranger to council. I’ve been asked by friends and colleagues to bring my wealth of governance experience and excellent track record to our ward. \nI’ve worked in both private and public sectors across education, housing, and conservation. On council, I've led portfolios across transport, environment, and community development, where I’ve championed integration of climate action into decision making. From how we plan our neighbourhoods to how we strengthen local resilience. \nIf elected, I’ll make sure your rates deliver you value.  I’ll defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa), support the Dark Sky initiative and making our beaches swim-safe. I’ll advocate for better upkeep of our roads and cheaper transport options for everyone. \nWith your support, I’ll be your voice for a Waitākere that’s safer, more equitable, and genuinely great for all who live here. Vote for me and the Future West team.","metadata":{"party":"Independent","ward":"Waitakere Ranges Local Board","id":"438","loc":{"lines":{"from":3,"to":6}}},"id":"77df433c-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.6999148],[{"pageContent":"resilience. Council must do more. For abundant fisheries; more marine sanctuaries. For abundant biodiversity; complete the North-West Wildlink (including Whenuapai), habitat, corridors. Urgent need to eradicate Exotic caulerpa and other highly invasive pests before this becomes too expensive. Protect SEAs. More natural solutions to climate issues, Community: Government is slashing local funding. Local boards and community organisations are very limited right now. Council can't do everything but we need to enable community safety, resilience and belonging. Local communities thrive with activation and programming from a neighbourhood scale anchor organisation managing a local facility where people and organisations gather, connect and collaborate for public good. These hubs build multicultural understanding, a sense of place, resilience in emergencies, Economic and cultural development: After Mayor Brown de-funded TAU, local boards have had NO ability to support local economic","metadata":{"ward":"Albany Ward","id":"18","party":"Independent","loc":{"lines":{"from":15,"to":15}}},"id":"0f8c4304-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.714112],[{"pageContent":"resilience. Council must do more. For abundant fisheries; more marine sanctuaries. For abundant biodiversity; complete the North-West Wildlink (including Whenuapai), habitat, corridors. Urgent need to eradicate Exotic caulerpa and other highly invasive pests before this becomes too expensive. Protect SEAs. More natural solutions to climate issues, Community: Government is slashing local funding. Local boards and community organisations are very limited right now. Council can't do everything but we need to enable community safety, resilience and belonging. Local communities thrive with activation and programming from a neighbourhood scale anchor organisation managing a local facility where people and organisations gather, connect and collaborate for public good. These hubs build multicultural understanding, a sense of place, resilience in emergencies, Economic and cultural development: After Mayor Brown de-funded TAU, local boards have had NO ability to support local economic","metadata":{"ward":"Upper Harbour Local Board","party":"Independent","id":"405","loc":{"lines":{"from":12,"to":12}}},"id":"6ec60232-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.714112],[{"pageContent":"Advocate for community-driven priorities in regional projects like storm recovery and resilience planning. Ensure financial decisions are responsible and focused on long-term value for ratepayers, protecting local assets for future generations.","metadata":{"id":"158","party":"Independent","ward":"Franklin Local Board Waiuku Subdivision","loc":{"lines":{"from":5,"to":5}}},"id":"2f6815aa-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.72276247],[{"pageContent":"I oppose urban sprawl particularly into the Waitakere Ranges foothills.  The area is already fragile and recent storm damage has shown to me that the area is at the peak of its carrying capacity., Natural environment: I was involved in the creation of the Waitakere Ranges Heritage Area Act and have been a strong supporter of it since it was passed.  The Act has the objective of protecting and enhancing the local environment.  I have always worked to ensure that the area has adequate resourcing and respect for its environment and will continue to do so.  I have also helped local communities form their own community resilience plans as local knowledge and approaches are best., Community: The Waitakere Ranges is blessed with a strong network of community groups, whether area based, arts, environmental or social.  Hoani Waititi Marae is perhaps the most important.  I have worked on maintaining relationships with them and doing my best to make sure that Council's resources are available to","metadata":{"id":"434","party":"Independent","ward":"Waitakere Ranges Local Board","loc":{"lines":{"from":11,"to":11}}},"id":"75b27840-9ca6-11f0-8ed7-fdbbefa2e1ae"},0.7268741]]
+RAG query started for contextPrompt: 
+
+ 
+Based on the following relevant information about candidates and their policies:
+
+Top Issues: I am running for the Waitakere Ward to ensure your concerns are not only heard but acted upon. My priorities are clear:
+
+•       Cap council rates to keep living affordable for all Aucklanders
+•       Eliminate wasteful spending on non-core council business
+•       Prioritise essential services: roads, rubbish, water, parks, and transport, and protect our Waitakere ranges.
+
+our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we
+
+our regional parks. Any projects that would promote climate resilience would have my support subject to the Council maintaining a balanced budget., Community: Our Communities and facilities are great things to be championed. I particularly see value in our Local Board and Regional Grant programmes. These are tangible examples where the Council facilitates your community to undertake the mahi on the ground. I do not support the current local board funding arrangements, as they may lead to changes in the amount of funding the Local Board receives., Economic and cultural development: We need to get the Council's policy settings correct so that major events will be held in the Region. Changing our culture of no to a culture of yes. Thinking in terms of funding, I support the bed tax being promoted by other candidates. This would provide the Council with an income stream that would be focused on improving our economic environment. Tataki Auckland Limited, being bought in-house, means we
+
+to any issues involving the Council or any other Agencies to ensure everyone is accountable to uphold their services to ensure the communities are cared for in the Ward., Economic and cultural development: I wish to work closely with the Local Business Community and the  residents to see that Papatoetoe Ward improves their lives by ensuring we work with Agencies to help homeless and reduce crime in the Area. Support ALL communities and help introduce  community programmes to assist with economic growth and preserve cultural Heritage., Well-managed local government and outcomes for Māori: I believe we provide funding and grants for Projects with  ALL the communities in mind and introduce community based funding to help with community projects to cater for needs which will benefit ALL  residents and improve lifestyle.
+
+Key Positions: Transport: Access for everyone on our roads - share the space., Water: We need to ensure the safety and availability of our drinking water supply.  We need to protect our harbour and ensure wastewater and sewerage are properly dealt with., Built environment: We need to plan for population growth by ensuring that the appropriate infrastructure is in place and, at the same time, protect the heritage of our special character areas., Natural environment: It is important to protect our waterways, encourage riparian planting and reforestation of areas, where suitable, with native trees, e.g. the Western Springs Urban Native Forest., Community: I support the provision of libraries and community centres to provide essential services to our community. Also, I support community groups that foster cultural and community connections., Economic and cultural development: I support the business improvement districts (BIDS) within the Waitemata Local Board area as a means of ensuring
+
+Statement: A fresh face for Waitākere, but no stranger to council. I’ve been asked by friends and colleagues to bring my wealth of governance experience and excellent track record to our ward. 
+I’ve worked in both private and public sectors across education, housing, and conservation. On council, I've led portfolios across transport, environment, and community development, where I’ve championed integration of climate action into decision making. From how we plan our neighbourhoods to how we strengthen local resilience. 
+If elected, I’ll make sure your rates deliver you value.  I’ll defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa), support the Dark Sky initiative and making our beaches swim-safe. I’ll advocate for better upkeep of our roads and cheaper transport options for everyone. 
+With your support, I’ll be your voice for a Waitākere that’s safer, more equitable, and genuinely great for all who live here. Vote for me and the Future West team.
+
+resilience. Council must do more. For abundant fisheries; more marine sanctuaries. For abundant biodiversity; complete the North-West Wildlink (including Whenuapai), habitat, corridors. Urgent need to eradicate Exotic caulerpa and other highly invasive pests before this becomes too expensive. Protect SEAs. More natural solutions to climate issues, Community: Government is slashing local funding. Local boards and community organisations are very limited right now. Council can't do everything but we need to enable community safety, resilience and belonging. Local communities thrive with activation and programming from a neighbourhood scale anchor organisation managing a local facility where people and organisations gather, connect and collaborate for public good. These hubs build multicultural understanding, a sense of place, resilience in emergencies, Economic and cultural development: After Mayor Brown de-funded TAU, local boards have had NO ability to support local economic
+
+resilience. Council must do more. For abundant fisheries; more marine sanctuaries. For abundant biodiversity; complete the North-West Wildlink (including Whenuapai), habitat, corridors. Urgent need to eradicate Exotic caulerpa and other highly invasive pests before this becomes too expensive. Protect SEAs. More natural solutions to climate issues, Community: Government is slashing local funding. Local boards and community organisations are very limited right now. Council can't do everything but we need to enable community safety, resilience and belonging. Local communities thrive with activation and programming from a neighbourhood scale anchor organisation managing a local facility where people and organisations gather, connect and collaborate for public good. These hubs build multicultural understanding, a sense of place, resilience in emergencies, Economic and cultural development: After Mayor Brown de-funded TAU, local boards have had NO ability to support local economic
+
+Advocate for community-driven priorities in regional projects like storm recovery and resilience planning. Ensure financial decisions are responsible and focused on long-term value for ratepayers, protecting local assets for future generations.
+
+I oppose urban sprawl particularly into the Waitakere Ranges foothills.  The area is already fragile and recent storm damage has shown to me that the area is at the peak of its carrying capacity., Natural environment: I was involved in the creation of the Waitakere Ranges Heritage Area Act and have been a strong supporter of it since it was passed.  The Act has the objective of protecting and enhancing the local environment.  I have always worked to ensure that the area has adequate resourcing and respect for its environment and will continue to do so.  I have also helped local communities form their own community resilience plans as local knowledge and approaches are best., Community: The Waitakere Ranges is blessed with a strong network of community groups, whether area based, arts, environmental or social.  Hoani Waititi Marae is perhaps the most important.  I have worked on maintaining relationships with them and doing my best to make sure that Council's resources are available to
+
+User context: User responses summary:
+question_1759088595893: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+question_1759090625818: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+question_1759091047112: Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).
+
+Question: Question: Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.
+Answers: Local currencies to boost local resilience
+MMT-inspired budgeting for community projects
+Participatory budgeting and citizen juries for major projects
+Digital dashboards for project proposals, impacts, and budgets
+Community-owned or co-owned infrastructure projects
+Public-private partnerships with strong community oversight
+
+Please provide:
+1. List of relevant candidates with their key positions
+2. Specific policy details that address the question
+3. Sources for the information
+
+Format as JSON with candidates, policies, and sources arrays.
+
+Time for: RAG Query ChatModel Invoke: 56.853s
+RAG response: 
+
+ {
+  candidates: [
+    {
+      id: 'cand1',
+      name: 'Future West Waitākere Ward candidate',
+      ward: 'Waitākere Ward',
+      affiliation: 'Future West',
+      key_positions: [Array],
+      notes: 'Emphasizes rate affordability, climate action integration, protection of the Waitākere Ranges, and infrastructure/transport improvements.'
+    },
+    {
+      id: 'cand2',
+      name: 'Environment and resilience-focused Waitākere Ward candidate',
+      ward: 'Waitākere Ward',
+      affiliation: 'Independent/Community resilience advocate',
+      key_positions: [Array],
+      notes: 'Prioritizes environmental protection, resilience planning, and local community-enabled funding; opposes overdevelopment into the ranges and emphasizes Heritage Area protections.'
+    }
+  ],
+  policies: [
+    {
+      candidate_id: 'cand1',
+      area: 'Environment, Local economy and jobs, Infrastructure and utilities',
+      policy_details: [Array]
+    },
+    {
+      candidate_id: 'cand2',
+      area: 'Environment, Local economy and jobs, Infrastructure and utilities',
+      policy_details: [Array]
+    }
+  ],
+  sources: [
+    "Candidate statement (Future West): 'A fresh face for Waitākere... defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa), support the Dark Sky initiative and making our beaches swim-safe. I’ll advocate for better upkeep of our roads and cheaper transport options for everyone. Vote for me and the Future West team.'",
+    'Candidate B platform excerpts: opposition to urban sprawl into Waitakere Ranges foothills; commitment to Waitakere Ranges Heritage Area Act; focus on biodiversity, marine sanctaries, resilience, and community hubs.',
+    'Reference to the Waitākere Ranges Heritage Area Act and ongoing emphasis on protecting the environment and local resilience.',
+    "Bed tax discussion: 'I support the bed tax being promoted by other candidates' as part of economic development considerations.",
+    "TAU funding history: 'After Mayor Brown de-funded TAU, local boards have had NO ability to support local economic resilience' (context for local funding and resilience concerns).",
+    'Governance and policy-implementation approaches question, listing: Local currencies, MMT budgeting, Participatory budgeting, Digital dashboards, Community-owned infrastructure, PPPs with community oversight.'
+  ]
+}
+Processing message with AI model
+getValidatedAIResponse: 
+ [
+  SystemMessage {
+    "content": "You are an AI political advisor helping users discover their voting preferences for the 2025 Local Council Elections in Auckland, New Zealand.\n      Current confidence level: 75/100\n      Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Consistent focus on related topics. Sufficient interaction history.\n\nAvailable candidates for consideration:\n- ALCOCK, John Ronald (null): Transport, Water, Built environment\n- BROWN, Wayne (null): Transport, Water, Built environment\n- CHUAH, Eric Boon Leong (null): Transport, Water, Built environment\n- COOTE, Michael (null): Transport, Water, Built environment\n- JOHNSTON, Ted (null): Transport, Water, Built environment\n- LEONI, Kerrin Bianca Melinda (null): Transport, Water, Built environment\n- MCNEIL, Rob (null): Transport, Water, Built environment\n- PAUSINA, Ryan Earl (null): Transport, Water, Built environment\n- PIETERSE, Jason (null): Transport, Water, Built environment\n- STAM, Simon (null): Transport, Water, Built environment\n- WAKEMAN, Peter (null): Transport, Water, Built environment\n- WIDDISON, Denise (null): Transport, Water, Built environment\n\nAdditional context from knowledge base:\nRelevant policy positions:\n- undefined: undefined - No details available...\n- undefined: undefined - No details available...\nSources: Candidate statement (Future West): 'A fresh face for Waitākere... defend the Ranges Heritage Area (Te Wao Nui-a-Tiriwa), support the Dark Sky initiative and making our beaches swim-safe. I’ll advocate for better upkeep of our roads and cheaper transport options for everyone. Vote for me and the Future West team.', Candidate B platform excerpts: opposition to urban sprawl into Waitakere Ranges foothills; commitment to Waitakere Ranges Heritage Area Act; focus on biodiversity, marine sanctaries, resilience, and community hubs., Reference to the Waitākere Ranges Heritage Area Act and ongoing emphasis on protecting the environment and local resilience.\n\n      Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.\n      Focus on policy topics including Housing, Transport, Environment, Economy, Infrastructure, Community Services and candidate positions.\n      Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)\nAnswers: Environment and climate resilience\nLocal economy and jobs\nInfrastructure and utilities",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  AIMessage {
+    "content": "Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:\n\n- Environment and climate resilience\n  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience\n\n- Local economy and jobs\n  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs\n\n- Infrastructure and utilities\n  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth\n\nWhich three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas.",
+    "additional_kwargs": {},
+    "response_metadata": {},
+    "tool_calls": [],
+    "invalid_tool_calls": []
+  },
+  HumanMessage {
+    "content": "Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.\nResponse: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... \nHaving said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. \nSo, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  AIMessage {
+    "content": "Thanks for sharing your broader context. Here’s a structured way to describe your concerns and turn them into concrete priorities and questions for candidates in Waitakere Ward.\n\n overall perspective\n- You value global action on climate, but want local governance that empowers communities and experiments with new ways of decision-making.\n- You’re open to progressive, not-conservative approaches that emphasize responsible growth, or even green/de-growth pathways, rather than pursuing growth at all costs.\n- You’re curious about technology-enabled participation and local currencies or MMT-inspired policies to boost local resilience and autonomy, while keeping a careful eye on budgets and practical implementation.\n\nEnvironment and climate resilience\nPriorities\n- Strong alignment with national/international climate action while ensuring local Waitakere resilience (coastlines, flood risk, storms, sea-level rise).\n- Support for climate-positive planning that protects natural areas and biodiversity, with budget-responsible approaches.\n- Interest in using technology to enable community input and real-time monitoring of climate and resilience projects.\n\nQuestions to ask candidates\n- How would you collaborate with national government and regional partners to advance climate resilience in Waitakere, and what funding or policy changes would you seek?\n- What concrete steps would you take to protect beaches, waterways, and natural areas while preparing for climate-related risks (flooding, storms) at a local level?\n- Would you support pilots or programs that use technology to enable citizen input on climate projects (e.g., digital dashboards, participatory budgeting for resilience projects)?\n- Do you support exploring green growth or de-growth approaches in local policy, and how would you measure the environmental and social outcomes?\n- How would you balance climate resilience investments with maintaining a balanced council budget?\n\nLocal economy and jobs\nPriorities\n- Interest in empowering local economic initiatives (potentially including local currencies) and applying MMT-inspired thinking to strengthen local resilience and decision-making.\n- Emphasis on “responsible” growth that prioritizes community needs, affordability, and sustainability over unchecked expansion.\n- Willingness to embrace technology-enabled processes to coordinate local economic projects and assess their community value.\n\nQuestions to ask candidates\n- What is your stance on experimenting with local currencies or community-supported economic models? under what safeguards would you implement them?\n- How would you apply MMT-informed principles to local budgeting and financing for community projects while ensuring fiscal responsibility?\n- How can Waitakere support local businesses, job creation, and affordable housing without compromising environmental and social goals?\n- Would you back participatory budgeting or community referenda for major economic projects? How would you ensure inclusivity and transparency?\n- What criteria would you use to decide between “growth” projects and projects that prioritize quality of life, affordability, and sustainability?\n\nInfrastructure and utilities\nPriorities\n- Focus on reliable essential services (water, wastewater, roads, transport) with a climate-resilient lens.\n- Interest in leveraging technology to plan, monitor, and evaluate infrastructure projects, ensuring they meet community needs and environmental goals.\n- Openness to integrating participatory decision-making into infrastructure planning and project selection.\n\nQuestions to ask candidates\n- What are your priorities for Waitakere’s water and wastewater infrastructure, and how will you fund and deliver these projects in a changing climate?\n- How would you incorporate climate risk into long-term infrastructure planning (e.g., flood protection, stormwater, resilient roads and transport hubs)?\n- Are you open to using digital tools or dashboards that show project proposals, environmental impact, cost, and community feedback in real time? How would you protect privacy and ensure accessibility?\n- How would you balance infrastructure investments with other community priorities (housing affordability, local business support) within a tight budget?\n- Would you support pilots of community-driven infrastructure decisions or participatory governance to test whether a project is “positive” for the community?\n\nHow to use this when evaluating candidates\n- Look for openness to national collaboration on climate policy, and a clear plan for Waitakere-specific resilience.\n- Check for demonstrated interest in innovative governance tools (participatory budgeting, digital dashboards, citizen panels) and, if relevant, willingness to explore local economic experiments (local currencies, MMT-informed budgeting).\n- Prioritize candidates who articulate a balanced approach to growth—embracing green growth or even de-growth where appropriate—without sacrificing essential services and fiscal prudence.\n- Ask exactly the questions above (in your own words) during interviews or candidate forums to compare approaches side by side.\n\nIf you’d like, I can tailor these questions into a short questionnaire you can use in conversations with candidates or in online surveys. Or share any specific local concerns (e.g., coastal erosion, public transport reliability, housing affordability) and I’ll map them to these three policy areas with tailored questions.",
+    "additional_kwargs": {},
+    "response_metadata": {},
+    "tool_calls": [],
+    "invalid_tool_calls": []
+  },
+  HumanMessage {
+    "content": "Question: Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.\nAnswers: Local currencies to boost local resilience\nMMT-inspired budgeting for community projects\nParticipatory budgeting and citizen juries for major projects\nDigital dashboards for project proposals, impacts, and budgets\nCommunity-owned or co-owned infrastructure projects\nPublic-private partnerships with strong community oversight",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  },
+  HumanMessage {
+    "content": "Question: Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.\nAnswers: Local currencies to boost local resilience\nMMT-inspired budgeting for community projects\nParticipatory budgeting and citizen juries for major projects\nDigital dashboards for project proposals, impacts, and budgets\nCommunity-owned or co-owned infrastructure projects\nPublic-private partnerships with strong community oversight",
+    "additional_kwargs": {},
+    "response_metadata": {}
+  }
+]
+Time for: AI Chat Invoke Attempt 1: 19.749s
+AI response: All six options align with your preferences, so you could select them all. Here’s a quick note on each to help you think about implementation and safeguards:
+
+- Local currencies to boost local resilience
+  - Pros: strengthens local economies, fosters community resilience and independence.
+  - Considerations: regulatory fit, acceptance, impact on prices and households; pilot with clear rules and sunset clauses.
+
+- MMT-inspired budgeting for community projects
+  - Pros: flexible funding for community priorities, can empower local decision-making.
+  - Considerations: ensure fiscal prudence and transparency; guardrails to avoid unsustainable deficits or misallocation.
+
+- Participatory budgeting and citizen juries for major projects
+  - Pros: deeper public legitimacy, better alignment with community needs.
+  - Considerations: ensure broad representation, decision-making speed, clarity on how input translates to funding.
+
+- Digital dashboards for project proposals, impacts, and budgets
+  - Pros: transparency, accountability, easier public scrutiny.
+  - Considerations: accessibility for all residents, privacy protections, data accuracy and timeliness.
+
+- Community-owned or co-owned infrastructure projects
+  - Pros: local stewardship, potential for shared benefits and resilience.
+  - Considerations: governance structure, risk management, scalability, financing.
+
+- Public-private partnerships with strong community oversight
+  - Pros: leverages private capital with public, community-driven oversight.
+  - Considerations: clear accountability metrics, protection of essential services, equitable access, long-term guarantees.
+
+Would you like me to turn these into a concise questionnaire or a short survey you can share with candidates or your network? I can also tailor questions to address specific local issues in Waitākere Ward (e.g., coastal resilience, transport reliability, housing affordability).
+Calling selectNextComponent with conversation state
+Calling prompt  COMPONENT_SELECTOR
+full prompt:  Analyze the conversation state and determine the best UI component for the next interaction for the 2025 Local Council Elections in Auckland, New Zealand.
+
+Current conversation state:
+
+Current confidence: 75/100
+Reasoning: User provides detailed, thoughtful responses. Limited exploration of policy topics. Consistent focus on related topics. Sufficient interaction history.
+
+Recent conversation:
+user: Question: Which policy areas are most important to you when choosing a candidate in Waitakere Ward? (Select up to 3)
+Answers: Environment and climate resilience
+Local economy and jobs
+Infrastructure and utilities
+assistant: Great—pick up to 3. Here’s a quick, neutral summary of what each area covers in Waitakere Ward to help you decide:
+
+- Environment and climate resilience
+  - Protect beaches and natural areas, address climate risks (flooding, storms), support climate action in planning and resilience
+
+- Local economy and jobs
+  - Support local businesses, grow jobs and opportunities for residents, balance growth with affordability and community needs
+
+- Infrastructure and utilities
+  - Ensure reliable water/wastewater infrastructure, roads, transport hubs, safety (potholes, lighting), and long-term planning for growth
+
+Which three are most important to you? If you want, tell me any specific concerns you have (e.g., coastal flooding, transport reliability, job opportunities, housing affordability) and I can help map them to these areas.
+user: Prompt: Please describe any specific concerns, priorities, or questions you have within the three policy areas you selected (Environment and climate resilience; Local economy and jobs; Infrastructure and utilities) that would influence your candidate choice in Waitakere Ward.
+Response: To be honest, I am mostly concerned about more global issues in these regards, I would like national collaboration to make it easier to prevent climate catastrophe etc... 
+Having said that, I do think that if we had a local government that would support e.g. local currencies and MMT principles, and that really empowers the local community to make our own decisions (in a somewhat controlled positive way) that would be great. I have some ideas how to implement some technology that would help locals coordinate and assess whether projects are 'positive', and possibly projects like this could spill over into national -> global governance. 
+So, maybe a candidate that is also open to technology would be good. Progressive (not conservative), but also not focused on growth, but on _responsible' growth or even de-growth (or green growth).
+assistant: Thanks for sharing your broader context. Here’s a structured way to describe your concerns and turn them into concrete priorities and questions for candidates in Waitakere Ward.
+
+ overall perspective
+- You value global action on climate, but want local governance that empowers communities and experiments with new ways of decision-making.
+- You’re open to progressive, not-conservative approaches that emphasize responsible growth, or even green/de-growth pathways, rather than pursuing growth at all costs.
+- You’re curious about technology-enabled participation and local currencies or MMT-inspired policies to boost local resilience and autonomy, while keeping a careful eye on budgets and practical implementation.
+
+Environment and climate resilience
+Priorities
+- Strong alignment with national/international climate action while ensuring local Waitakere resilience (coastlines, flood risk, storms, sea-level rise).
+- Support for climate-positive planning that protects natural areas and biodiversity, with budget-responsible approaches.
+- Interest in using technology to enable community input and real-time monitoring of climate and resilience projects.
+
+Questions to ask candidates
+- How would you collaborate with national government and regional partners to advance climate resilience in Waitakere, and what funding or policy changes would you seek?
+- What concrete steps would you take to protect beaches, waterways, and natural areas while preparing for climate-related risks (flooding, storms) at a local level?
+- Would you support pilots or programs that use technology to enable citizen input on climate projects (e.g., digital dashboards, participatory budgeting for resilience projects)?
+- Do you support exploring green growth or de-growth approaches in local policy, and how would you measure the environmental and social outcomes?
+- How would you balance climate resilience investments with maintaining a balanced council budget?
+
+Local economy and jobs
+Priorities
+- Interest in empowering local economic initiatives (potentially including local currencies) and applying MMT-inspired thinking to strengthen local resilience and decision-making.
+- Emphasis on “responsible” growth that prioritizes community needs, affordability, and sustainability over unchecked expansion.
+- Willingness to embrace technology-enabled processes to coordinate local economic projects and assess their community value.
+
+Questions to ask candidates
+- What is your stance on experimenting with local currencies or community-supported economic models? under what safeguards would you implement them?
+- How would you apply MMT-informed principles to local budgeting and financing for community projects while ensuring fiscal responsibility?
+- How can Waitakere support local businesses, job creation, and affordable housing without compromising environmental and social goals?
+- Would you back participatory budgeting or community referenda for major economic projects? How would you ensure inclusivity and transparency?
+- What criteria would you use to decide between “growth” projects and projects that prioritize quality of life, affordability, and sustainability?
+
+Infrastructure and utilities
+Priorities
+- Focus on reliable essential services (water, wastewater, roads, transport) with a climate-resilient lens.
+- Interest in leveraging technology to plan, monitor, and evaluate infrastructure projects, ensuring they meet community needs and environmental goals.
+- Openness to integrating participatory decision-making into infrastructure planning and project selection.
+
+Questions to ask candidates
+- What are your priorities for Waitakere’s water and wastewater infrastructure, and how will you fund and deliver these projects in a changing climate?
+- How would you incorporate climate risk into long-term infrastructure planning (e.g., flood protection, stormwater, resilient roads and transport hubs)?
+- Are you open to using digital tools or dashboards that show project proposals, environmental impact, cost, and community feedback in real time? How would you protect privacy and ensure accessibility?
+- How would you balance infrastructure investments with other community priorities (housing affordability, local business support) within a tight budget?
+- Would you support pilots of community-driven infrastructure decisions or participatory governance to test whether a project is “positive” for the community?
+
+How to use this when evaluating candidates
+- Look for openness to national collaboration on climate policy, and a clear plan for Waitakere-specific resilience.
+- Check for demonstrated interest in innovative governance tools (participatory budgeting, digital dashboards, citizen panels) and, if relevant, willingness to explore local economic experiments (local currencies, MMT-informed budgeting).
+- Prioritize candidates who articulate a balanced approach to growth—embracing green growth or even de-growth where appropriate—without sacrificing essential services and fiscal prudence.
+- Ask exactly the questions above (in your own words) during interviews or candidate forums to compare approaches side by side.
+
+If you’d like, I can tailor these questions into a short questionnaire you can use in conversations with candidates or in online surveys. Or share any specific local concerns (e.g., coastal erosion, public transport reliability, housing affordability) and I’ll map them to these three policy areas with tailored questions.
+user: Question: Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.
+Answers: Local currencies to boost local resilience
+MMT-inspired budgeting for community projects
+Participatory budgeting and citizen juries for major projects
+Digital dashboards for project proposals, impacts, and budgets
+Community-owned or co-owned infrastructure projects
+Public-private partnerships with strong community oversight
+
+Latest user message: "Question: Which governance and policy-implementation approaches would you support for Waitakere Ward within Environment, Local economy and jobs, and Infrastructure and utilities? Select up to 6 options.
+Answers: Local currencies to boost local resilience
+MMT-inspired budgeting for community projects
+Participatory budgeting and citizen juries for major projects
+Digital dashboards for project proposals, impacts, and budgets
+Community-owned or co-owned infrastructure projects
+Public-private partnerships with strong community oversight"
+AI response: "All six options align with your preferences, so you could select them all. Here’s a quick note on each to help you think about implementation and safeguards:
+
+- Local currencies to boost local resilience
+  - Pros: strengthens local economies, fosters community resilience and independence.
+  - Considerations: regulatory fit, acceptance, impact on prices and households; pilot with clear rules and sunset clauses.
+
+- MMT-inspired budgeting for community projects
+  - Pros: flexible funding for community priorities, can empower local decision-making.
+  - Considerations: ensure fiscal prudence and transparency; guardrails to avoid unsustainable deficits or misallocation.
+
+- Participatory budgeting and citizen juries for major projects
+  - Pros: deeper public legitimacy, better alignment with community needs.
+  - Considerations: ensure broad representation, decision-making speed, clarity on how input translates to funding.
+
+- Digital dashboards for project proposals, impacts, and budgets
+  - Pros: transparency, accountability, easier public scrutiny.
+  - Considerations: accessibility for all residents, privacy protections, data accuracy and timeliness.
+
+- Community-owned or co-owned infrastructure projects
+  - Pros: local stewardship, potential for shared benefits and resilience.
+  - Considerations: governance structure, risk management, scalability, financing.
+
+- Public-private partnerships with strong community oversight
+  - Pros: leverages private capital with public, community-driven oversight.
+  - Considerations: clear accountability metrics, protection of essential services, equitable access, long-term guarantees.
+
+Would you like me to turn these into a concise questionnaire or a short survey you can share with candidates or your network? I can also tailor questions to address specific local issues in Waitākere Ward (e.g., coastal resilience, transport reliability, housing affordability)."
+
+Please select the next component that will best help narrow down the user's political preferences.
+
+Available component types and their EXACT data structures:
+
+1. chat: Continue conversational interaction
+   Data structure: { "messages": ConversationMessage[], "placeholder": string }
+
+2. yesno: Ask a yes/no question about multiple statements
+    Data structure: { "statements": [{ "statement": string, "context": string }, ...] }
+
+3. multiselect: Allow user to select multiple options from a list
+   Data structure: {
+     "question": string,
+     "options": [{ "id": string, "label": string, "description": string }],
+     "maxSelections": number
+   }
+
+4. freetext: Ask for open-ended text response
+   Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
+
+5. slider: Use a slider for quantitative responses
+   Data structure: {
+     "label": string,
+     "min": number,
+     "max": number,
+     "step": number,
+     "unit": string,
+     "description": string
+   }
+
+Consider:
+- User engagement level and conversation flow
+- Complexity of next topic to explore from: Housing, Transport, Environment, Economy, Infrastructure, Community Services
+- Variety in interaction types used so far
+- User's response patterns and depth of answers
+- What would most effectively narrow down their political preferences for Auckland Council local elections for mayor and ward representatives
+- Available wards: Mayor
+
+Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
+
+Return JSON format:
+{
+  "component": "chat|yesno|multiselect|freetext|slider",
+  "reasoning": "Why this component fits best for narrowing preferences",
+  "data": {
+    // Use the exact structure for the chosen component type - no extra fields
+  }
+}
+
+Guidelines for data generation:
+- multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
+- yesno: Generate up to 10 relevant political statements as an array of objects with statement and optional context
+- slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
+- chat: Use empty messages array and a relevant placeholder text
+- freetext: Include a clear prompt, placeholder text, and optional maxLength
+Time for: Prompt Execution: COMPONENT_SELECTOR: 19.607s
+Got response from PromptManager with prompt COMPONENT_SELECTOR: 
+ AIMessage {
+  "id": "gen-1759091408-y4gAUqKLei8WXJHCt4Nf",
+  "content": "{\n  \"component\": \"yesno\",\n  \"reasoning\": \"A yes/no questionnaire with concrete statements about each governance approach lets the user express clear support levels and identifies areas of stronger or weaker alignment. It builds on the six options they've already endorsed and provides structured data to tailor candidate prompts or survey follow-ups for Waitakere Ward.\",\n  \"data\": {\n    \"statements\": [\n      {\n        \"statement\": \"I would support local currencies to boost Waitakere's local resilience.\",\n        \"context\": \"Environment/Economy: local resilience and community empowerment\"\n      },\n      {\n        \"statement\": \"I would support MMT-inspired budgeting for community projects to fund local priorities.\",\n        \"context\": \"Economy/Budgeting: flexible funding for community projects with safeguards\"\n      },\n      {\n        \"statement\": \"I would support participatory budgeting and citizen juries for major Waitakere projects.\",\n        \"context\": \"Governance: public input and legitimacy in major decisions\"\n      },\n      {\n        \"statement\": \"I would support digital dashboards for project proposals, impacts, and budgets to increase transparency.\",\n        \"context\": \"Governance/Transparency: real-time visibility into proposals and finances\"\n      },\n      {\n        \"statement\": \"I would support community-owned or co-owned infrastructure projects where the community has governance rights.\",\n        \"context\": \"Infrastructure/Community Ownership: local stewardship and governance\"\n      },\n      {\n        \"statement\": \"I would support public-private partnerships with strong community oversight and protections for essential services.\",\n        \"context\": \"Infrastructure/Delivery: leveraging private capital with safeguards\"\n      },\n      {\n        \"statement\": \"I would require sunset clauses or clear safeguards when pilots or experimental governance tools are used.\",\n        \"context\": \"Governance: accountability and risk management for new tools\"\n      },\n      {\n        \"statement\": \"I would require broad representation and inclusive reach in participatory processes.\",\n        \"context\": \"Participation: ensure diverse and representative input\"\n      },\n      {\n        \"statement\": \"I would prioritize environmental and social outcomes when evaluating proposed projects.\",\n        \"context\": \"Environment/Economy: alignment with sustainability and community well-being\"\n      },\n      {\n        \"statement\": \"I would ensure privacy and data protections when using digital tools for governance.\",\n        \"context\": \"Technology/Privacy: safeguarding resident information\"\n      }\n    ]\n  }\n}",
+  "additional_kwargs": {},
+  "response_metadata": {
+    "tokenUsage": {
+      "promptTokens": 2576,
+      "completionTokens": 1964,
+      "totalTokens": 4540
+    },
+    "finish_reason": "stop",
+    "model_name": "openai/gpt-5-nano"
+  },
+  "tool_calls": [],
+  "invalid_tool_calls": [],
+  "usage_metadata": {
+    "output_tokens": 1964,
+    "input_tokens": 2576,
+    "total_tokens": 4540,
+    "input_token_details": {},
+    "output_token_details": {}
+  }
+}
+Component selection result: {
+  component: 'yesno',
+  reasoning: "A yes/no questionnaire with concrete statements about each governance approach lets the user express clear support levels and identifies areas of stronger or weaker alignment. It builds on the six options they've already endorsed and provides structured data to tailor candidate prompts or survey follow-ups for Waitakere Ward.",
+  data: {
+    statements: [
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object],
+      [Object], [Object]
+    ]
+  }
+}
+Next component: {"type":"yesno","data":{"statements":[{"statement":"I would support local currencies to boost Waitakere's local resilience.","context":"Environment/Economy: local resilience and community empowerment"},{"statement":"I would support MMT-inspired budgeting for community projects to fund local priorities.","context":"Economy/Budgeting: flexible funding for community projects with safeguards"},{"statement":"I would support participatory budgeting and citizen juries for major Waitakere projects.","context":"Governance: public input and legitimacy in major decisions"},{"statement":"I would support digital dashboards for project proposals, impacts, and budgets to increase transparency.","context":"Governance/Transparency: real-time visibility into proposals and finances"},{"statement":"I would support community-owned or co-owned infrastructure projects where the community has governance rights.","context":"Infrastructure/Community Ownership: local stewardship and governance"},{"statement":"I would support public-private partnerships with strong community oversight and protections for essential services.","context":"Infrastructure/Delivery: leveraging private capital with safeguards"},{"statement":"I would require sunset clauses or clear safeguards when pilots or experimental governance tools are used.","context":"Governance: accountability and risk management for new tools"},{"statement":"I would require broad representation and inclusive reach in participatory processes.","context":"Participation: ensure diverse and representative input"},{"statement":"I would prioritize environmental and social outcomes when evaluating proposed projects.","context":"Environment/Economy: alignment with sustainability and community well-being"},{"statement":"I would ensure privacy and data protections when using digital tools for governance.","context":"Technology/Privacy: safeguarding resident information"}]}}
+ POST / 200 in 96372ms

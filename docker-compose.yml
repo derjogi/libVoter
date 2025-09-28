@@ -1,15 +1,12 @@
-version: '3.8'
 services:
   chroma:
     image: chromadb/chroma
     ports:
       - "8000:8000"
     volumes:
-      - chroma-data:/chroma/chroma
+      - ./data/chroma:/chroma/chroma
     environment:
       - ANONYMIZED_TELEMETRY=False
+      - CHROMA_SERVER_PERSIST_DIR=/chroma/chroma
+      - ALLOW_RESET=TRUE
     restart: unless-stopped
-
-volumes:
-  chroma-data:
-    driver: local

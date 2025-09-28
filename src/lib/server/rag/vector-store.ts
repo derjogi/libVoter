@@ -35,7 +35,7 @@ class VectorStoreManager {
       }
     } catch (error) {
       // Create new collection if it doesn't exist
-      console.log("📝 Creating new vector store...");
+      console.log("📝 Collection not found, creating new vector store...");
       await this.createVectorStore();
     }
   }
@@ -257,6 +257,13 @@ class VectorStoreManager {
     console.log(
       `✅ Added ${processedCount}/${splitDocs.length} documents to vector store`
     );
+
+    // Persistence verification: Check final count after adding documents
+    const finalCount = await this.vectorStore!.collection!.count();
+    console.log(`🔍 Persistence verification: Final document count is ${finalCount}`);
+    if (finalCount === 0) {
+      throw new Error("Persistence failed: No documents found in vector store after population");
+    }
   }
 
   async query(question: string, maxResults: number = 5) {
