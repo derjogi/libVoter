@@ -37,7 +37,7 @@ export function CandidateList({
       // Search filter
       const matchesSearch = !searchQuery ||
         candidate.candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.candidate.party.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        candidate.candidate.party?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
         candidate.topMatchingPolicies.some(policy =>
           policy.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -66,8 +66,8 @@ export function CandidateList({
           bValue = b.candidate.name.toLowerCase();
           break;
         case 'party':
-          aValue = a.candidate.party.toLowerCase();
-          bValue = b.candidate.party.toLowerCase();
+          aValue = a.candidate.party?.toLowerCase() || '';
+          bValue = b.candidate.party?.toLowerCase() || '';
           break;
         default:
           return 0;

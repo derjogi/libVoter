@@ -10,10 +10,6 @@ export function isUserResponse(obj: any): obj is import('./index').UserResponse 
   return obj && typeof obj.id === 'string' && typeof obj.questionId === 'string';
 }
 
-export function isCandidate(obj: any): obj is import('./index').Candidate {
-  return obj && typeof obj.id === 'string' && typeof obj.name === 'string';
-}
-
 // Type assertions with validation
 export function assertIsUserSession(obj: any): asserts obj is import('./index').UserSession {
   if (!obj || typeof obj.id !== 'string') {

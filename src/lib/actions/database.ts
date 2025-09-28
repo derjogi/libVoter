@@ -4,7 +4,6 @@ import { db } from '@/lib/server/db';
 import { candidates, parties, appSettings } from '@/lib/db/schema';
 import { eq, like, or, ne, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import type { Candidate, CandidateMatch } from '@/types';
 
 // Load all candidates
 export async function loadCandidates() {

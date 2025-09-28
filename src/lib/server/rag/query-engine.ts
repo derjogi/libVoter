@@ -1,8 +1,7 @@
 // Server-only RAG query engine
 import { getVectorStoreManager } from './vector-store';
 import { createChatModel } from '@/lib/server/ai/model-factory';
-import { AIMessage, BaseMessage } from '@langchain/core/messages';
-import type { Candidate, PolicyPosition } from '@/types';
+import type { PolicyPosition } from '@/types';
 import type { ChatModel } from '@/lib/server/ai/model-factory';
 
 export interface RankedCandidate {
@@ -80,9 +79,10 @@ Format as JSON with candidates, policies, and sources arrays.
     //   sources: []
     // }));
     console.timeEnd("Time for: RAG Query ChatModel Invoke");
-
+    
     try {
       const parsed = JSON.parse(response.content as string);
+      console.debug("RAG response: \n\n", parsed)
       return {
         rankedCandidates,
         relevantPolicies: parsed.policies || policies,

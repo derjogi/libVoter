@@ -1,8 +1,6 @@
 'use server';
 
-import { RAGQueryEngine, type RAGContext } from '@/lib/server/rag/query-engine';
-import { getCandidatesByIds } from '@/lib/actions/database';
-import type { Candidate, PolicyPosition } from '@/types';
+import { RAGQueryEngine } from '@/lib/server/rag/query-engine';
 
 let ragEngine: RAGQueryEngine | null = null;
 

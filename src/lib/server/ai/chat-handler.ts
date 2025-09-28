@@ -185,16 +185,7 @@ export class AIChatHandler {
 
       // Transform to CandidateMatch format
       return result.data.map(candidate => ({
-        candidate: {
-          id: candidate.id.toString(),
-          name: candidate.name,
-          party: candidate.party || 'Independent',
-          profileData: {
-            positions: [], // Will be populated from candidate data
-            biography: candidate.candidate_statement || undefined
-          },
-          createdAt: candidate.created_at || new Date()
-        },
+        candidate,
         score: 75, // Default score for RAG-fetched candidates
         reasoning: 'Identified through semantic search',
         pros: [],
@@ -216,16 +207,7 @@ export class AIChatHandler {
 
     // Transform to CandidateMatch format
     return filteredCandidates.map(candidate => ({
-      candidate: {
-        id: candidate.id.toString(),
-        name: candidate.name,
-        party: candidate.party || 'Independent',
-        profileData: {
-          positions: [], // Will be populated from candidate data
-          biography: candidate.candidate_statement || undefined
-        },
-        createdAt: candidate.created_at || new Date()
-      },
+      candidate,
       score: 75, // Default score for RAG-fetched candidates
       reasoning: 'Identified through semantic search',
       pros: [],
@@ -253,13 +235,13 @@ export class AIChatHandler {
       );
 
       const newRankedCandidates = ragContext.rankedCandidates.filter(rc =>
-        !existingCandidateIds.has(rc.candidateId) && ragCandidateMap.has(rc.candidateId)
+        !existingCandidateIds.has(parseInt(rc.candidateId)) && ragCandidateMap.has(parseInt(rc.candidateId))
       );
 
       if (newRankedCandidates.length > 0) {
         ragInfo += '\nSemantically relevant candidates:';
         newRankedCandidates.slice(0, 3).forEach((rankedCandidate, index) => {
-          const candidate = ragCandidateMap.get(rankedCandidate.candidateId);
+          const candidate = ragCandidateMap.get(parseInt(rankedCandidate.candidateId));
           if (candidate) {
             const relevancePercent = Math.round(rankedCandidate.relevanceScore * 100);
             ragInfo += `\n${index + 1}. ${candidate.name} (${candidate.party}) - ${relevancePercent}% relevance`;
@@ -285,7 +267,7 @@ export class AIChatHandler {
       if (newPolicies.length > 0) {
         ragInfo += '\nRelevant policy positions:';
         newPolicies.slice(0, 3).forEach((policy: any) => {
-          const details = policy.details ? policy.details.substring(0, 100) : 'No details available';
+          const details = policy.details ? policy.details : 'No details available';
           ragInfo += `\n- ${policy.topic}: ${policy.stance} - ${details}...`;
         });
       }
@@ -481,13 +463,7 @@ Please select the next component that will best help narrow down the user's poli
           const topPolicies = this.extractTopPolicies(candidate);
 
           return {
-            candidate: {
-              id: candidate.id.toString(),
-              name: candidate.name,
-              party: candidate.party || 'Independent',
-              profileData: candidate.profileData || {},
-              createdAt: candidate.createdAt || new Date()
-            },
+            candidate,
             score,
             reasoning: explanationResult.success ? explanationResult.data : 'Unable to generate explanation',
             pros: [],
