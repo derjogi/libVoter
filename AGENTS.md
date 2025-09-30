@@ -1,0 +1,120 @@
+# Agent onboarding
+
+> **Read this file first.** It is the entry point for any AI agent (or human)
+> picking up development on `lib-voter`. It is intentionally short — deeper
+> details live in `docs/` and are linked from each section.
+
+## What this project is
+
+An AI-driven voting advisor for the **Auckland 2025 local council
+elections**. A user picks their ward, the app asks adaptive questions
+(chat / yes-no / multi-select / dropdown / free-text / slider), an LLM picks
+which question type to ask next, and a confidence-gated right panel reveals
+candidate matches with AI-generated explanations.
+
+Single-page Next.js 15 (App Router, React 19, Tailwind/shadcn, Bun runtime).
+LangChain orchestrates LLMs (OpenAI / Anthropic / **OpenRouter**). Candidate
+data lives in a committed SQLite file (`voting-advisor.db`) via Drizzle ORM.
+RAG uses **Chroma** in Docker with **local HuggingFace embeddings** (no
+embedding API costs).
+
+## Where to look (in this order)
+
+| Need to understand…                                | Read                                                                 |
+| -------------------------------------------------- | -------------------------------------------------------------------- |
+| The big picture, file layout, runtime data flow    | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                       |
+| How to install and run from scratch                | [`docs/SETUP.md`](docs/SETUP.md)                                     |
+| What happens screen-by-screen and component shapes | [`docs/USER_FLOW.md`](docs/USER_FLOW.md)                             |
+| Test status today and the plan for AI-free tests   | [`docs/TESTING.md`](docs/TESTING.md)                                 |
+| Product intent vs. code, and the NZ 2026 migration | [`docs/REQUIREMENTS_GAP.md`](docs/REQUIREMENTS_GAP.md)               |
+| Original (historical, partially out-of-date) spec  | [`.instructions/`](./.instructions) — treat as design intent, **not** ground truth |
+
+When the docs disagree with the code, **the code wins**. Update the doc.
+
+## Required prerequisites for running anything
+
+1. `bun install`
+2. `.env.local` with at least `OPENROUTER_API_KEY` (or `OPENAI_API_KEY` /
+   `ANTHROPIC_API_KEY`) and the model strings from `docs/SETUP.md`.
+3. Chroma running: `docker compose up -d chroma`
+4. `bun run dev` — first request takes minutes (downloads HF model, populates
+   Chroma).
+
+Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
+`HuggingFaceTransformersEmbeddings` in
+[`src/lib/server/ai/model-factory.ts`](src/lib/server/ai/model-factory.ts).
+
+## Known broken / sharp edges (non-obvious)
+
+- **`AIChatHandler.processMessage` throws** — `messages` and `candidates` are
+  referenced after their construction was commented out in
+  [`src/lib/server/ai/chat-handler.ts`](src/lib/server/ai/chat-handler.ts)
+  (~lines 55–80). Only the very first ward-dropdown turn works, because
+  [`src/app/page.tsx`](src/app/page.tsx) bypasses the handler and calls
+  `selectNextComponent` directly. **Fix this before doing anything else with
+  chat.**
+- **No mock layer for the LLM.** Every Server Action goes to a real model.
+  The Playwright spec (`test-chat-flow.spec.ts`) burns tokens and uses
+  `waitForTimeout(20000)` placeholders, which is why it's flaky and slow.
+  The plan to add an `AI_MODE=mock|local|live` seam is in
+  [`docs/TESTING.md`](docs/TESTING.md).
+- **LLM JSON outputs aren't validated.** When `selectNextComponent` returns
+  malformed JSON or an unexpected component shape, the UI silently breaks.
+  Wrap each `JSON.parse(result.response)` in a Zod check matching the target
+  component's `data` shape.
+- **`scripts/scrape-candidates.ts` `main()` is mostly commented out** — it
+  currently only re-populates the vector store. Re-enable the body to
+  actually re-scrape, and note it uses **headed** Chromium.
+- **Prompt model is hard-coded to `small`** in `PromptManager` and
+  `RAGQueryEngine`; `large`/`reasoning` are unused.
+- **`README.md` is the default Next.js template.** Don't trust it; this file
+  + `docs/` is the source of truth.
+- Three almost-duplicate prompt files exist:
+  [`src/lib/server/prompts/index.ts`](src/lib/server/prompts/index.ts) is the
+  template registry,
+  [`src/lib/server/prompts/prompt-manager.ts`](src/lib/server/prompts/prompt-manager.ts)
+  is the active singleton, and `src/lib/server/prompts/manager.ts` is a
+  stale duplicate worth deleting.
+
+## Architectural rules to respect when editing
+
+- **Server-only code lives under `src/lib/server/`** and must not be
+  imported from a client component. Cross via Server Actions in
+  [`src/lib/actions/`](src/lib/actions) (all marked `'use server'`).
+- **Client-only hooks live in `src/lib/client/hooks/`**.
+- **Types are centralized** in [`src/types/`](src/types). Drizzle schemas in
+  [`src/lib/db/schema.ts`](src/lib/db/schema.ts) double as the source of
+  truth for candidate data via `drizzle-zod`.
+- **Election parameters** are configured in a single file:
+  [`src/lib/config/election.ts`](src/lib/config/election.ts). To change
+  election: edit it, re-scrape, wipe `data/chroma/`.
+
+## Useful commands
+
+| Command                                          | Purpose                                |
+| ------------------------------------------------ | -------------------------------------- |
+| `bun run dev`                                    | Chroma (bg) + Next dev server          |
+| `bun run lint` / `bun run format`                | Biome                                  |
+| `bun run setup-env [setup\|validate]`            | Env scaffolding / validation           |
+| `bun run scrape:candidates`                      | Playwright scraper (headed Chromium)   |
+| `bunx drizzle-kit generate / migrate`            | Drizzle migrations                     |
+| `bunx playwright test test-chat-flow.spec.ts`    | E2E spec (currently hits real LLMs)    |
+
+## Conventions
+
+- **Package manager**: Bun (`bun.lock`). npm/pnpm probably work but aren't
+  tested.
+- **Version control**: Jujutsu (`.jj/`) on top of git (`.git/`). The original
+  spec asks for `jj describe` after each step.
+- **Lint/format**: Biome (`biome.json`). Run `bun run lint` before
+  committing.
+- **Tests**: Playwright spec at the repo root for now; new tests should land
+  under `tests/` once the structure in `docs/TESTING.md` is in place.
+
+## When in doubt
+
+1. Re-read the relevant `docs/*.md`.
+2. Search the actual code (`rg`) before guessing.
+3. Update `AGENTS.md` and `docs/` whenever you change something structural,
+   so the next agent (or you, in two months) doesn't have to reverse-engineer
+   it again.

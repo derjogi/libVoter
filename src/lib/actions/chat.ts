@@ -16,13 +16,13 @@ function getChatHandler() {
 export async function processChatMessage(
   message: string,
   conversationHistory: ConversationMessage[],
-  userResponses: UserResponse[],
+  userResponseHistory: UserResponse[],
   availableCandidates: Candidate[]
 ): Promise<ChatResponse> {
   try {
     const handler = getChatHandler();
     console.log('processChatMessage: \n', message);
-    const response = await handler.processMessage(message, conversationHistory, userResponses, availableCandidates);
+    const response = await handler.processMessage(message, conversationHistory, userResponseHistory, availableCandidates);
 
     return response;
   } catch (error) {

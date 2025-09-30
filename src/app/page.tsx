@@ -88,6 +88,8 @@ export default function VotingAdvisor() {
   const handleComponentResponse = async (response: any) => {
     try {
       
+      console.log(`Got response for ${currentComponent?.type}:\n`, response);
+
       if (
         currentComponent?.type === "dropdown" &&
         (currentComponent.data as DropdownData).questionId === "ward_selection"
@@ -134,11 +136,11 @@ export default function VotingAdvisor() {
       let processedResponse = response;
       let questionId = `question_${Date.now()}`;
 
-      if (currentComponent?.type === 'yesno' && typeof response === 'object' && 'index' in response) {
-        // For yesno components, include the statement index in the question ID
-        questionId = `yesno_statement_${response.index}_${Date.now()}`;
-        processedResponse = response.response; // Extract the actual response ('agree' | 'disagree' | 'skip')
-      } 
+      // if (currentComponent?.type === 'yesno' && typeof response === 'object' && 'index' in response) {
+      //   // For yesno components, include the statement index in the question ID
+      //   questionId = `yesno_statement_${response.index}_${Date.now()}`;
+      //   processedResponse = response.response; // Extract the actual response ('agree' | 'disagree' | 'skip')
+      // } 
 
       // Create user response record
       const userResponse: UserResponse = {

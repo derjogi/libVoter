@@ -16,7 +16,7 @@ export function useChat() {
 
   const sendMessage = useCallback(async (
     message: string,
-    userResponses: UserResponse[],
+    userResponseHistory: UserResponse[],
     availableCandidates: Candidate[]
   ) => {
     setIsLoading(true);
@@ -35,7 +35,7 @@ export function useChat() {
       setMessages(updatedHistory);
 
       // Process with AI
-      const result = await processChatMessage(message, updatedHistory || [], userResponses || [], availableCandidates);
+      const result = await processChatMessage(message, updatedHistory || [], userResponseHistory || [], availableCandidates);
 
       if (!result) {
         throw new Error('No response from server');

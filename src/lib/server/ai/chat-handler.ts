@@ -38,39 +38,39 @@ export class AIChatHandler {
   async processMessage(
     userMessage: string,
     conversationHistory: ConversationMessage[],
-    userResponses: UserResponse[],
+    userResponseHistory: UserResponse[],
     availableCandidates: Candidate[]
   ): Promise<ChatResponse> {
     try {
       // Calculate current confidence
       const confidenceResult = ConfidenceCalculator.calculate(
-        userResponses,
+        userResponseHistory,
         conversationHistory
       );
 
       // Calculate available wards from available candidates
       const availableWards = [...new Set(availableCandidates.map(c => c.ward))];
 
-      // Always fetch eligible candidates for AI context
-      const candidates = await this.generateCandidateMatches(userResponses, availableCandidates);
+      // // Always fetch eligible candidates for AI context
+      // const candidates = await this.generateCandidateMatches(userResponseHistory, availableCandidates);
 
-      // Query RAG for semantically relevant candidate information
-      const userContext = this.createUserProfileSummary(userResponses);
-      const ragContext = await this.queryRAGContext(userMessage, userContext);
+      // // Query RAG for semantically relevant candidate information
+      // const userContext = this.createUserProfileSummary(userResponseHistory);
+      // const ragContext = await this.queryRAGContext(userMessage, userContext);
 
       // Fetch full candidate data for RAG-ranked candidates
-      const ragCandidateIds = ragContext.rankedCandidates?.map(rc => rc.candidateId) || [];
-      const ragCandidates: CandidateMatch[] = ragCandidateIds.length > 0 && availableCandidates ? this.filterAndTransformCandidates(ragCandidateIds, availableCandidates) : [];
+      // const ragCandidateIds = ragContext.rankedCandidates?.map(rc => rc.candidateId) || [];
+      // const ragCandidates: CandidateMatch[] = ragCandidateIds.length > 0 && availableCandidates ? this.filterAndTransformCandidates(ragCandidateIds, availableCandidates) : [];
 
       // Prepare conversation context
-      const messages = this.buildConversationContext(
-        userMessage,
-        conversationHistory,
-        confidenceResult,
-        candidates,
-        ragContext,
-        ragCandidates
-      );
+      // const messages = this.buildConversationContext(
+      //   userMessage,
+      //   conversationHistory,
+      //   confidenceResult,
+      //   availableCandidates,
+      //   ragContext,
+      //   ragCandidates
+      // );
 
       // Get AI response with validation
       console.log(`Processing message with AI model`);
@@ -82,7 +82,7 @@ export class AIChatHandler {
         responseText,
         confidenceResult,
         conversationHistory,
-        userResponses,
+        userResponseHistory,
         availableWards
       );
       console.log('Next component:', JSON.stringify(nextComponent));
@@ -90,7 +90,7 @@ export class AIChatHandler {
       const config = getAIConfig();
       const shouldShowCandidates =
         confidenceResult.score >= config.thresholds.confidence &&
-        userResponses.length >= config.thresholds.minInteractions;
+        userResponseHistory.length >= config.thresholds.minInteractions;
 
       // Generate followup question if confidence is low
       let followupQuestion;
@@ -173,29 +173,6 @@ export class AIChatHandler {
         relevantPolicies: [],
         sources: []
       };
-    }
-  }
-
-  private async fetchCandidatesByIds(ids: string[]): Promise<CandidateMatch[]> {
-    try {
-      const result = await getCandidatesByIds(ids);
-      if (!result.success || !result.data) {
-        return [];
-      }
-
-      // Transform to CandidateMatch format
-      return result.data.map(candidate => ({
-        candidate,
-        score: 75, // Default score for RAG-fetched candidates
-        reasoning: 'Identified through semantic search',
-        pros: [],
-        cons: [],
-        topMatchingPolicies: this.extractTopPolicies(candidate),
-        sources: []
-      }));
-    } catch (error) {
-      console.error('Error fetching candidates by IDs:', error);
-      return [];
     }
   }
 
@@ -285,21 +262,21 @@ export class AIChatHandler {
     userMessage: string,
     history: ConversationMessage[],
     confidence: { score: number; reasoning: string },
-    candidates: CandidateMatch[],
-    ragContext: RAGContext,
-    ragCandidates: CandidateMatch[]
+    candidates: Candidate[],
+    // ragContext: RAGContext,
+    // ragCandidates: CandidateMatch[]
   ): (HumanMessage | AIMessage | SystemMessage)[] {
     const messages: (HumanMessage | AIMessage | SystemMessage)[] = [];
 
     // System prompt
     const candidateInfo = candidates.length > 0
       ? `\n\nAvailable candidates for consideration:\n${candidates.map(c =>
-          `- ${c.candidate.name} (${c.candidate.party}): ${c.topMatchingPolicies?.join(', ')}`
+          `- ${c.name} (${c.party}): ${c.topMatchingPolicies?.join(', ')}`
         ).join('\n')}`
       : '\n\nNo candidates available yet.';
 
     // Add RAG-enhanced context without duplicating structured data
-    const ragInfo = this.formatRAGContext(ragContext, candidates, ragCandidates);
+    // const ragInfo = this.formatRAGContext(ragContext, candidates, ragCandidates);
 
     messages.push(new SystemMessage(
       `You are an AI political advisor helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
@@ -449,7 +426,7 @@ Please select the next component that will best help narrow down the user's poli
           // Generate a simple score (in production, use more sophisticated matching)
           const score = this.calculateCandidateScore(candidate, userResponses);
 
-          let explanationResult = {success: true, data: "Too many candidates"};
+          let explanationResult = {success: true, data: "Too many candidates to fetch detailed explanation. Please narrow down candidate selection more to generate match explanations."};
           if (candidates.length <= 3) {
             // Generate explanation
             explanationResult = await explainCandidateMatch(
@@ -558,11 +535,6 @@ Please select the next component that will best help narrow down the user's poli
     if (candidate.top_issues && policies.length < 3) {
       const issues = candidate.top_issues.split(',').map((s: string) => s.trim());
       policies.push(...issues.slice(0, 3 - policies.length));
-    }
-
-    // Fallback if no policies found
-    if (policies.length === 0) {
-      policies.push('General representation', 'Community service', 'Local governance');
     }
 
     return policies.slice(0, 3); // Ensure max 3 policies
