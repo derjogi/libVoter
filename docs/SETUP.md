@@ -112,7 +112,7 @@ The scraper is currently mostly commented-out in `scripts/scrape-candidates.ts`
 | `bun run dev`                        | start chroma in bg + Next dev server (Turbopack)    |
 | `bun run build` / `bun run start`    | production build / serve                            |
 | `bun run lint` / `bun run format`    | Biome check / write                                 |
-| `bun run chroma`                     | `docker compose start chroma`                       |
+| `bun run chroma`                     | `docker compose up -d chroma` (creates if missing)  |
 | `bun run setup-env [setup|validate]` | env scaffolding / validation                        |
 | `bun run validate-env`               | run `setup-env validate`                            |
 | `bun run scrape:candidates`          | Playwright scraper (see above)                      |
