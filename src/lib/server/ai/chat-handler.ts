@@ -48,29 +48,30 @@ export class AIChatHandler {
         conversationHistory
       );
 
-      // Calculate available wards from available candidates
-      const availableWards = [...new Set(availableCandidates.map(c => c.ward))];
+      // Calculate available seats (electorates/wards) from available candidates
+      const availableSeats = [...new Set(availableCandidates.map(c => c.ward))];
 
-      // // Always fetch eligible candidates for AI context
-      // const candidates = await this.generateCandidateMatches(userResponseHistory, availableCandidates);
+      // Build a minimal conversation context (no RAG yet — see spec 005)
+      const systemPrompt = `You are an AI political advisor helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
+Current confidence level: ${confidenceResult.score}/100
+Reasoning: ${confidenceResult.reasoning}
 
-      // // Query RAG for semantically relevant candidate information
-      // const userContext = this.createUserProfileSummary(userResponseHistory);
-      // const ragContext = await this.queryRAGContext(userMessage, userContext);
+Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
+Focus on policy topics including ${electionConfig.keyTopics.join(', ')} and candidate positions.
+Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.`;
 
-      // Fetch full candidate data for RAG-ranked candidates
-      // const ragCandidateIds = ragContext.rankedCandidates?.map(rc => rc.candidateId) || [];
-      // const ragCandidates: CandidateMatch[] = ragCandidateIds.length > 0 && availableCandidates ? this.filterAndTransformCandidates(ragCandidateIds, availableCandidates) : [];
+      const recentHistory = conversationHistory.slice(-10);
+      const messages: (HumanMessage | AIMessage | SystemMessage)[] = [
+        new SystemMessage(systemPrompt),
+        ...recentHistory.map(h =>
+          h.role === 'user' ? new HumanMessage(h.content) : new AIMessage(h.content)
+        ),
+        new HumanMessage(userMessage),
+      ];
 
-      // Prepare conversation context
-      // const messages = this.buildConversationContext(
-      //   userMessage,
-      //   conversationHistory,
-      //   confidenceResult,
-      //   availableCandidates,
-      //   ragContext,
-      //   ragCandidates
-      // );
+      // Candidate ranking will move to spec 005; for now return [] so the client
+      // keeps using its existing list rather than overwriting it.
+      const candidates: CandidateMatch[] = [];
 
       // Get AI response with validation
       console.log(`Processing message with AI model`);
@@ -83,7 +84,7 @@ export class AIChatHandler {
         confidenceResult,
         conversationHistory,
         userResponseHistory,
-        availableWards
+        availableSeats
       );
       console.log('Next component:', JSON.stringify(nextComponent));
       // Check if we should show candidates
@@ -97,11 +98,11 @@ export class AIChatHandler {
       if (confidenceResult.score < 70) {
         try {
           const context = `AI Response: ${responseText}\nConfidence: ${confidenceResult.score}/100\nReasoning: ${confidenceResult.reasoning}`;
-          const followupResult = await generateFollowupQuestion(userMessage, context, availableWards);
+          const followupResult = await generateFollowupQuestion(userMessage, context, availableSeats);
           if (followupResult.success && followupResult.data) {
             followupQuestion = {
               question: followupResult.data.question,
-              type: followupResult.data.type,
+              type: followupResult.data.type ?? 'chat',
               reasoning: followupResult.data.reasoning
             };
           }
@@ -258,59 +259,13 @@ export class AIChatHandler {
     return ragInfo;
   }
 
-  private buildConversationContext(
-    userMessage: string,
-    history: ConversationMessage[],
-    confidence: { score: number; reasoning: string },
-    candidates: Candidate[],
-    // ragContext: RAGContext,
-    // ragCandidates: CandidateMatch[]
-  ): (HumanMessage | AIMessage | SystemMessage)[] {
-    const messages: (HumanMessage | AIMessage | SystemMessage)[] = [];
-
-    // System prompt
-    const candidateInfo = candidates.length > 0
-      ? `\n\nAvailable candidates for consideration:\n${candidates.map(c =>
-          `- ${c.name} (${c.party}): ${c.topMatchingPolicies?.join(', ')}`
-        ).join('\n')}`
-      : '\n\nNo candidates available yet.';
-
-    // Add RAG-enhanced context without duplicating structured data
-    // const ragInfo = this.formatRAGContext(ragContext, candidates, ragCandidates);
-
-    messages.push(new SystemMessage(
-      `You are an AI political advisor helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
-      Current confidence level: ${confidence.score}/100
-      Reasoning: ${confidence.reasoning}${candidateInfo}${ragInfo}
-
-      Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
-      Focus on policy topics including ${electionConfig.keyTopics.join(', ')} and candidate positions.
-      Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.`
-    ));
-
-    // Add recent conversation history (last 10 messages)
-    const recentHistory = history.slice(-10);
-    for (const msg of recentHistory) {
-      if (msg.role === 'user') {
-        messages.push(new HumanMessage(msg.content));
-      } else {
-        messages.push(new AIMessage(msg.content));
-      }
-    }
-
-    // Add current user message
-    messages.push(new HumanMessage(userMessage));
-
-    return messages;
-  }
-
   private async determineNextComponent(
     userMessage: string,
     aiResponse: string,
     confidence: { score: number; reasoning: string },
     history: ConversationMessage[],
     userResponses: UserResponse[],
-    availableWards: string[]
+    availableSeats: string[]
   ): Promise<ComponentData | undefined> {
     const config = getAIConfig();
 
@@ -341,7 +296,7 @@ Please select the next component that will best help narrow down the user's poli
 
     try {
       console.log('Calling selectNextComponent with conversation state');
-      const result = await selectNextComponent(conversationState, availableWards);
+      const result = await selectNextComponent(conversationState, availableSeats);
 
       if (result.success && result.data) {
         console.log('Component selection result:', result.data);
@@ -365,16 +320,16 @@ Please select the next component that will best help narrow down the user's poli
 
     // Check if ward has been selected
     if (!userResponses.some(r => r.questionId === 'ward_selection')) {
-      if (availableWards.length > 0) {
-        const options = availableWards.map(ward => ({ id: ward, label: ward, description: '' }));
+      if (availableSeats.length > 0) {
+        const options = availableSeats.map(seat => ({ id: seat, label: seat, description: '' }));
         return {
           type: 'multiselect',
           data: {
-            question: 'Which ward do you live in?',
+            question: `Which ${electionConfig.seatLabel} do you live in?`,
             options,
             maxSelections: 1,
-            questionId: 'ward_selection'
-          }
+            questionId: 'ward_selection',
+          },
         };
       }
     }

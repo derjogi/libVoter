@@ -1,9 +1,16 @@
 'use server';
 
 import { db } from '@/lib/server/db';
-import { candidates, parties, appSettings } from '@/lib/db/schema';
-import { eq, like, or, ne, inArray } from 'drizzle-orm';
+import {
+  candidates,
+  parties,
+  appSettings,
+  races,
+  candidacies,
+} from '@/lib/db/schema';
+import { eq, like, or, ne, inArray, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { electionConfig } from '@/lib/config/election';
 
 // Load all candidates
 export async function loadCandidates() {
@@ -75,6 +82,9 @@ export async function getAppSetting(key: string) {
 }
 
 // Get unique wards from candidates table, excluding "Mayor"
+//
+// Kept for backward compatibility. Prefer `getSeatsForCurrentElection()` which
+// uses the new `races` table and works for any election.
 export async function getUniqueWards() {
   try {
     const data = await db
@@ -88,6 +98,51 @@ export async function getUniqueWards() {
   } catch (error) {
     console.error('Error loading wards:', error);
     return { success: false, error: 'Failed to load wards' };
+  }
+}
+
+/**
+ * Generic version of `getUniqueWards()`: returns the list of seats (wards or
+ * electorates) the user can pick from for the currently configured election.
+ *
+ * Prefers the new `races` table (filled by spec-002 migration). Falls back to
+ * the legacy `candidates.ward` column if races haven't been backfilled yet,
+ * so the running app keeps working.
+ */
+export async function getSeatsForCurrentElection() {
+  try {
+    const electionId = electionConfig.id;
+
+    // Try the new schema first.
+    const userFacingKinds = electionConfig.seatTypes.filter(
+      (k) => k !== 'mayor' && k !== 'list'
+    );
+
+    if (userFacingKinds.length > 0) {
+      const rows = await db
+        .selectDistinct({ name: races.name, district: races.district })
+        .from(races)
+        .where(
+          and(
+            eq(races.electionId, electionId),
+            inArray(races.kind, userFacingKinds)
+          )
+        )
+        .orderBy(races.name);
+
+      if (rows.length > 0) {
+        return {
+          success: true,
+          data: rows.map((r) => r.district ?? r.name),
+        };
+      }
+    }
+
+    // Fallback: legacy candidates.ward.
+    return getUniqueWards();
+  } catch (error) {
+    console.error('Error loading seats:', error);
+    return getUniqueWards();
   }
 }
 

@@ -1,6 +1,11 @@
 'use server';
 
 import { getPromptManager } from '@/lib/server/prompts/prompt-manager';
+import {
+  parseComponentSpec,
+  parseQuestionResponse,
+  SAFE_FALLBACK_COMPONENT,
+} from '@/types/components.zod';
 import type { ConversationMessage, UserResponse } from '@/types';
 
 export async function generateNextQuestion(
@@ -19,31 +24,27 @@ export async function generateNextQuestion(
         fallback: {
           question: 'What are your thoughts on current political issues?',
           type: 'chat',
-          context: 'General political discussion'
-        }
+          context: 'General political discussion',
+        },
       };
     }
 
-    // Parse the JSON response
-    try {
-      const parsed = JSON.parse(result.response);
-      return {
-        success: true,
-        data: parsed,
-        metadata: result.metadata
-      };
-    } catch (parseError) {
-      // If JSON parsing fails, return a fallback
-      return {
-        success: false,
-        error: 'Failed to parse AI response',
-        fallback: {
-          question: result.response, // Use raw response as question
-          type: questionType,
-          context: 'AI-generated question'
-        }
-      };
+    const validated = parseQuestionResponse(result.response);
+    if (validated) {
+      return { success: true, data: validated, metadata: result.metadata };
     }
+
+    // Couldn't parse / validate. Treat the raw response as a chat question.
+    console.warn('generateNextQuestion: invalid LLM JSON, falling back to raw text');
+    return {
+      success: false,
+      error: 'Failed to validate AI response',
+      fallback: {
+        question: typeof result.response === 'string' ? result.response : 'Tell me more about your views.',
+        type: questionType,
+        context: 'AI-generated question (validation failed)',
+      },
+    };
   } catch (error) {
     console.error('Question generation failed:', error);
     return {
@@ -52,8 +53,8 @@ export async function generateNextQuestion(
       fallback: {
         question: 'What political topics interest you most?',
         type: 'chat',
-        context: 'Fallback question'
-      }
+        context: 'Fallback question',
+      },
     };
   }
 }
@@ -61,11 +62,11 @@ export async function generateNextQuestion(
 export async function generateFollowupQuestion(
   lastResponse: string,
   context: string,
-  availableWards?: string[]
+  availableSeats?: string[]
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.generateFollowupQuestion(lastResponse, context, availableWards);
+    const result = await manager.generateFollowupQuestion(lastResponse, context, availableSeats);
 
     if (!result.success) {
       return {
@@ -74,29 +75,26 @@ export async function generateFollowupQuestion(
         fallback: {
           question: 'Can you tell me more about that?',
           type: 'chat',
-          reasoning: 'Follow-up to previous response'
-        }
+          reasoning: 'Follow-up to previous response',
+        },
       };
     }
 
-    try {
-      const parsed = JSON.parse(result.response);
-      return {
-        success: true,
-        data: parsed,
-        metadata: result.metadata
-      };
-    } catch (parseError) {
-      return {
-        success: false,
-        error: 'Failed to parse followup response',
-        fallback: {
-          question: result.response,
-          type: 'chat',
-          reasoning: 'AI-generated followup'
-        }
-      };
+    const validated = parseQuestionResponse(result.response);
+    if (validated) {
+      return { success: true, data: validated, metadata: result.metadata };
     }
+
+    console.warn('generateFollowupQuestion: invalid LLM JSON, falling back to raw text');
+    return {
+      success: false,
+      error: 'Failed to validate followup response',
+      fallback: {
+        question: typeof result.response === 'string' ? result.response : 'Can you elaborate on your previous answer?',
+        type: 'chat',
+        reasoning: 'AI-generated followup (validation failed)',
+      },
+    };
   } catch (error) {
     console.error('Followup generation failed:', error);
     return {
@@ -105,60 +103,44 @@ export async function generateFollowupQuestion(
       fallback: {
         question: 'Can you elaborate on your previous answer?',
         type: 'chat',
-        reasoning: 'Fallback followup'
-      }
+        reasoning: 'Fallback followup',
+      },
     };
   }
 }
 
 export async function selectNextComponent(
   conversationState: string,
-  availableWards?: string[]
+  availableSeats?: string[]
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.selectComponent(conversationState, availableWards);
+    const result = await manager.selectComponent(conversationState, availableSeats);
 
     if (!result.success) {
       return {
-        success: false,
+        success: true,
+        data: SAFE_FALLBACK_COMPONENT,
+        validationFailed: true,
         error: result.error,
-        fallback: {
-          component: 'chat',
-          reasoning: 'Default to chat interface',
-          data: { placeholder: 'Continue the conversation...' }
-        }
       };
     }
 
-    try {
-      const parsed = JSON.parse(result.response);
-      return {
-        success: true,
-        data: parsed,
-        metadata: result.metadata
-      };
-    } catch (parseError) {
-      return {
-        success: false,
-        error: 'Failed to parse component selection',
-        fallback: {
-          component: 'chat',
-          reasoning: 'Fallback to chat',
-          data: { placeholder: 'What would you like to discuss?' }
-        }
-      };
-    }
+    const { spec, ok, error } = parseComponentSpec(result.response);
+    return {
+      success: true,
+      data: spec,
+      validationFailed: !ok,
+      error: ok ? undefined : error,
+      metadata: result.metadata,
+    };
   } catch (error) {
     console.error('Component selection failed:', error);
     return {
-      success: false,
+      success: true,
+      data: SAFE_FALLBACK_COMPONENT,
+      validationFailed: true,
       error: 'Failed to select component',
-      fallback: {
-        component: 'chat',
-        reasoning: 'Error fallback',
-        data: { placeholder: 'Please continue...' }
-      }
     };
   }
 }
@@ -170,28 +152,26 @@ export async function explainCandidateMatch(
 ) {
   try {
     const manager = getPromptManager();
-    console.log("Explaining Match...")
+    console.log("Explaining Match...");
     const result = await manager.explainMatch(userProfile, candidateInfo, matchScore);
 
     return {
       success: result.success,
       data: result.success ? result.response : null,
       error: result.error,
-      metadata: result.metadata
+      metadata: result.metadata,
     };
   } catch (error) {
     console.error('Match explanation failed:', error);
     return {
       success: false,
       error: 'Failed to generate explanation',
-      data: 'This candidate appears to align with your stated preferences.'
+      data: 'This candidate appears to align with your stated preferences.',
     };
   }
 }
 
-export async function summarizeUserPreferences(
-  userResponses: UserResponse[]
-) {
+export async function summarizeUserPreferences(userResponses: UserResponse[]) {
   try {
     const manager = getPromptManager();
     const result = await manager.summarizePreferences(userResponses);
@@ -200,14 +180,14 @@ export async function summarizeUserPreferences(
       success: result.success,
       data: result.success ? result.response : null,
       error: result.error,
-      metadata: result.metadata
+      metadata: result.metadata,
     };
   } catch (error) {
     console.error('Preference summarization failed:', error);
     return {
       success: false,
       error: 'Failed to summarize preferences',
-      data: 'Based on your responses, you have shown interest in various political topics.'
+      data: 'Based on your responses, you have shown interest in various political topics.',
     };
   }
 }

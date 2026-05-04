@@ -8,7 +8,12 @@ import { ComponentRenderer } from '@/components/dynamic/ComponentRenderer';
 import { RightPanel } from '@/components/layout/RightPanel';
 import { useChat } from '@/lib/client/hooks/useChat';
 import { selectNextComponent } from '@/lib/actions/prompts';
-import { getCandidatesByWard, getUniqueWards, getMayorCandidates } from '@/lib/actions/database';
+import {
+  getCandidatesByWard,
+  getSeatsForCurrentElection,
+  getMayorCandidates,
+} from '@/lib/actions/database';
+import { electionConfig } from '@/lib/config/election';
 import type { UserResponse, ComponentData, CandidateMatch, DropdownData } from '@/types';
 import type { Candidate } from '@/lib/db/schema';
 
@@ -21,9 +26,13 @@ export default function VotingAdvisor() {
   const [showCandidates, setShowCandidates] = useState(false);
   const [preferenceSummary, setPreferenceSummary] = useState<string>('Your Preferences');
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
-  const [wards, setWards] = useState<string[]>([]);
-  const [isLoadingWards, setIsLoadingWards] = useState(true);
+  const [seats, setSeats] = useState<string[]>([]);
+  const [isLoadingSeats, setIsLoadingSeats] = useState(true);
   const [availableCandidates, setAvailableCandidates] = useState<Candidate[]>([]);
+
+  // Pretty user-facing label for the seat ("ward" / "electorate") from the
+  // current election config.
+  const seatLabel = electionConfig.seatLabel;
 
   const { messages, isLoading, sendMessage, clearChat, followupQuestion } = useChat();
 
@@ -38,39 +47,39 @@ export default function VotingAdvisor() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Fetch wards on component mount
+  // Fetch seats (electorates / wards) on component mount
   useEffect(() => {
-    const fetchWards = async () => {
+    const fetchSeats = async () => {
       try {
-        const wardResult = await getUniqueWards();
-        if (wardResult.success && wardResult.data) {
-          setWards(wardResult.data);
+        const result = await getSeatsForCurrentElection();
+        if (result.success && result.data) {
+          setSeats(result.data);
         }
       } catch (error) {
-        console.error('Error fetching wards:', error);
+        console.error('Error fetching seats:', error);
       } finally {
-        setIsLoadingWards(false);
+        setIsLoadingSeats(false);
       }
     };
 
-    fetchWards();
+    fetchSeats();
   }, []);
 
-  // Initialize with ward selection component
+  // Initialize with seat selection component
   useEffect(() => {
-    if (!currentComponent && !isLoadingWards && wards.length > 0) {
-      const options = wards.map(ward => ({ id: ward, label: ward, description: '' }));
+    if (!currentComponent && !isLoadingSeats && seats.length > 0) {
+      const options = seats.map(seat => ({ id: seat, label: seat, description: '' }));
       setCurrentComponent({
         type: 'dropdown',
         data: {
-          question: 'Which ward do you live in?',
+          question: `Which ${seatLabel} do you live in?`,
           options,
-          placeholder: 'Select your ward...',
-          questionId: 'ward_selection'
-        }
+          placeholder: `Select your ${seatLabel}...`,
+          questionId: 'ward_selection',
+        },
       });
     }
-  }, [currentComponent, isLoadingWards, wards]);
+  }, [currentComponent, isLoadingSeats, seats, seatLabel]);
 
   // Update messages in currentComponent when messages change
   useEffect(() => {
@@ -107,7 +116,7 @@ export default function VotingAdvisor() {
         setAvailableCandidates(allCandidates);
 
         const candidateNames = allCandidates.map(c => c.name);
-        const conversationState = `I am voting in ${response}, and the following candidates are running: \n${candidateNames?.join(
+        const conversationState = `I am voting in the ${response} ${seatLabel}, and the following candidates are running: \n${candidateNames?.join(
           "\n"
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 
@@ -187,19 +196,19 @@ export default function VotingAdvisor() {
 
   const handleReset = () => {
     clearChat();
-    if (wards.length > 0) {
-      const options = wards.map(ward => ({ id: ward, label: ward, description: '' }));
+    if (seats.length > 0) {
+      const options = seats.map(seat => ({ id: seat, label: seat, description: '' }));
       setCurrentComponent({
         type: 'dropdown',
         data: {
-          question: 'Which ward do you live in?',
+          question: `Which ${seatLabel} do you live in?`,
           options,
-          placeholder: 'Select your ward...',
-          questionId: 'ward_selection'
-        }
+          placeholder: `Select your ${seatLabel}...`,
+          questionId: 'ward_selection',
+        },
       });
     } else {
-      // Fallback to chat if wards not loaded
+      // Fallback to chat if seats not loaded
       setCurrentComponent({
         type: 'chat',
         data: {
@@ -256,10 +265,12 @@ export default function VotingAdvisor() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {isLoadingWards ? (
+                {isLoadingSeats ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading wards...</p>
+                    <p className="text-muted-foreground">
+                      Loading {electionConfig.seatLabelPlural}...
+                    </p>
                   </div>
                 ) : currentComponent ? (
                   <ComponentRenderer
@@ -280,15 +291,19 @@ export default function VotingAdvisor() {
             </Card>
           </div>
 
-          {/* Right Side - Candidate Matches */}
+          {/* Right Side - Candidate Matches (always visible per spec 005) */}
           <div className={`${isMobile && !showCandidates ? 'hidden' : 'block'}`}>
             <RightPanel
               candidates={candidates}
               confidence={confidence}
-              isVisible={showCandidates || confidence > 30}
               isMobile={isMobile}
               onCandidateSelect={handleCandidateSelect}
               userResponses={userResponses}
+              onReadyToDecide={() => {
+                // User has chosen to stop. Collapse the question panel by
+                // surfacing the right panel on mobile.
+                setShowCandidates(true);
+              }}
             />
           </div>
         </div>

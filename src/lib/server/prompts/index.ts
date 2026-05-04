@@ -175,7 +175,7 @@ Consider:
 - Variety in interaction types used so far
 - User's response patterns and depth of answers
 - What would most effectively narrow down their political preferences for {electionDescription}
-- Available wards: {electionWards}
+- Available {electionSeatLabelPlural} (the seat the voter lives in): {electionSeats}
 
 Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
 
@@ -194,7 +194,7 @@ Guidelines for data generation:
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
 - chat: Use empty messages array and a relevant placeholder text
 - freetext: Include a clear prompt, placeholder text, and optional maxLength`,
-    variables: ["conversationState", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription", "electionWards"],
+    variables: ["conversationState", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription", "electionSeatLabelPlural", "electionSeats"],
     description:
       "Determines optimal UI component for next user interaction and generates component data",
     version: "1.0",

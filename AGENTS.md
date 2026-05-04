@@ -46,22 +46,18 @@ Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
 
 ## Known broken / sharp edges (non-obvious)
 
-- **`AIChatHandler.processMessage` throws** — `messages` and `candidates` are
-  referenced after their construction was commented out in
-  [`src/lib/server/ai/chat-handler.ts`](src/lib/server/ai/chat-handler.ts)
-  (~lines 55–80). Only the very first ward-dropdown turn works, because
-  [`src/app/page.tsx`](src/app/page.tsx) bypasses the handler and calls
-  `selectNextComponent` directly. **Fix this before doing anything else with
-  chat.**
-- **No mock layer for the LLM.** Every Server Action goes to a real model.
-  The Playwright spec (`test-chat-flow.spec.ts`) burns tokens and uses
-  `waitForTimeout(20000)` placeholders, which is why it's flaky and slow.
-  The plan to add an `AI_MODE=mock|local|live` seam is in
-  [`docs/TESTING.md`](docs/TESTING.md).
-- **LLM JSON outputs aren't validated.** When `selectNextComponent` returns
-  malformed JSON or an unexpected component shape, the UI silently breaks.
-  Wrap each `JSON.parse(result.response)` in a Zod check matching the target
-  component's `data` shape.
+- ~~**`AIChatHandler.processMessage` throws**~~ — fixed in spec 001 (May
+  2026). The handler now builds `messages` inline and returns `[]` for
+  candidates; full ranking lives in spec 005.
+- ~~**No mock layer for the LLM.**~~ Spec 006 added `AI_MODE=mock`. Set it
+  in `.env.local` (or per-command, e.g. `AI_MODE=mock bun run dev`) and
+  every chat / embedding call returns deterministic fixtures from
+  [`src/lib/server/ai/__mocks__/responses.ts`](src/lib/server/ai/__mocks__/responses.ts).
+  Vitest unit tests run under mock mode automatically (`bun run test`).
+- ~~**LLM JSON outputs aren't validated.**~~ Spec 004 added Zod schemas in
+  [`src/types/components.zod.ts`](src/types/components.zod.ts) used by
+  every `actions/prompts.ts` entry point. Malformed responses fall back to
+  a safe chat component instead of breaking the UI.
 - **`scripts/scrape-candidates.ts` `main()` is mostly commented out** — it
   currently only re-populates the vector store. Re-enable the body to
   actually re-scrape, and note it uses **headed** Chromium.

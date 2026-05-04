@@ -11,7 +11,13 @@
     "setup-env": "bun run scripts/setup-env.ts",
     "validate-env": "bun run scripts/setup-env.ts validate",
     "scrape:candidates": "bun scripts/scrape-candidates.ts",
+    "scrape:nz-2026": "bun scripts/scrape-nz-2026.ts",
+    "migrate:to-races": "bun scripts/migrate-to-races.ts",
     "test:election-config": "bun run scripts/test-election-config.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "AI_MODE=mock playwright test",
+    "test:e2e:live": "AI_MODE=live playwright test",
     "chroma": "docker compose up -d chroma"
   },
   "dependencies": {
@@ -51,10 +57,13 @@
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@types/uuid": "^10.0.0",
+    "@vitest/ui": "^4.1.5",
     "drizzle-kit": "^0.31.4",
+    "happy-dom": "^20.9.0",
     "playwright-core": "^1.55.0",
     "tailwindcss": "^4.1.13",
     "tw-animate-css": "^1.3.8",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.5"
   }
 }

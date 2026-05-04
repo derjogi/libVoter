@@ -29,6 +29,13 @@
       "when": 1757993309265,
       "tag": "0003_sleepy_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1777888724358,
+      "tag": "0004_flexible_election_schema",
+      "breakpoints": true
     }
   ]
 }

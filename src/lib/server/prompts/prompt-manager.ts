@@ -4,7 +4,7 @@ import { createChatModel } from '@/lib/server/ai/model-factory';
 import { electionConfig, type ElectionConfig } from '@/lib/config/election';
 import type { ConversationMessage, UserResponse } from '@/types';
 import type { ChatModel } from '@/lib/server/ai/model-factory';
-import { getUniqueWards } from '@/lib/actions/database';
+import { getSeatsForCurrentElection } from '@/lib/actions/database';
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -36,14 +36,25 @@ export class PromptManager {
     try {
       const template = getPrompt(promptId);
 
-      // Merge election variables into the provided variables
+      // Merge election variables into the provided variables.
+      // `electionSeats` is the generic name; `electionWards` is the legacy alias
+      // some prompt templates still use. Both resolve to the same list.
+      const seats =
+        variables.electionSeats ||
+        variables.electionWards ||
+        (await getSeatsForCurrentElection()).data?.join(', ');
+
       const electionVariables = {
         electionYear: this.electionConfig.year,
         electionType: this.electionConfig.type,
         electionLocation: this.electionConfig.location,
         electionKeyTopics: this.electionConfig.keyTopics.join(', '),
         electionDescription: this.electionConfig.description,
-        electionWards: variables.electionWards || (await getUniqueWards()).data?.join(', ')
+        electionSeatLabel: this.electionConfig.seatLabel,
+        electionSeatLabelPlural: this.electionConfig.seatLabelPlural,
+        electionVotingSystem: this.electionConfig.votingSystem,
+        electionWards: seats,
+        electionSeats: seats,
       };
 
       const allVariables = { ...variables, ...electionVariables };
@@ -111,22 +122,22 @@ export class PromptManager {
   async generateFollowupQuestion(
     lastResponse: string,
     context: string,
-    availableWards?: string[]
+    availableSeats?: string[]
   ): Promise<PromptExecutionResult> {
     return this.executePrompt('FOLLOWUP_QUESTION', {
       lastResponse,
       context,
-      electionWards: availableWards?.join(', ')
+      electionSeats: availableSeats?.join(', '),
     });
   }
 
   async selectComponent(
     conversationState: string,
-    availableWards?: string[]
+    availableSeats?: string[]
   ): Promise<PromptExecutionResult> {
     return this.executePrompt('COMPONENT_SELECTOR', {
       conversationState,
-      electionWards: availableWards?.join(', ')
+      electionSeats: availableSeats?.join(', '),
     });
   }
 

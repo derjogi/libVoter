@@ -5,13 +5,28 @@ import { OpenAIEmbeddings } from '@langchain/openai';
 import { getAIConfig } from './config';
 import type { AIModelConfig } from './config';
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
+import { MockChatModel, MockEmbeddings } from './mock-models';
 
-export type ChatModel = ChatOpenAI | ChatAnthropic;
-export type EmbeddingModel = OpenAIEmbeddings | HuggingFaceTransformersEmbeddings;
+export type ChatModel = ChatOpenAI | ChatAnthropic | MockChatModel;
+export type EmbeddingModel =
+  | OpenAIEmbeddings
+  | HuggingFaceTransformersEmbeddings
+  | MockEmbeddings;
+
+/** Returns true when AI_MODE=mock is set (free, deterministic responses). */
+export function isMockMode(): boolean {
+  return process.env.AI_MODE === 'mock';
+}
+
 /**
  * Creates a chat model instance based on the provided configuration
  */
 export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
+  if (isMockMode()) {
+    console.log('AI_MODE=mock — using MockChatModel');
+    return new MockChatModel();
+  }
+
   const config = getAIConfig();
   const finalConfig = modelConfig || config.models.small;
 
@@ -57,9 +72,13 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
 }
 
 /**
- * Creates an embedding model instance
- * Currently only supports Huggingface embeddings (I don't have credit on OpenAI, and OpenRouter doesn't have embeddingModels)
+ * Creates an embedding model instance.
+ * AI_MODE=mock returns a deterministic in-memory MockEmbeddings; otherwise
+ * Huggingface (no API costs).
  */
 export function createEmbeddingModel(): EmbeddingModel {
+  if (isMockMode()) {
+    return new MockEmbeddings();
+  }
   return new HuggingFaceTransformersEmbeddings();
 }

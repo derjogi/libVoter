@@ -16,19 +16,25 @@ import { error } from 'console';
 interface RightPanelProps {
   candidates: CandidateMatch[];
   confidence: number;
-  isVisible: boolean;
+  /**
+   * @deprecated The right panel is always visible per spec 005; this prop is
+   * accepted for backward compatibility but ignored.
+   */
+  isVisible?: boolean;
   isMobile?: boolean;
   onCandidateSelect?: (candidate: CandidateMatch) => void;
   userResponses?: UserResponse[];
+  /** Called when the user clicks "I'm ready to decide". */
+  onReadyToDecide?: () => void;
 }
 
 export function RightPanel({
   candidates,
   confidence,
-  isVisible,
   isMobile = false,
   onCandidateSelect,
-  userResponses = []
+  userResponses = [],
+  onReadyToDecide,
 }: RightPanelProps) {
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateMatch | null>(null);
   const [comparisonCandidates, setComparisonCandidates] = useState<CandidateMatch[]>([]);
@@ -87,10 +93,6 @@ export function RightPanel({
     fetchPreferenceSummary(userResponses);
   }, [userResponses]);
 
-  if (!isVisible) {
-    return null;
-  }
-
   return (
     <>
       <div className={`space-y-4 ${isMobile ? 'w-full' : ''}`}>
@@ -148,7 +150,7 @@ export function RightPanel({
         </Card>
 
         {/* Candidates List */}
-        <Card>
+        <Card data-testid="candidate-matches">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Users className="mr-2 h-5 w-5" />
@@ -163,6 +165,20 @@ export function RightPanel({
             />
           </CardContent>
         </Card>
+
+        {/* User control: stop any time. */}
+        {onReadyToDecide && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onReadyToDecide}
+              data-testid="ready-to-decide-btn"
+            >
+              I'm ready to decide
+            </Button>
+          </div>
+        )}
 
         {/* Comparison Actions */}
         {comparisonCandidates.length > 0 && (
