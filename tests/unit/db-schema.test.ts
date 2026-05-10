@@ -2,32 +2,36 @@
 // produced the expected number of rows and that the legacy `getCandidatesByWard`
 // API still returns matching candidate names compared to the new
 // candidacies-via-races path.
-import { describe, it, expect } from 'vitest';
-import { db } from '@/lib/server/db';
+
+import { and, eq } from "drizzle-orm";
+import { describe, expect, it } from "vitest";
 import {
-  candidates as legacyCandidates,
-  races,
   candidacies,
   elections,
+  candidates as legacyCandidates,
   people,
-} from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+  races,
+} from "@/lib/db/schema";
+import { db } from "@/lib/server/db";
 
-const AUCKLAND = 'auckland-2025';
+const AUCKLAND = "auckland-2025";
 
-describe('Spec 002 schema & backfill', () => {
-  it('elections row exists for auckland-2025', async () => {
+describe("Spec 002 schema & backfill", () => {
+  it("elections row exists for auckland-2025", async () => {
     const rows = await db
       .select()
       .from(elections)
       .where(eq(elections.id, AUCKLAND))
       .all();
     expect(rows).toHaveLength(1);
-    expect(rows[0].votingSystem).toBe('stv');
+    expect(rows[0].votingSystem).toBe("stv");
   });
 
-  it('race count matches distinct legacy wards (incl. Mayor)', async () => {
-    const allLegacy = await db.select({ ward: legacyCandidates.ward }).from(legacyCandidates).all();
+  it("race count matches distinct legacy wards (incl. Mayor)", async () => {
+    const allLegacy = await db
+      .select({ ward: legacyCandidates.ward })
+      .from(legacyCandidates)
+      .all();
     const distinct = new Set(allLegacy.map((r) => r.ward));
 
     const raceRows = await db
@@ -38,8 +42,10 @@ describe('Spec 002 schema & backfill', () => {
     expect(raceRows.length).toBe(distinct.size);
   });
 
-  it('candidacy count matches legacy candidate count', async () => {
-    const legacyCount = (await db.select({ id: legacyCandidates.id }).from(legacyCandidates).all()).length;
+  it("candidacy count matches legacy candidate count", async () => {
+    const legacyCount = (
+      await db.select({ id: legacyCandidates.id }).from(legacyCandidates).all()
+    ).length;
     const candidacyCount = (
       await db
         .select({ id: candidacies.id })
@@ -50,12 +56,12 @@ describe('Spec 002 schema & backfill', () => {
     expect(candidacyCount).toBe(legacyCount);
   });
 
-  it('legacy getCandidatesByWard returns same names as candidacy join for an arbitrary ward', async () => {
+  it("legacy getCandidatesByWard returns same names as candidacy join for an arbitrary ward", async () => {
     // Pick the first non-mayor ward.
     const firstRace = await db
       .select()
       .from(races)
-      .where(and(eq(races.electionId, AUCKLAND), eq(races.kind, 'ward')))
+      .where(and(eq(races.electionId, AUCKLAND), eq(races.kind, "ward")))
       .limit(1)
       .all();
     expect(firstRace.length).toBe(1);
@@ -63,7 +69,11 @@ describe('Spec 002 schema & backfill', () => {
 
     // Names via the legacy table.
     const legacyNames = (
-      await db.select({ name: legacyCandidates.name }).from(legacyCandidates).where(eq(legacyCandidates.ward, ward)).all()
+      await db
+        .select({ name: legacyCandidates.name })
+        .from(legacyCandidates)
+        .where(eq(legacyCandidates.ward, ward))
+        .all()
     )
       .map((r) => r.name)
       .sort();
@@ -74,7 +84,12 @@ describe('Spec 002 schema & backfill', () => {
         .select({ name: people.name })
         .from(candidacies)
         .innerJoin(people, eq(people.id, candidacies.personId))
-        .where(and(eq(candidacies.electionId, AUCKLAND), eq(candidacies.raceId, firstRace[0].id)))
+        .where(
+          and(
+            eq(candidacies.electionId, AUCKLAND),
+            eq(candidacies.raceId, firstRace[0].id),
+          ),
+        )
         .all()
     )
       .map((r) => r.name)
@@ -84,9 +99,11 @@ describe('Spec 002 schema & backfill', () => {
   });
 });
 
-describe('database actions', () => {
-  it('getSeatsForCurrentElection returns a non-empty list', async () => {
-    const { getSeatsForCurrentElection } = await import('@/lib/actions/database');
+describe("database actions", () => {
+  it("getSeatsForCurrentElection returns a non-empty list", async () => {
+    const { getSeatsForCurrentElection } = await import(
+      "@/lib/actions/database"
+    );
     const result = await getSeatsForCurrentElection();
     expect(result.success).toBe(true);
     expect(Array.isArray(result.data)).toBe(true);
@@ -94,9 +111,9 @@ describe('database actions', () => {
   });
 
   it('getUniqueWards excludes "Mayor"', async () => {
-    const { getUniqueWards } = await import('@/lib/actions/database');
+    const { getUniqueWards } = await import("@/lib/actions/database");
     const result = await getUniqueWards();
     expect(result.success).toBe(true);
-    expect(result.data).not.toContain('Mayor');
+    expect(result.data).not.toContain("Mayor");
   });
 });

@@ -1,16 +1,16 @@
-'use server';
+"use server";
 
-import { db } from '@/lib/server/db';
+import { and, eq, inArray, like, ne, or } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { electionConfig } from "@/lib/config/election";
 import {
+  appSettings,
+  candidacies,
   candidates,
   parties,
-  appSettings,
   races,
-  candidacies,
-} from '@/lib/db/schema';
-import { eq, like, or, ne, inArray, and } from 'drizzle-orm';
-import { revalidatePath } from 'next/cache';
-import { electionConfig } from '@/lib/config/election';
+} from "@/lib/db/schema";
+import { db } from "@/lib/server/db";
 
 // Load all candidates
 export async function loadCandidates() {
@@ -18,8 +18,8 @@ export async function loadCandidates() {
     const data = await db.select().from(candidates).orderBy(candidates.name);
     return { success: true, data };
   } catch (error) {
-    console.error('Error loading candidates:', error);
-    return { success: false, error: 'Failed to load candidates' };
+    console.error("Error loading candidates:", error);
+    return { success: false, error: "Failed to load candidates" };
   }
 }
 
@@ -29,8 +29,8 @@ export async function loadParties() {
     const data = await db.select().from(parties).orderBy(parties.name);
     return { success: true, data };
   } catch (error) {
-    console.error('Error loading parties:', error);
-    return { success: false, error: 'Failed to load parties' };
+    console.error("Error loading parties:", error);
+    return { success: false, error: "Failed to load parties" };
   }
 }
 
@@ -53,11 +53,11 @@ export async function updateAppSetting(key: string, value: any) {
         },
       });
 
-    revalidatePath('/'); // Revalidate to update cached data
+    revalidatePath("/"); // Revalidate to update cached data
     return { success: true };
   } catch (error) {
-    console.error('Error updating app setting:', error);
-    return { success: false, error: 'Failed to update setting' };
+    console.error("Error updating app setting:", error);
+    return { success: false, error: "Failed to update setting" };
   }
 }
 
@@ -71,13 +71,16 @@ export async function getAppSetting(key: string) {
       .limit(1);
 
     if (result.length === 0) {
-      return { success: false, error: 'Setting not found' };
+      return { success: false, error: "Setting not found" };
     }
 
-    return { success: true, data: JSON.parse(result[0].value as string || 'null') };
+    return {
+      success: true,
+      data: JSON.parse((result[0].value as string) || "null"),
+    };
   } catch (error) {
-    console.error('Error getting app setting:', error);
-    return { success: false, error: 'Failed to get setting' };
+    console.error("Error getting app setting:", error);
+    return { success: false, error: "Failed to get setting" };
   }
 }
 
@@ -90,14 +93,14 @@ export async function getUniqueWards() {
     const data = await db
       .selectDistinct({ ward: candidates.ward })
       .from(candidates)
-      .where(ne(candidates.ward, 'Mayor'))
+      .where(ne(candidates.ward, "Mayor"))
       .orderBy(candidates.ward);
 
-    const wards = data.map(row => row.ward);
+    const wards = data.map((row) => row.ward);
     return { success: true, data: wards };
   } catch (error) {
-    console.error('Error loading wards:', error);
-    return { success: false, error: 'Failed to load wards' };
+    console.error("Error loading wards:", error);
+    return { success: false, error: "Failed to load wards" };
   }
 }
 
@@ -115,7 +118,7 @@ export async function getSeatsForCurrentElection() {
 
     // Try the new schema first.
     const userFacingKinds = electionConfig.seatTypes.filter(
-      (k) => k !== 'mayor' && k !== 'list'
+      (k) => k !== "mayor" && k !== "list",
     );
 
     if (userFacingKinds.length > 0) {
@@ -125,8 +128,8 @@ export async function getSeatsForCurrentElection() {
         .where(
           and(
             eq(races.electionId, electionId),
-            inArray(races.kind, userFacingKinds)
-          )
+            inArray(races.kind, userFacingKinds),
+          ),
         )
         .orderBy(races.name);
 
@@ -141,7 +144,7 @@ export async function getSeatsForCurrentElection() {
     // Fallback: legacy candidates.ward.
     return getUniqueWards();
   } catch (error) {
-    console.error('Error loading seats:', error);
+    console.error("Error loading seats:", error);
     return getUniqueWards();
   }
 }
@@ -155,16 +158,16 @@ export async function searchCandidates(query: string) {
       .where(
         or(
           like(candidates.name, `%${query}%`),
-          like(candidates.party, `%${query}%`)
-        )
+          like(candidates.party, `%${query}%`),
+        ),
       )
       .orderBy(candidates.name)
       .limit(20);
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error searching candidates:', error);
-    return { success: false, error: 'Failed to search candidates' };
+    console.error("Error searching candidates:", error);
+    return { success: false, error: "Failed to search candidates" };
   }
 }
 
@@ -179,8 +182,8 @@ export async function getCandidatesByWard(ward: string) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error loading candidates by ward:', error);
-    return { success: false, error: 'Failed to load candidates by ward' };
+    console.error("Error loading candidates by ward:", error);
+    return { success: false, error: "Failed to load candidates by ward" };
   }
 }
 
@@ -190,13 +193,13 @@ export async function getMayorCandidates() {
     const data = await db
       .select()
       .from(candidates)
-      .where(eq(candidates.ward, 'Mayor'))
+      .where(eq(candidates.ward, "Mayor"))
       .orderBy(candidates.name);
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error loading mayor candidates:', error);
-    return { success: false, error: 'Failed to load mayor candidates' };
+    console.error("Error loading mayor candidates:", error);
+    return { success: false, error: "Failed to load mayor candidates" };
   }
 }
 
@@ -210,12 +213,17 @@ export async function getCandidatesByIds(ids: string[]) {
     const data = await db
       .select()
       .from(candidates)
-      .where(inArray(candidates.id, ids.map(id => parseInt(id))))
+      .where(
+        inArray(
+          candidates.id,
+          ids.map((id) => parseInt(id)),
+        ),
+      )
       .orderBy(candidates.name);
 
     return { success: true, data };
   } catch (error) {
-    console.error('Error loading candidates by IDs:', error);
-    return { success: false, error: 'Failed to load candidates by IDs' };
+    console.error("Error loading candidates by IDs:", error);
+    return { success: false, error: "Failed to load candidates by IDs" };
   }
 }

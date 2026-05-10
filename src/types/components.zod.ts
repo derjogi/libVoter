@@ -1,13 +1,13 @@
 // Zod schemas mirroring the *Data interfaces in src/types/index.ts. These are
 // used to validate LLM-generated component specs and other prompt outputs.
-import { z } from 'zod';
+import { z } from "zod";
 
 // === Component data schemas ===
 
 export const SelectOptionSchema = z.object({
   id: z.string(),
   label: z.string(),
-  description: z.string().optional().default(''),
+  description: z.string().optional().default(""),
 });
 
 export const ChatDataSchema = z.object({
@@ -22,7 +22,7 @@ export const YesNoDataSchema = z.object({
       z.object({
         statement: z.string(),
         context: z.string().optional(),
-      })
+      }),
     )
     .min(1),
 });
@@ -58,34 +58,34 @@ export const SliderDataSchema = z.object({
 
 // === Top-level LLM output: COMPONENT_SELECTOR ===
 
-export const ComponentSpecSchema = z.discriminatedUnion('component', [
+export const ComponentSpecSchema = z.discriminatedUnion("component", [
   z.object({
-    component: z.literal('chat'),
+    component: z.literal("chat"),
     data: ChatDataSchema,
     reasoning: z.string().optional(),
   }),
   z.object({
-    component: z.literal('yesno'),
+    component: z.literal("yesno"),
     data: YesNoDataSchema,
     reasoning: z.string().optional(),
   }),
   z.object({
-    component: z.literal('multiselect'),
+    component: z.literal("multiselect"),
     data: MultiSelectDataSchema,
     reasoning: z.string().optional(),
   }),
   z.object({
-    component: z.literal('dropdown'),
+    component: z.literal("dropdown"),
     data: DropdownDataSchema,
     reasoning: z.string().optional(),
   }),
   z.object({
-    component: z.literal('freetext'),
+    component: z.literal("freetext"),
     data: FreeTextDataSchema,
     reasoning: z.string().optional(),
   }),
   z.object({
-    component: z.literal('slider'),
+    component: z.literal("slider"),
     data: SliderDataSchema,
     reasoning: z.string().optional(),
   }),
@@ -108,8 +108,8 @@ export type QuestionResponse = z.infer<typeof QuestionResponseSchema>;
 // === Safe fallback component ===
 
 export const SAFE_FALLBACK_COMPONENT: ComponentSpec = {
-  component: 'chat',
-  reasoning: 'Validation fallback — the AI returned an invalid component spec.',
+  component: "chat",
+  reasoning: "Validation fallback — the AI returned an invalid component spec.",
   data: {
     messages: [],
     placeholder:
@@ -131,20 +131,20 @@ export function parseComponentSpec(raw: string): {
   try {
     parsed = JSON.parse(raw);
   } catch (e) {
-    console.warn('parseComponentSpec: invalid JSON', { raw, error: String(e) });
-    return { spec: SAFE_FALLBACK_COMPONENT, ok: false, error: 'invalid JSON' };
+    console.warn("parseComponentSpec: invalid JSON", { raw, error: String(e) });
+    return { spec: SAFE_FALLBACK_COMPONENT, ok: false, error: "invalid JSON" };
   }
 
   const result = ComponentSpecSchema.safeParse(parsed);
   if (!result.success) {
-    console.warn('parseComponentSpec: schema mismatch', {
+    console.warn("parseComponentSpec: schema mismatch", {
       issues: result.error.issues,
       parsed,
     });
     return {
       spec: SAFE_FALLBACK_COMPONENT,
       ok: false,
-      error: result.error.issues.map((i) => i.message).join('; '),
+      error: result.error.issues.map((i) => i.message).join("; "),
     };
   }
 

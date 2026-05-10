@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: '2026-05-03'
 tags: [ai, reliability]
 priority: medium

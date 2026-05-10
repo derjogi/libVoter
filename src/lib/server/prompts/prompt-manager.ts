@@ -1,10 +1,11 @@
 // Server-only prompt manager
-import { getPrompt, formatPrompt, type PromptTemplate } from './index';
-import { createChatModel } from '@/lib/server/ai/model-factory';
-import { electionConfig, type ElectionConfig } from '@/lib/config/election';
-import type { ConversationMessage, UserResponse } from '@/types';
-import type { ChatModel } from '@/lib/server/ai/model-factory';
-import { getSeatsForCurrentElection } from '@/lib/actions/database';
+
+import { getSeatsForCurrentElection } from "@/lib/actions/database";
+import { type ElectionConfig, electionConfig } from "@/lib/config/election";
+import type { ChatModel } from "@/lib/server/ai/model-factory";
+import { createChatModel } from "@/lib/server/ai/model-factory";
+import type { ConversationMessage, UserResponse } from "@/types";
+import { formatPrompt, getPrompt, type PromptTemplate } from "./index";
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -28,8 +29,8 @@ export class PromptManager {
   }
 
   async executePrompt(
-    promptId: keyof typeof import('./index').PROMPTS,
-    variables: Record<string, any>
+    promptId: keyof typeof import("./index").PROMPTS,
+    variables: Record<string, any>,
   ): Promise<PromptExecutionResult> {
     const startTime = Date.now();
 
@@ -42,13 +43,13 @@ export class PromptManager {
       const seats =
         variables.electionSeats ||
         variables.electionWards ||
-        (await getSeatsForCurrentElection()).data?.join(', ');
+        (await getSeatsForCurrentElection()).data?.join(", ");
 
       const electionVariables = {
         electionYear: this.electionConfig.year,
         electionType: this.electionConfig.type,
         electionLocation: this.electionConfig.location,
-        electionKeyTopics: this.electionConfig.keyTopics.join(', '),
+        electionKeyTopics: this.electionConfig.keyTopics.join(", "),
         electionDescription: this.electionConfig.description,
         electionSeatLabel: this.electionConfig.seatLabel,
         electionSeatLabelPlural: this.electionConfig.seatLabelPlural,
@@ -59,18 +60,21 @@ export class PromptManager {
 
       const allVariables = { ...variables, ...electionVariables };
       const formatted = formatPrompt(template, allVariables);
-      console.log("Calling prompt ", promptId)
+      console.log("Calling prompt ", promptId);
       console.debug("full prompt: ", formatted.content);
       console.time(`Time for: Prompt Execution: ${promptId}`);
-      const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(', ')}.`;
+      const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(", ")}.`;
       const response = await this.chatModel.invoke([
-        { role: 'system', content: systemMessage },
-        { role: 'user', content: formatted.content }
+        { role: "system", content: systemMessage },
+        { role: "user", content: formatted.content },
       ]);
       // const response = {content: "This is a not so very helpful message"}
       console.timeEnd(`Time for: Prompt Execution: ${promptId}`);
 
-      console.log(`Got response from PromptManager with prompt ${promptId}: \n`, response)
+      console.log(
+        `Got response from PromptManager with prompt ${promptId}: \n`,
+        response,
+      );
 
       const executionTime = Date.now() - startTime;
 
@@ -81,8 +85,8 @@ export class PromptManager {
           promptId: template.id,
           executionTime,
           tokensUsed: this.estimateTokens(formatted.content + response.content),
-          model: this.chatModel.model
-        }
+          model: this.chatModel.model,
+        },
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
@@ -91,12 +95,12 @@ export class PromptManager {
 
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
         metadata: {
           promptId,
           executionTime,
-          model: process.env.AI_MODEL_LARGE || 'gpt-4'
-        }
+          model: process.env.AI_MODEL_LARGE || "gpt-4",
+        },
       };
     }
   }
@@ -104,64 +108,64 @@ export class PromptManager {
   async generateNextQuestion(
     conversationHistory: ConversationMessage[],
     userResponses: UserResponse[],
-    questionType: string = 'chat'
+    questionType: string = "chat",
   ): Promise<PromptExecutionResult> {
     const conversationText = conversationHistory
-      .map(msg => `${msg.role}: ${msg.content}`)
-      .join('\n');
+      .map((msg) => `${msg.role}: ${msg.content}`)
+      .join("\n");
 
     const preferences = this.extractPreferences(userResponses);
 
-    return this.executePrompt('NEXT_QUESTION_GENERAL', {
+    return this.executePrompt("NEXT_QUESTION_GENERAL", {
       conversationHistory: conversationText,
       currentPreferences: preferences,
-      questionType
+      questionType,
     });
   }
 
   async generateFollowupQuestion(
     lastResponse: string,
     context: string,
-    availableSeats?: string[]
+    availableSeats?: string[],
   ): Promise<PromptExecutionResult> {
-    return this.executePrompt('FOLLOWUP_QUESTION', {
+    return this.executePrompt("FOLLOWUP_QUESTION", {
       lastResponse,
       context,
-      electionSeats: availableSeats?.join(', '),
+      electionSeats: availableSeats?.join(", "),
     });
   }
 
   async selectComponent(
     conversationState: string,
-    availableSeats?: string[]
+    availableSeats?: string[],
   ): Promise<PromptExecutionResult> {
-    return this.executePrompt('COMPONENT_SELECTOR', {
+    return this.executePrompt("COMPONENT_SELECTOR", {
       conversationState,
-      electionSeats: availableSeats?.join(', '),
+      electionSeats: availableSeats?.join(", "),
     });
   }
 
   async explainMatch(
     userProfile: string,
     candidateInfo: string,
-    matchScore: number
+    matchScore: number,
   ): Promise<PromptExecutionResult> {
-    return this.executePrompt('EXPLAIN_MATCH', {
+    return this.executePrompt("EXPLAIN_MATCH", {
       userProfile,
       candidateInfo,
-      matchScore
+      matchScore,
     });
   }
 
   async summarizePreferences(
-    allResponses: UserResponse[]
+    allResponses: UserResponse[],
   ): Promise<PromptExecutionResult> {
     const responsesText = allResponses
-      .map(r => `${r.questionId}: ${r.value}`)
-      .join('\n');
+      .map((r) => `${r.questionId}: ${r.value}`)
+      .join("\n");
 
-    return this.executePrompt('SUMMARIZE_PREFERENCES', {
-      allResponses: responsesText
+    return this.executePrompt("SUMMARIZE_PREFERENCES", {
+      allResponses: responsesText,
     });
   }
 
@@ -169,31 +173,40 @@ export class PromptManager {
     // Simple preference extraction - enhance with more sophisticated analysis
     const topics = new Set<string>();
 
-    responses.forEach(response => {
+    responses.forEach((response) => {
       const text = this.extractTextFromResponse(response);
       const lowerText = text.toLowerCase();
 
       // Extract common political topics
       const topicKeywords = [
-        'economy', 'healthcare', 'education', 'environment',
-        'taxes', 'immigration', 'foreign policy', 'social security'
+        "economy",
+        "healthcare",
+        "education",
+        "environment",
+        "taxes",
+        "immigration",
+        "foreign policy",
+        "social security",
       ];
 
-      topicKeywords.forEach(topic => {
+      topicKeywords.forEach((topic) => {
         if (lowerText.includes(topic)) {
           topics.add(topic);
         }
       });
     });
 
-    return Array.from(topics).join(', ') || 'No clear preferences identified yet';
+    return (
+      Array.from(topics).join(", ") || "No clear preferences identified yet"
+    );
   }
 
   private extractTextFromResponse(response: UserResponse): string {
-    if (typeof response.value === 'string') return response.value;
-    if (Array.isArray(response.value)) return response.value.join(' ');
-    if (typeof response.value === 'object') return JSON.stringify(response.value);
-    return String(response.value || '');
+    if (typeof response.value === "string") return response.value;
+    if (Array.isArray(response.value)) return response.value.join(" ");
+    if (typeof response.value === "object")
+      return JSON.stringify(response.value);
+    return String(response.value || "");
   }
 
   private estimateTokens(text: string): number {

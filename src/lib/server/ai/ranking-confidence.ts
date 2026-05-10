@@ -3,7 +3,7 @@
 //
 // Replaces the older heuristic in ConfidenceCalculator that only counted
 // interactions / response length and never reflected actual ranking quality.
-import type { CandidateMatch } from '@/types';
+import type { CandidateMatch } from "@/types";
 
 export interface RankingConfidenceInput {
   /** Candidates as currently ranked (highest score first). */
@@ -33,7 +33,9 @@ export interface RankingConfidenceResult {
  * If there's only one candidate, margin=top score (we're already as confident
  * as that score lets us be). If there are no candidates, score=0.
  */
-export function rankingConfidence(input: RankingConfidenceInput): RankingConfidenceResult {
+export function rankingConfidence(
+  input: RankingConfidenceInput,
+): RankingConfidenceResult {
   const { ranked, coveredTopicCount, totalTopicCount } = input;
 
   if (ranked.length === 0) {

@@ -1,30 +1,34 @@
-'use server';
+"use server";
 
-import { getPromptManager } from '@/lib/server/prompts/prompt-manager';
+import { getPromptManager } from "@/lib/server/prompts/prompt-manager";
+import type { ConversationMessage, UserResponse } from "@/types";
 import {
   parseComponentSpec,
   parseQuestionResponse,
   SAFE_FALLBACK_COMPONENT,
-} from '@/types/components.zod';
-import type { ConversationMessage, UserResponse } from '@/types';
+} from "@/types/components.zod";
 
 export async function generateNextQuestion(
   conversationHistory: ConversationMessage[],
   userResponses: UserResponse[],
-  questionType: string = 'chat'
+  questionType: string = "chat",
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.generateNextQuestion(conversationHistory, userResponses, questionType);
+    const result = await manager.generateNextQuestion(
+      conversationHistory,
+      userResponses,
+      questionType,
+    );
 
     if (!result.success) {
       return {
         success: false,
         error: result.error,
         fallback: {
-          question: 'What are your thoughts on current political issues?',
-          type: 'chat',
-          context: 'General political discussion',
+          question: "What are your thoughts on current political issues?",
+          type: "chat",
+          context: "General political discussion",
         },
       };
     }
@@ -35,25 +39,30 @@ export async function generateNextQuestion(
     }
 
     // Couldn't parse / validate. Treat the raw response as a chat question.
-    console.warn('generateNextQuestion: invalid LLM JSON, falling back to raw text');
+    console.warn(
+      "generateNextQuestion: invalid LLM JSON, falling back to raw text",
+    );
     return {
       success: false,
-      error: 'Failed to validate AI response',
+      error: "Failed to validate AI response",
       fallback: {
-        question: typeof result.response === 'string' ? result.response : 'Tell me more about your views.',
+        question:
+          typeof result.response === "string"
+            ? result.response
+            : "Tell me more about your views.",
         type: questionType,
-        context: 'AI-generated question (validation failed)',
+        context: "AI-generated question (validation failed)",
       },
     };
   } catch (error) {
-    console.error('Question generation failed:', error);
+    console.error("Question generation failed:", error);
     return {
       success: false,
-      error: 'Failed to generate question',
+      error: "Failed to generate question",
       fallback: {
-        question: 'What political topics interest you most?',
-        type: 'chat',
-        context: 'Fallback question',
+        question: "What political topics interest you most?",
+        type: "chat",
+        context: "Fallback question",
       },
     };
   }
@@ -62,20 +71,24 @@ export async function generateNextQuestion(
 export async function generateFollowupQuestion(
   lastResponse: string,
   context: string,
-  availableSeats?: string[]
+  availableSeats?: string[],
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.generateFollowupQuestion(lastResponse, context, availableSeats);
+    const result = await manager.generateFollowupQuestion(
+      lastResponse,
+      context,
+      availableSeats,
+    );
 
     if (!result.success) {
       return {
         success: false,
         error: result.error,
         fallback: {
-          question: 'Can you tell me more about that?',
-          type: 'chat',
-          reasoning: 'Follow-up to previous response',
+          question: "Can you tell me more about that?",
+          type: "chat",
+          reasoning: "Follow-up to previous response",
         },
       };
     }
@@ -85,25 +98,30 @@ export async function generateFollowupQuestion(
       return { success: true, data: validated, metadata: result.metadata };
     }
 
-    console.warn('generateFollowupQuestion: invalid LLM JSON, falling back to raw text');
+    console.warn(
+      "generateFollowupQuestion: invalid LLM JSON, falling back to raw text",
+    );
     return {
       success: false,
-      error: 'Failed to validate followup response',
+      error: "Failed to validate followup response",
       fallback: {
-        question: typeof result.response === 'string' ? result.response : 'Can you elaborate on your previous answer?',
-        type: 'chat',
-        reasoning: 'AI-generated followup (validation failed)',
+        question:
+          typeof result.response === "string"
+            ? result.response
+            : "Can you elaborate on your previous answer?",
+        type: "chat",
+        reasoning: "AI-generated followup (validation failed)",
       },
     };
   } catch (error) {
-    console.error('Followup generation failed:', error);
+    console.error("Followup generation failed:", error);
     return {
       success: false,
-      error: 'Failed to generate followup',
+      error: "Failed to generate followup",
       fallback: {
-        question: 'Can you elaborate on your previous answer?',
-        type: 'chat',
-        reasoning: 'Fallback followup',
+        question: "Can you elaborate on your previous answer?",
+        type: "chat",
+        reasoning: "Fallback followup",
       },
     };
   }
@@ -111,11 +129,14 @@ export async function generateFollowupQuestion(
 
 export async function selectNextComponent(
   conversationState: string,
-  availableSeats?: string[]
+  availableSeats?: string[],
 ) {
   try {
     const manager = getPromptManager();
-    const result = await manager.selectComponent(conversationState, availableSeats);
+    const result = await manager.selectComponent(
+      conversationState,
+      availableSeats,
+    );
 
     if (!result.success) {
       return {
@@ -135,12 +156,12 @@ export async function selectNextComponent(
       metadata: result.metadata,
     };
   } catch (error) {
-    console.error('Component selection failed:', error);
+    console.error("Component selection failed:", error);
     return {
       success: true,
       data: SAFE_FALLBACK_COMPONENT,
       validationFailed: true,
-      error: 'Failed to select component',
+      error: "Failed to select component",
     };
   }
 }
@@ -148,12 +169,16 @@ export async function selectNextComponent(
 export async function explainCandidateMatch(
   userProfile: string,
   candidateInfo: string,
-  matchScore: number
+  matchScore: number,
 ) {
   try {
     const manager = getPromptManager();
     console.log("Explaining Match...");
-    const result = await manager.explainMatch(userProfile, candidateInfo, matchScore);
+    const result = await manager.explainMatch(
+      userProfile,
+      candidateInfo,
+      matchScore,
+    );
 
     return {
       success: result.success,
@@ -162,11 +187,11 @@ export async function explainCandidateMatch(
       metadata: result.metadata,
     };
   } catch (error) {
-    console.error('Match explanation failed:', error);
+    console.error("Match explanation failed:", error);
     return {
       success: false,
-      error: 'Failed to generate explanation',
-      data: 'This candidate appears to align with your stated preferences.',
+      error: "Failed to generate explanation",
+      data: "This candidate appears to align with your stated preferences.",
     };
   }
 }
@@ -183,11 +208,11 @@ export async function summarizeUserPreferences(userResponses: UserResponse[]) {
       metadata: result.metadata,
     };
   } catch (error) {
-    console.error('Preference summarization failed:', error);
+    console.error("Preference summarization failed:", error);
     return {
       success: false,
-      error: 'Failed to summarize preferences',
-      data: 'Based on your responses, you have shown interest in various political topics.',
+      error: "Failed to summarize preferences",
+      data: "Based on your responses, you have shown interest in various political topics.",
     };
   }
 }

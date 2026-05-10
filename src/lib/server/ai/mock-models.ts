@@ -1,13 +1,14 @@
 // Deterministic mock chat + embedding models for AI_MODE=mock.
 // Mirrors enough of the LangChain ChatModel surface that the rest of the
 // codebase can use it without changes.
-import { AIMessage } from '@langchain/core/messages';
-import type { BaseMessage } from '@langchain/core/messages';
-import { pickMockResponse } from './__mocks__/responses';
+
+import type { BaseMessage } from "@langchain/core/messages";
+import { AIMessage } from "@langchain/core/messages";
+import { pickMockResponse } from "./__mocks__/responses";
 
 export class MockChatModel {
   // Keep the public model property so callers that read it still work.
-  readonly model = 'mock';
+  readonly model = "mock";
 
   async invoke(messages: any[]): Promise<AIMessage> {
     const text = extractPromptText(messages);
@@ -20,11 +21,14 @@ function extractPromptText(messages: any[]): string {
   // Concatenate all user/system message contents for sniffing.
   return messages
     .map((m) => {
-      if (typeof m === 'string') return m;
-      if (m?.content) return typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
-      return '';
+      if (typeof m === "string") return m;
+      if (m?.content)
+        return typeof m.content === "string"
+          ? m.content
+          : JSON.stringify(m.content);
+      return "";
     })
-    .join('\n');
+    .join("\n");
 }
 
 /**
@@ -33,7 +37,7 @@ function extractPromptText(messages: any[]): string {
  * (handy for vector-store assertions).
  */
 export class MockEmbeddings {
-  readonly model = 'mock-embeddings';
+  readonly model = "mock-embeddings";
   readonly dimensions = 16;
 
   async embedQuery(text: string): Promise<number[]> {

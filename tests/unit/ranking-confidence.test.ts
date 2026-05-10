@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { rankingConfidence } from '@/lib/server/ai/ranking-confidence';
-import type { CandidateMatch } from '@/types';
+import { describe, expect, it } from "vitest";
+import { rankingConfidence } from "@/lib/server/ai/ranking-confidence";
+import type { CandidateMatch } from "@/types";
 
 function fakeCandidate(score: number): CandidateMatch {
   return {
     candidate: { id: score, name: `c${score}` } as any,
     score,
-    reasoning: '',
+    reasoning: "",
     pros: [],
     cons: [],
     topMatchingPolicies: [],
@@ -14,14 +14,18 @@ function fakeCandidate(score: number): CandidateMatch {
   };
 }
 
-describe('rankingConfidence', () => {
-  it('returns 0 when there are no candidates', () => {
+describe("rankingConfidence", () => {
+  it("returns 0 when there are no candidates", () => {
     expect(
-      rankingConfidence({ ranked: [], coveredTopicCount: 0, totalTopicCount: 8 })
+      rankingConfidence({
+        ranked: [],
+        coveredTopicCount: 0,
+        totalTopicCount: 8,
+      }),
     ).toEqual({ score: 0, marginScore: 0, topicScore: 0 });
   });
 
-  it('uses the top score directly when only one candidate is ranked', () => {
+  it("uses the top score directly when only one candidate is ranked", () => {
     const r = rankingConfidence({
       ranked: [fakeCandidate(70)],
       coveredTopicCount: 0,
@@ -31,7 +35,7 @@ describe('rankingConfidence', () => {
     expect(r.score).toBe(100);
   });
 
-  it('rises with topic coverage even when the margin is zero', () => {
+  it("rises with topic coverage even when the margin is zero", () => {
     const r = rankingConfidence({
       ranked: [fakeCandidate(50), fakeCandidate(50)],
       coveredTopicCount: 4,
@@ -41,7 +45,7 @@ describe('rankingConfidence', () => {
     expect(r.score).toBe(25);
   });
 
-  it('grows with the spread between top and second candidate', () => {
+  it("grows with the spread between top and second candidate", () => {
     const small = rankingConfidence({
       ranked: [fakeCandidate(80), fakeCandidate(75)],
       coveredTopicCount: 0,
@@ -55,7 +59,7 @@ describe('rankingConfidence', () => {
     expect(big.score).toBeGreaterThan(small.score);
   });
 
-  it('caps at 100', () => {
+  it("caps at 100", () => {
     const r = rankingConfidence({
       ranked: [fakeCandidate(95), fakeCandidate(0)],
       coveredTopicCount: 8,
@@ -65,7 +69,7 @@ describe('rankingConfidence', () => {
     expect(r.topicScore).toBe(100);
   });
 
-  it('handles a totalTopicCount of zero without dividing', () => {
+  it("handles a totalTopicCount of zero without dividing", () => {
     const r = rankingConfidence({
       ranked: [fakeCandidate(60), fakeCandidate(40)],
       coveredTopicCount: 0,
