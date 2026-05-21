@@ -5,7 +5,7 @@
 
 export const MOCK_RESPONSES: Record<string, string> = {
   COMPONENT_SELECTOR: JSON.stringify({
-    component: "multiselect",
+    type: "multiselect",
     reasoning: "mock — pick top issues",
     data: {
       question: "Which issues matter most to you?",

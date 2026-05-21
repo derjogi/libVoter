@@ -1,88 +1,95 @@
-'use client';
+"use client";
 
-import type { ComponentRendererProps } from '@/types/components';
-import type { ChatData } from '@/types';
-import { ChatInterface } from './ChatInterface';
-import { YesNoQuestion } from './YesNoQuestion';
-import { MultiSelectChecklist } from './MultiSelectChecklist';
-import { DropdownSelect } from './DropdownSelect';
-import { FreeTextInput } from './FreeTextInput';
-import { QuantitativeSlider } from './QuantitativeSlider';
+import type { ComponentRendererProps } from "@/types/components";
+import { ChatInterface } from "./ChatInterface";
+import { DropdownSelect } from "./DropdownSelect";
+import { FreeTextInput } from "./FreeTextInput";
+import { MultiSelectChecklist } from "./MultiSelectChecklist";
+import { QuantitativeSlider } from "./QuantitativeSlider";
+import { YesNoQuestion } from "./YesNoQuestion";
 
+/**
+ * Picks the right dynamic component for `componentData.type`. The discriminated
+ * union from `components.zod.ts` means each `case` narrows `componentData.data`
+ * to the right shape automatically — no casting needed.
+ */
 export function ComponentRenderer({
-  type,
-  data,
+  componentData,
   onResponse,
-  onNext,
   disabled = false,
   isLoading = false,
-  followupQuestion
+  followupQuestion,
 }: ComponentRendererProps) {
-  switch (type) {
-    case 'chat':
+  switch (componentData.type) {
+    case "chat":
       return (
         <ChatInterface
-          data={data as any}
+          data={componentData.data}
           onSendMessage={onResponse}
-          messages={(data as ChatData).messages || []}
+          messages={componentData.data.messages ?? []}
           isLoading={isLoading}
           disabled={disabled}
           followupQuestion={followupQuestion}
         />
       );
 
-    case 'yesno':
+    case "yesno":
       return (
         <YesNoQuestion
-          data={data as any}
+          data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
         />
       );
 
-    case 'multiselect':
+    case "multiselect":
       return (
         <MultiSelectChecklist
-          data={data as any}
+          data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
         />
       );
 
-    case 'dropdown':
+    case "dropdown":
       return (
         <DropdownSelect
-          data={data as any}
+          data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
         />
       );
 
-    case 'freetext':
+    case "freetext":
       return (
         <FreeTextInput
-          data={data as any}
+          data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
         />
       );
 
-    case 'slider':
+    case "slider":
       return (
         <QuantitativeSlider
-          data={data as any}
+          data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
         />
       );
 
-    default:
+    default: {
+      // Exhaustiveness check — if a new component type is added to the
+      // discriminated union, TypeScript will fail here until the switch is
+      // updated.
+      const _exhaustive: never = componentData;
       return (
         <div className="text-center p-8">
           <p className="text-muted-foreground">
-            Component type "{type}" not implemented yet.
+            Unknown component type: {JSON.stringify(_exhaustive)}
           </p>
         </div>
       );
+    }
   }
 }

@@ -181,7 +181,7 @@ Your task: Choose the most appropriate next component type and generate the spec
 
 Return JSON format:
 {
-  "component": "chat|yesno|multiselect|freetext|slider",
+  "type": "chat|yesno|multiselect|freetext|slider",
   "reasoning": "Why this component fits best for narrowing preferences",
   "data": {
     // Use the exact structure for the chosen component type - no extra fields

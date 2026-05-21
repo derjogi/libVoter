@@ -8,8 +8,48 @@ import { Document } from "langchain/document";
 import path from "path";
 import { db } from "../db";
 import { candidates } from "../../db/schema";
-import { createEmbeddingModel } from "../ai/model-factory";
+import { createEmbeddingModel, isMockMode } from "../ai/model-factory";
 import type { EmbeddingModel } from "../ai/model-factory";
+
+/**
+ * In-memory mock vector store used when AI_MODE=mock. Skips Chroma entirely
+ * (no docker, no embeddings) and returns three deterministic candidate
+ * snippets regardless of the query. Just enough for tests to exercise the
+ * RAG codepath without network/state.
+ */
+class MockVectorStoreManager {
+  async query(_question: string, maxResults: number = 5) {
+    const docs: Array<{
+      content: string;
+      metadata: Record<string, any>;
+      score: number;
+    }> = [
+      {
+        content:
+          "Mock Candidate Alpha (Independent) - Central Ward. Housing-first platform with focus on transit-oriented development.",
+        metadata: { ward: "Central", party: "Independent", id: "mock-1" },
+        score: 0.92,
+      },
+      {
+        content:
+          "Mock Candidate Beta (Green Party) - North Ward. Climate-action and affordable housing.",
+        metadata: { ward: "North", party: "Green", id: "mock-2" },
+        score: 0.81,
+      },
+      {
+        content:
+          "Mock Candidate Gamma (Labour) - West Ward. Public transport investment and health services.",
+        metadata: { ward: "West", party: "Labour", id: "mock-3" },
+        score: 0.74,
+      },
+    ];
+    return docs.slice(0, maxResults);
+  }
+
+  async addDocuments(_docs: any[]) {
+    // No-op in mock mode.
+  }
+}
 
 class VectorStoreManager {
   private vectorStore: Chroma | null = null;
@@ -43,7 +83,7 @@ class VectorStoreManager {
   private async createVectorStore() {
     console.log(
       "⚙️ Creating vector store with embedding model: ",
-      this.embeddings.model
+      this.embeddings.model,
     );
 
     // Create empty vector store first
@@ -80,17 +120,17 @@ class VectorStoreManager {
       console.log(`📊 Loaded ${allCandidates.length} candidates from database`);
 
       const validCandidates = allCandidates.filter(
-        (candidate) => candidate.name && candidate.ward
+        (candidate) => candidate.name && candidate.ward,
       );
       console.log(
         `✅ ${validCandidates.length} candidates passed validation (${
           allCandidates.length - validCandidates.length
-        } filtered out)`
+        } filtered out)`,
       );
 
       if (allCandidates.length !== validCandidates.length) {
         const invalidCandidates = allCandidates.filter(
-          (candidate) => !candidate.name || !candidate.ward
+          (candidate) => !candidate.name || !candidate.ward,
         );
         console.log(
           "❌ Invalid candidates:",
@@ -98,7 +138,7 @@ class VectorStoreManager {
             id: c.id,
             name: c.name,
             ward: c.ward,
-          }))
+          })),
         );
       }
 
@@ -114,7 +154,7 @@ class VectorStoreManager {
           } catch (error) {
             console.warn(
               `Failed to parse key_positions for candidate ${candidate.id}:`,
-              error
+              error,
             );
             console.warn("Raw key_positions value:", candidate.key_positions);
           }
@@ -131,7 +171,7 @@ class VectorStoreManager {
           } catch (error) {
             console.warn(
               `Failed to parse supporting_links for candidate ${candidate.id}:`,
-              error
+              error,
             );
           }
         }
@@ -161,7 +201,7 @@ class VectorStoreManager {
       });
 
       console.log(
-        `📄 Created ${docs.length} documents from database candidates`
+        `📄 Created ${docs.length} documents from database candidates`,
       );
 
       // Log first few documents for inspection
@@ -186,7 +226,7 @@ class VectorStoreManager {
     const splitDocs = await splitter.splitDocuments(docs);
 
     console.log(
-      `📄 Loaded and split ${docs.length} documents into ${splitDocs.length} chunks.`
+      `📄 Loaded and split ${docs.length} documents into ${splitDocs.length} chunks.`,
     );
 
     // Validate splitDocs before adding to vector store
@@ -204,7 +244,7 @@ class VectorStoreManager {
 
     if (invalidDocs.length > 0) {
       console.error(
-        `Found ${invalidDocs.length} invalid documents out of ${splitDocs.length}`
+        `Found ${invalidDocs.length} invalid documents out of ${splitDocs.length}`,
       );
     } else {
       console.log("✅ All splitDocs are valid");
@@ -212,7 +252,7 @@ class VectorStoreManager {
 
     console.log(
       "⚙️ Adding documents to vector store with embedding model: ",
-      this.embeddings.model
+      this.embeddings.model,
     );
 
     console.log("Initiated adding documents in batches...");
@@ -226,15 +266,15 @@ class VectorStoreManager {
       const batch = splitDocs.slice(i, i + BATCH_SIZE);
       console.log(
         `📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(
-          splitDocs.length / BATCH_SIZE
-        )} (${batch.length} documents)`
+          splitDocs.length / BATCH_SIZE,
+        )} (${batch.length} documents)`,
       );
 
       try {
         await this.vectorStore!.addDocuments(batch);
         processedCount += batch.length;
         console.log(
-          `✅ Successfully added batch. Total processed: ${processedCount}/${splitDocs.length}`
+          `✅ Successfully added batch. Total processed: ${processedCount}/${splitDocs.length}`,
         );
 
         // Add a small delay between batches to prevent overwhelming the system
@@ -244,10 +284,10 @@ class VectorStoreManager {
       } catch (error) {
         console.error(
           `❌ Failed to add batch ${Math.floor(i / BATCH_SIZE) + 1}:`,
-          error
+          error,
         );
         console.error(
-          `   Batch contained ${batch.length} documents starting from index ${i}`
+          `   Batch contained ${batch.length} documents starting from index ${i}`,
         );
         // Continue with the next batch instead of failing entirely
       }
@@ -255,14 +295,18 @@ class VectorStoreManager {
 
     console.timeEnd("Time for: Add Documents");
     console.log(
-      `✅ Added ${processedCount}/${splitDocs.length} documents to vector store`
+      `✅ Added ${processedCount}/${splitDocs.length} documents to vector store`,
     );
 
     // Persistence verification: Check final count after adding documents
     const finalCount = await this.vectorStore!.collection!.count();
-    console.log(`🔍 Persistence verification: Final document count is ${finalCount}`);
+    console.log(
+      `🔍 Persistence verification: Final document count is ${finalCount}`,
+    );
     if (finalCount === 0) {
-      throw new Error("Persistence failed: No documents found in vector store after population");
+      throw new Error(
+        "Persistence failed: No documents found in vector store after population",
+      );
     }
   }
 
@@ -274,7 +318,7 @@ class VectorStoreManager {
     console.time("Time for: Similarity Search");
     const results = await this.vectorStore.similaritySearchWithScore(
       question,
-      maxResults
+      maxResults,
     );
     console.timeEnd("Time for: Similarity Search");
 
@@ -301,13 +345,20 @@ class VectorStoreManager {
 }
 
 // Singleton instance
-let vectorStoreManager: VectorStoreManager | null = null;
+let vectorStoreManager: VectorStoreManager | MockVectorStoreManager | null =
+  null;
 
 export async function getVectorStoreManager() {
   if (!vectorStoreManager) {
-    console.log("Creating new VectorStoreManager");
-    vectorStoreManager = new VectorStoreManager();
-    await vectorStoreManager.initialize();
+    if (isMockMode()) {
+      console.log("AI_MODE=mock — using MockVectorStoreManager");
+      vectorStoreManager = new MockVectorStoreManager();
+    } else {
+      console.log("Creating new VectorStoreManager");
+      const real = new VectorStoreManager();
+      await real.initialize();
+      vectorStoreManager = real;
+    }
   }
   return vectorStoreManager;
 }

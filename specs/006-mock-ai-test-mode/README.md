@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: complete
 created: 2026-05-03
 priority: medium
 tags:
@@ -13,7 +13,7 @@ updated_at: 2026-05-03T01:39:17.415207976Z
 
 # AI_MODE=mock|live for free, deterministic tests
 
-> **Status**: planned · **Priority**: medium · **Created**: 2026-05-03
+> **Status**: complete · **Priority**: medium · **Created**: 2026-05-03
 
 ## Overview
 

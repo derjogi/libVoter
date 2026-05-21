@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  ComponentDataSchema,
   ComponentSpecSchema,
   parseComponentSpec,
   parseQuestionResponse,
+  parseRAGResponse,
   SAFE_FALLBACK_COMPONENT,
 } from "@/types/components.zod";
 
@@ -13,7 +15,7 @@ beforeEach(() => {
 describe("parseComponentSpec", () => {
   it("accepts a valid multiselect spec", () => {
     const raw = JSON.stringify({
-      component: "multiselect",
+      type: "multiselect",
       reasoning: "top issues",
       data: {
         question: "Which issues matter?",
@@ -26,15 +28,15 @@ describe("parseComponentSpec", () => {
     });
     const { spec, ok } = parseComponentSpec(raw);
     expect(ok).toBe(true);
-    expect(spec.component).toBe("multiselect");
-    if (spec.component === "multiselect") {
+    expect(spec.type).toBe("multiselect");
+    if (spec.type === "multiselect") {
       expect(spec.data.options).toHaveLength(2);
     }
   });
 
   it("accepts a valid yesno spec", () => {
     const raw = JSON.stringify({
-      component: "yesno",
+      type: "yesno",
       data: {
         statements: [
           { statement: "I support more public transport investment." },
@@ -44,12 +46,12 @@ describe("parseComponentSpec", () => {
     });
     const { spec, ok } = parseComponentSpec(raw);
     expect(ok).toBe(true);
-    expect(spec.component).toBe("yesno");
+    expect(spec.type).toBe("yesno");
   });
 
   it("accepts a valid slider spec", () => {
     const raw = JSON.stringify({
-      component: "slider",
+      type: "slider",
       data: { label: "How much?", min: 0, max: 10 },
     });
     const { spec, ok } = parseComponentSpec(raw);
@@ -64,15 +66,15 @@ describe("parseComponentSpec", () => {
   });
 
   it("falls back when component name is unknown", () => {
-    const raw = JSON.stringify({ component: "rocket", data: {} });
+    const raw = JSON.stringify({ type: "rocket", data: {} });
     const { ok, spec } = parseComponentSpec(raw);
     expect(ok).toBe(false);
-    expect(spec.component).toBe("chat");
+    expect(spec.type).toBe("chat");
   });
 
   it("falls back when multiselect is missing options", () => {
     const raw = JSON.stringify({
-      component: "multiselect",
+      type: "multiselect",
       data: { question: "Pick" },
     });
     const { ok, spec } = parseComponentSpec(raw);
@@ -82,7 +84,7 @@ describe("parseComponentSpec", () => {
 
   it("falls back when multiselect maxSelections is not a number", () => {
     const raw = JSON.stringify({
-      component: "multiselect",
+      type: "multiselect",
       data: {
         question: "Pick",
         options: [{ id: "a", label: "A", description: "" }],
@@ -95,7 +97,7 @@ describe("parseComponentSpec", () => {
 
   it("falls back when yesno statements is a string", () => {
     const raw = JSON.stringify({
-      component: "yesno",
+      type: "yesno",
       data: { statements: "I support housing" },
     });
     const { ok } = parseComponentSpec(raw);
@@ -104,7 +106,7 @@ describe("parseComponentSpec", () => {
 
   it("falls back when freetext is missing prompt", () => {
     const raw = JSON.stringify({
-      component: "freetext",
+      type: "freetext",
       data: { placeholder: "Type here" },
     });
     const { ok } = parseComponentSpec(raw);
@@ -136,5 +138,52 @@ describe("parseQuestionResponse", () => {
 
   it("returns null when question is missing", () => {
     expect(parseQuestionResponse(JSON.stringify({ type: "chat" }))).toBeNull();
+  });
+});
+
+describe("parseRAGResponse", () => {
+  it("accepts a fully-shaped response", () => {
+    const raw = JSON.stringify({
+      candidates: [{ id: "c1" }],
+      policies: [
+        { topic: "Housing", stance: "supports", details: "more density" },
+      ],
+      sources: ["https://example.com"],
+    });
+    const out = parseRAGResponse(raw);
+    expect(out?.policies).toHaveLength(1);
+    expect(out?.sources).toEqual(["https://example.com"]);
+  });
+
+  it("accepts an empty object (all fields default to [])", () => {
+    const out = parseRAGResponse("{}");
+    expect(out).toEqual({ candidates: [], policies: [], sources: [] });
+  });
+
+  it("returns null on invalid JSON", () => {
+    expect(parseRAGResponse("not json")).toBeNull();
+  });
+
+  it("returns null when policy entry is malformed", () => {
+    const raw = JSON.stringify({
+      policies: [{ topic: "Housing" }], // missing required `stance`
+    });
+    expect(parseRAGResponse(raw)).toBeNull();
+  });
+});
+
+describe("ComponentDataSchema narrowing", () => {
+  it("back-compat: rewrites legacy `component` key to `type`", () => {
+    const raw = JSON.stringify({
+      component: "freetext",
+      data: { prompt: "Why?", placeholder: "Tell me" },
+    });
+    const { spec, ok } = parseComponentSpec(raw);
+    expect(ok).toBe(true);
+    expect(spec.type).toBe("freetext");
+  });
+
+  it("ComponentDataSchema is the same instance the runtime uses", () => {
+    expect(ComponentDataSchema).toBe(ComponentSpecSchema);
   });
 });

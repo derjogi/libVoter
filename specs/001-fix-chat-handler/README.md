@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: complete
 created: '2026-05-03'
 tags: [bug, chat]
 priority: high
@@ -7,7 +7,7 @@ priority: high
 
 # Fix AIChatHandler.processMessage
 
-> **Status**: planned · **Priority**: high · **Created**: 2026-05-03
+> **Status**: complete · **Priority**: high · **Created**: 2026-05-03
 
 ## Overview
 

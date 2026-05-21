@@ -1,15 +1,19 @@
-import type { ComponentType, ComponentSpecificData } from './index';
+import type { ComponentData } from "./components.zod";
 
 export interface DynamicComponentProps {
-  componentData: ComponentSpecificData;
+  componentData: ComponentData;
   onResponse: (response: any) => void;
   onNext?: () => void;
   disabled?: boolean;
 }
 
+/**
+ * Renderer props. `componentData` is the discriminated union from
+ * `components.zod.ts`, so the switch in `ComponentRenderer` narrows the
+ * payload automatically — no `as any` casts needed.
+ */
 export interface ComponentRendererProps {
-  type: ComponentType;
-  data: ComponentSpecificData;
+  componentData: ComponentData;
   onResponse: (response: any) => void;
   onNext?: () => void;
   disabled?: boolean;

@@ -1,34 +1,49 @@
 // Centralized configuration management
-import { z } from 'zod';
+import { z } from "zod";
 
 // Environment schema validation
 const envSchema = z.object({
-  // AI Configuration
-  OPENAI_API_KEY: z.string().min(1, 'OpenAI API key is required'),
-  AI_MODEL_SMALL: z.string().default('gpt-3.5-turbo'),
-  AI_MODEL_LARGE: z.string().default('gpt-4'),
-  AI_MODEL_REASONING: z.string().default('gpt-4-turbo'),
-  AI_CONFIDENCE_THRESHOLD: z.string().default('60'),
-  AI_MAX_TOKENS: z.string().default('2000'),
-  AI_TEMPERATURE: z.string().default('0.7'),
+  // AI Mode: 'mock' returns deterministic fixtures (free, no network).
+  // 'live' (default) calls real OpenAI/Anthropic/OpenRouter models.
+  AI_MODE: z.enum(["mock", "live"]).default("live"),
+
+  // AI Configuration. Not required in mock mode.
+  OPENAI_API_KEY: z.string().optional(),
+  AI_MODEL_SMALL: z.string().default("gpt-3.5-turbo"),
+  AI_MODEL_LARGE: z.string().default("gpt-4"),
+  AI_MODEL_REASONING: z.string().default("gpt-4-turbo"),
+  AI_CONFIDENCE_THRESHOLD: z.string().default("60"),
+  AI_MAX_TOKENS: z.string().default("2000"),
+  AI_TEMPERATURE: z.string().default("0.7"),
 
   // Database Configuration
-  DATABASE_URL: z.string().default('file:./voting-advisor.db'),
+  DATABASE_URL: z.string().default("file:./voting-advisor.db"),
   DATABASE_AUTH_TOKEN: z.string().optional(),
 
   // Vector Database
-  CHROMA_URL: z.string().url().default('http://localhost:8000'),
+  CHROMA_URL: z.string().url().default("http://localhost:8000"),
 
   // Development Settings
-  USE_MOCK_DATA: z.string().transform(val => val === 'true').default(true),
-  DEBUG_AI_RESPONSES: z.string().transform(val => val === 'true').default(false),
-  DEBUG_CONFIDENCE_CALCULATION: z.string().transform(val => val === 'true').default(false),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  USE_MOCK_DATA: z
+    .string()
+    .transform((val) => val === "true")
+    .default(true),
+  DEBUG_AI_RESPONSES: z
+    .string()
+    .transform((val) => val === "true")
+    .default(false),
+  DEBUG_CONFIDENCE_CALCULATION: z
+    .string()
+    .transform((val) => val === "true")
+    .default(false),
+  NODE_ENV: z
+    .enum(["development", "production", "test"])
+    .default("development"),
 
   // UI Configuration
-  MOBILE_BREAKPOINT: z.string().default('768'),
-  MAX_CANDIDATES_DISPLAY: z.string().default('10'),
-  MIN_INTERACTIONS_BEFORE_RESULTS: z.string().default('3'),
+  MOBILE_BREAKPOINT: z.string().default("768"),
+  MAX_CANDIDATES_DISPLAY: z.string().default("10"),
+  MIN_INTERACTIONS_BEFORE_RESULTS: z.string().default("3"),
 
   // Security (optional)
   NEXTAUTH_SECRET: z.string().optional(),
@@ -39,15 +54,16 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error('❌ Environment validation failed:');
-  parsedEnv.error.issues.forEach(error => {
-    console.error(`  - ${error.path.join('.')}: ${error.message}`);
+  console.error("❌ Environment validation failed:");
+  parsedEnv.error.issues.forEach((error) => {
+    console.error(`  - ${error.path.join(".")}: ${error.message}`);
   });
-  throw new Error('Invalid environment configuration');
+  throw new Error("Invalid environment configuration");
 }
 
 export const config = {
   ai: {
+    mode: parsedEnv.data.AI_MODE,
     openaiApiKey: parsedEnv.data.OPENAI_API_KEY,
     modelSmall: parsedEnv.data.AI_MODEL_SMALL,
     modelLarge: parsedEnv.data.AI_MODEL_LARGE,
@@ -80,7 +96,9 @@ export const config = {
   ui: {
     mobileBreakpoint: parseInt(parsedEnv.data.MOBILE_BREAKPOINT),
     maxCandidatesDisplay: parseInt(parsedEnv.data.MAX_CANDIDATES_DISPLAY),
-    minInteractionsBeforeResults: parseInt(parsedEnv.data.MIN_INTERACTIONS_BEFORE_RESULTS),
+    minInteractionsBeforeResults: parseInt(
+      parsedEnv.data.MIN_INTERACTIONS_BEFORE_RESULTS,
+    ),
   },
 
   security: {
@@ -100,11 +118,11 @@ export const getConfig = (): AppConfig => {
 };
 
 export const isDevelopment = (): boolean => {
-  return config.development.nodeEnv === 'development';
+  return config.development.nodeEnv === "development";
 };
 
 export const isProduction = (): boolean => {
-  return config.development.nodeEnv === 'production';
+  return config.development.nodeEnv === "production";
 };
 
 export const shouldUseMockData = (): boolean => {

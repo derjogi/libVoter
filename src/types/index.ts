@@ -76,74 +76,39 @@ export interface Source {
 }
 
 // === UI Component Types ===
+// The single source of truth is `src/types/components.zod.ts` — the Zod
+// schemas there are used both to validate LLM-generated component specs and
+// to drive the React renderer. Re-exported here so existing imports from
+// `@/types` keep working.
 
-export type ComponentType =
-  | "chat"
-  | "yesno"
-  | "multiselect"
-  | "dropdown"
-  | "freetext"
-  | "slider";
+import type {
+  ChatData,
+  ComponentData,
+  ComponentType,
+  DropdownData,
+  FreeTextData,
+  MultiSelectData,
+  SelectOption,
+  SliderData,
+  YesNoData,
+} from "./components.zod";
 
-export interface ComponentData {
-  type: ComponentType;
-  data: ComponentSpecificData;
-}
+export type {
+  ChatData,
+  ComponentData,
+  ComponentType,
+  DropdownData,
+  FreeTextData,
+  MultiSelectData,
+  SelectOption,
+  SliderData,
+  YesNoData,
+};
 
-export type ComponentSpecificData =
-  | ChatData
-  | YesNoData
-  | MultiSelectData
-  | DropdownData
-  | FreeTextData
-  | SliderData;
-
-export interface ChatData {
-  messages: ConversationMessage[];
-  placeholder?: string;
-}
-
-export interface YesNoData {
-  statements: Array<{
-    statement: string;
-    context?: string;
-  }>;
-}
-
-export interface MultiSelectData {
-  question: string;
-  options: SelectOption[];
-  maxSelections?: number;
-  questionId?: string;
-}
-
-export interface DropdownData {
-  question: string;
-  options: SelectOption[];
-  placeholder?: string;
-  questionId?: string;
-}
-
-export interface SelectOption {
-  id: string;
-  label: string;
-  description?: string;
-}
-
-export interface FreeTextData {
-  prompt: string;
-  placeholder: string;
-  maxLength?: number;
-}
-
-export interface SliderData {
-  label: string;
-  min: number;
-  max: number;
-  step?: number;
-  unit?: string;
-  description?: string;
-}
+// Convenience alias for the data union (the second positional in
+// `ComponentData`). Prefer narrowing via `componentData.type` over reaching
+// for this directly.
+export type ComponentSpecificData = ComponentData["data"];
 
 // === Conversation Types ===
 
@@ -221,7 +186,7 @@ export const UserSessionSchema = z.object({
         ]),
         timestamp: z.date(),
         confidence: z.number().min(0).max(100).optional(),
-      })
+      }),
     ),
     preferences: z.object({
       topics: z.array(z.string()),
@@ -240,7 +205,7 @@ export const UserSessionSchema = z.object({
             data: z.any(),
           })
           .optional(),
-      })
+      }),
     ),
     currentStep: z.number(),
     confidenceScore: z.number().min(0).max(100),
@@ -262,7 +227,7 @@ export const CandidateSchema = z.object({
           details: z.string().optional(),
           sources: z.array(z.string()).optional(),
           confidence: z.number().min(0).max(1).optional(),
-        })
+        }),
       ),
       biography: z.string().optional(),
       experience: z.array(z.string()).optional(),
