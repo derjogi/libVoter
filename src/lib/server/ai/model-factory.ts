@@ -19,6 +19,34 @@ export function isMockMode(): boolean {
 }
 
 /**
+ * Returns a set of provider identifiers for which an API key is actually present
+ * in the environment.  Used to decide whether a requested provider must be
+ * silently rerouted through OpenRouter.
+ */
+function getAvailableProviders(): Set<'openai' | 'anthropic' | 'openrouter'> {
+  const available: Set<'openai' | 'anthropic' | 'openrouter'> = new Set();
+  if (process.env.OPENAI_API_KEY)   available.add('openai');
+  if (process.env.ANTHROPIC_API_KEY) available.add('anthropic');
+  if (process.env.OPENROUTER_API_KEY) available.add('openrouter');
+  return available;
+}
+
+/**
+ * Resolve the effective provider for a model whose "natural" provider is
+ * `requestedProvider`.  If that provider's API key is missing but OpenRouter
+ * *is* configured, route through OpenRouter instead (OpenRouter proxies
+ * OpenAI- and Anthropic-compatible models).  Returns the raw `requestedProvider`
+ * when no reroute is possible so the caller can surface a clear error.
+ */
+function resolveProvider(requestedProvider: string): string {
+  if (isMockMode()) return requestedProvider;
+  const available = getAvailableProviders();
+  if (available.has(requestedProvider as 'openai' | 'anthropic')) return requestedProvider;
+  if (available.has('openrouter')) return 'openrouter';
+  return requestedProvider; // no key at all – will throw in the switch
+}
+
+/**
  * Creates a chat model instance based on the provided configuration
  */
 export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
@@ -32,7 +60,9 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
 
   const { provider, model } = finalConfig;
 
-  switch (provider) {
+  const resolvedProvider = resolveProvider(provider);
+
+  switch (resolvedProvider) {
     case 'openai':
       console.log('Using OpenAI chat model:', model);
       return new ChatOpenAI({
@@ -54,7 +84,7 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
       });
 
     case 'openrouter':
-      console.log('Using OpenRouter chat model:', model);
+      console.log('Using OpenRouter chat model:', model, '(routed from provider:', provider, ')');
       return new ChatOpenAI({
         modelName: model,
         temperature: config.limits.temperature,
