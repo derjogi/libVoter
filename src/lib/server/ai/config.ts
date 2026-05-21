@@ -5,13 +5,8 @@ export interface AIModelConfig {
 }
 
 function parseModelString(modelString: string): AIModelConfig {
-  const [provider, ...rest] = modelString.split('/');
-  const model = rest.length > 1 ? rest.join('/') : rest[0];
-  if (['openai', 'anthropic', 'openrouter'].includes(provider)) {
-    return { provider: provider as AIModelConfig['provider'], model };
-  }
-  // Default to openrouter if no provider specified
-  return { provider: 'openrouter', model: modelString };
+  const [provider, model] = modelString.split('/', 2);
+  return { provider: provider as AIModelConfig['provider'], model };
 }
 
 export const AI_CONFIG = {
