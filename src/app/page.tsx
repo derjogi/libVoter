@@ -1,38 +1,50 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import { ComponentRenderer } from "@/components/dynamic/ComponentRenderer";
 import { RightPanel } from "@/components/layout/RightPanel";
-import { useChat } from "@/lib/client/hooks/useChat";
-import { selectNextComponent } from "@/lib/actions/prompts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getCandidatesByWard,
-  getSeatsForCurrentElection,
   getMayorCandidates,
+  getSeatsForCurrentElection,
 } from "@/lib/actions/database";
+import { selectNextComponent } from "@/lib/actions/prompts";
+import { useChat } from "@/lib/client/hooks/useChat";
+import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
 import { electionConfig } from "@/lib/config/election";
-import type { UserResponse, ComponentData, CandidateMatch } from "@/types";
 import type { Candidate } from "@/lib/db/schema";
+import type { CandidateMatch, ComponentData, UserResponse } from "@/types";
 
 export default function VotingAdvisor() {
-  const [currentComponent, setCurrentComponent] =
-    useState<ComponentData | null>(null);
-  const [userResponses, setUserResponses] = useState<UserResponse[]>([]);
-  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
-  const [confidence, setConfidence] = useState(0);
+  const [
+    currentComponent,
+    setCurrentComponent,
+    isComponentHydrated,
+    clearStoredComponent,
+  ] = usePersistedState<ComponentData | null>("session:currentComponent", null);
+  const [userResponses, setUserResponses, , clearStoredResponses] =
+    usePersistedState<UserResponse[]>("session:userResponses", []);
+  const [candidates, setCandidates, , clearStoredCandidates] =
+    usePersistedState<CandidateMatch[]>("session:candidates", []);
+  const [confidence, setConfidence, , clearStoredConfidence] =
+    usePersistedState<number>("session:confidence", 0);
   const [isMobile, setIsMobile] = useState(false);
-  const [showCandidates, setShowCandidates] = useState(false);
+  const [showCandidates, setShowCandidates, , clearStoredShowCandidates] =
+    usePersistedState<boolean>("session:showCandidates", false);
   const [preferenceSummary, setPreferenceSummary] =
     useState<string>("Your Preferences");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
-  const [availableCandidates, setAvailableCandidates] = useState<Candidate[]>(
-    [],
-  );
+  const [
+    availableCandidates,
+    setAvailableCandidates,
+    ,
+    clearStoredAvailableCandidates,
+  ] = usePersistedState<Candidate[]>("session:availableCandidates", []);
 
   // Pretty user-facing label for the seat ("ward" / "electorate") from the
   // current election config.
@@ -70,9 +82,16 @@ export default function VotingAdvisor() {
     fetchSeats();
   }, []);
 
-  // Initialize with seat selection component
+  // Initialize with seat selection component. Wait until the persisted
+  // session state has been read from localStorage; otherwise we'd briefly
+  // overwrite a restored `currentComponent` with the ward dropdown.
   useEffect(() => {
-    if (!currentComponent && !isLoadingSeats && seats.length > 0) {
+    if (
+      isComponentHydrated &&
+      !currentComponent &&
+      !isLoadingSeats &&
+      seats.length > 0
+    ) {
       const options = seats.map((seat) => ({
         id: seat,
         label: seat,
@@ -88,7 +107,14 @@ export default function VotingAdvisor() {
         },
       });
     }
-  }, [currentComponent, isLoadingSeats, seats, seatLabel]);
+  }, [
+    isComponentHydrated,
+    currentComponent,
+    isLoadingSeats,
+    seats,
+    seatLabel,
+    setCurrentComponent,
+  ]);
 
   // Update messages in currentComponent when messages change
   useEffect(() => {
@@ -104,7 +130,7 @@ export default function VotingAdvisor() {
         };
       });
     }
-  }, [messages]);
+  }, [messages, currentComponent?.type, setCurrentComponent]);
 
   const handleComponentResponse = async (response: any) => {
     try {
@@ -157,8 +183,8 @@ export default function VotingAdvisor() {
       }
 
       // Handle different response formats based on component type
-      let processedResponse = response;
-      let questionId = `question_${Date.now()}`;
+      const processedResponse = response;
+      const questionId = `question_${Date.now()}`;
 
       // if (currentComponent?.type === 'yesno' && typeof response === 'object' && 'index' in response) {
       //   // For yesno components, include the statement index in the question ID
@@ -213,6 +239,14 @@ export default function VotingAdvisor() {
 
   const handleReset = () => {
     clearChat();
+    // Wipe persisted session state so a subsequent reload starts fresh.
+    clearStoredComponent();
+    clearStoredResponses();
+    clearStoredCandidates();
+    clearStoredConfidence();
+    clearStoredShowCandidates();
+    clearStoredAvailableCandidates();
+
     if (seats.length > 0) {
       const options = seats.map((seat) => ({
         id: seat,
@@ -238,10 +272,6 @@ export default function VotingAdvisor() {
         },
       });
     }
-    setUserResponses([]);
-    setCandidates([]);
-    setConfidence(0);
-    setShowCandidates(false);
   };
 
   const handleUndo = () => {
