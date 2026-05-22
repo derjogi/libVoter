@@ -34,12 +34,12 @@ export function FreeTextInput({ data, onResponse, disabled = false }: FreeTextIn
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto">
+    <Card className="w-full max-w-lg mx-auto h-full flex flex-col min-h-0">
       <CardHeader>
         <CardTitle className="text-lg">{data.prompt}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
+      <CardContent className="flex-1 min-h-0 flex flex-col gap-4">
+        <div className="flex-1 min-h-0 flex flex-col gap-2">
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -48,7 +48,7 @@ export function FreeTextInput({ data, onResponse, disabled = false }: FreeTextIn
             disabled={disabled}
             maxLength={maxLength}
             rows={6}
-            className="resize-none"
+            className="flex-1 min-h-0 resize-none"
           />
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Share your detailed thoughts</span>

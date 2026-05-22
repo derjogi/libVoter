@@ -29,11 +29,11 @@ export function DropdownSelect({ data, onResponse, disabled = false }: DropdownS
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto">
+    <Card className="w-full max-w-lg mx-auto h-full flex flex-col min-h-0">
       <CardHeader>
         <CardTitle className="text-lg">{data.question}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex-1 min-h-0 flex flex-col gap-4">
         <Select value={selectedId} onValueChange={handleValueChange} disabled={disabled}>
           <SelectTrigger>
             <SelectValue placeholder={data.placeholder || "Select an option..."} />
@@ -57,7 +57,7 @@ export function DropdownSelect({ data, onResponse, disabled = false }: DropdownS
         <Button
           onClick={handleSubmit}
           disabled={disabled || !selectedId}
-          className="w-full"
+          className="w-full mt-auto"
         >
           Continue
         </Button>

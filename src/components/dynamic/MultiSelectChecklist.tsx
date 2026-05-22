@@ -44,7 +44,7 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
   const maxSelections = data.maxSelections;
 
   return (
-    <Card className="w-full max-w-lg mx-auto">
+    <Card className="w-full max-w-lg mx-auto h-full flex flex-col min-h-0">
       <CardHeader>
         <CardTitle className="text-lg">{data.question}</CardTitle>
         {maxSelections && (
@@ -55,8 +55,8 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
+      <CardContent className="flex-1 min-h-0 flex flex-col gap-4">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
           {data.options.map((option) => (
             <div key={option.id} className="flex items-start space-x-3">
               <Checkbox

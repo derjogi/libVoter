@@ -281,7 +281,7 @@ export default function VotingAdvisor() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4">
@@ -305,11 +305,13 @@ export default function VotingAdvisor() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-15rem)]">
+      <main className="container mx-auto px-4 py-6 flex-1 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-0">
           {/* Left Side - Dynamic Input */}
-          <div className={`${isMobile && showCandidates ? "hidden" : "block"}`}>
-            <Card className="h-full">
+          <div
+            className={`min-h-0 ${isMobile && showCandidates ? "hidden" : "flex flex-col"}`}
+          >
+            <Card className="flex-1 min-h-0 overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <Badge variant="outline">
@@ -317,7 +319,7 @@ export default function VotingAdvisor() {
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 flex-1 min-h-0 flex flex-col">
                 {isLoadingSeats ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
@@ -344,7 +346,7 @@ export default function VotingAdvisor() {
 
           {/* Right Side - Candidate Matches (always visible per spec 005) */}
           <div
-            className={`${isMobile && !showCandidates ? "hidden" : "block"}`}
+            className={`min-h-0 ${isMobile && !showCandidates ? "hidden" : "overflow-y-auto"}`}
           >
             <RightPanel
               candidates={candidates}

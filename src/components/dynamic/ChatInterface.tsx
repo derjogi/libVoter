@@ -54,8 +54,8 @@ export function ChatInterface({
   };
 
   return (
-    <Card className="flex flex-col h-full max-h-[600px] overflow-scroll">
-      <CardContent className="flex-1 flex flex-col p-4">
+    <Card className="flex flex-col h-full min-h-0">
+      <CardContent className="flex-1 flex flex-col p-4 min-h-0">
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.length === 0 && (
