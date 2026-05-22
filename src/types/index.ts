@@ -19,6 +19,11 @@ export interface UserResponse {
   id: string;
   questionId: string;
   componentType: ComponentType;
+  /** The question text as shown to the user when they answered this step. */
+  question?: string;
+  /** Full component data snapshot so the history panel can re-render the
+   *  original question (options, labels, etc.) without reconstructing it. */
+  componentData?: ComponentData;
   value: ResponseValue;
   timestamp: Date;
   confidence?: number; // How confident the user was
@@ -184,6 +189,15 @@ export const UserSessionSchema = z.object({
           z.array(z.string()),
           z.record(z.any(), z.any()),
         ]),
+        /** Optional question text stored alongside the response for history display. */
+        question: z.string().optional(),
+        /** Optional component data snapshot for rich history rendering. */
+        componentData: z
+          .object({
+            type: z.string(),
+            data: z.any(),
+          })
+          .optional(),
         timestamp: z.date(),
         confidence: z.number().min(0).max(100).optional(),
       }),

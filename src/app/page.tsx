@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ComponentRenderer } from "@/components/dynamic/ComponentRenderer";
+import { ChatHistory } from "@/components/dynamic/ChatHistory";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,7 +133,7 @@ export default function VotingAdvisor() {
     }
   }, [messages, currentComponent?.type, setCurrentComponent]);
 
-  const handleComponentResponse = async (response: any) => {
+  const handleComponentResponse = async (response: unknown) => {
     try {
       console.log(`Got response for ${currentComponent?.type}:\n`, response);
 
@@ -140,6 +141,8 @@ export default function VotingAdvisor() {
         currentComponent?.type === "dropdown" &&
         currentComponent.data.questionId === "ward_selection"
       ) {
+        const responseString =
+          typeof response === "string" ? response : String(response);
         // Fetch mayor candidates
         const mayorResult = await getMayorCandidates();
         const mayorCandidates = mayorResult.success
@@ -147,7 +150,7 @@ export default function VotingAdvisor() {
           : [];
 
         // Fetch ward candidates
-        const wardResult = await getCandidatesByWard(response);
+        const wardResult = await getCandidatesByWard(responseString);
         const wardCandidates = wardResult.success ? wardResult.data || [] : [];
 
         // Combine and store available candidates
@@ -155,7 +158,7 @@ export default function VotingAdvisor() {
         setAvailableCandidates(allCandidates);
 
         const candidateNames = allCandidates.map((c) => c.name);
-        const conversationState = `I am voting in the ${response} ${seatLabel}, and the following candidates are running: \n${candidateNames?.join(
+        const conversationState = `I am voting in the ${responseString} ${seatLabel}, and the following candidates are running: \n${candidateNames?.join(
           "\n",
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 
@@ -183,7 +186,16 @@ export default function VotingAdvisor() {
       }
 
       // Handle different response formats based on component type
-      const processedResponse = response;
+      const processedResponse: UserResponse["value"] =
+        typeof response === "string"
+          ? response
+          : typeof response === "number" || typeof response === "boolean"
+            ? response
+            : Array.isArray(response)
+              ? response
+              : typeof response === "object" && response !== null
+                ? JSON.stringify(response)
+                : String(response);
       const questionId = `question_${Date.now()}`;
 
       // if (currentComponent?.type === 'yesno' && typeof response === 'object' && 'index' in response) {
@@ -192,14 +204,32 @@ export default function VotingAdvisor() {
       //   processedResponse = response.response; // Extract the actual response ('agree' | 'disagree' | 'skip')
       // }
 
-      // Create user response record
+      // Store the question text and full component data snapshot before
+      // the dialog in the currentComponent.discriminated step panel
+      // can reconstruct each Q&A step without guessing.
+      const activeComp = currentComponent; // narrow from ComponentData | null
+      const compDisplayQ =
+        activeComp?.type === "chat"
+          ? activeComp.data.prompt ??
+            activeComp.data.messages?.slice(-1)[0]?.content ??
+            ""
+          : (activeComp?.data as { question?: string })?.question ?? "";
+
+      const compDisplayQId =
+        activeComp?.type === "chat"
+          ? "response_turn"
+          : (activeComp?.data as { questionId?: string })?.questionId ??
+            questionId;
+
       const userResponse: UserResponse = {
         id: `response_${Date.now()}`,
-        questionId,
-        componentType: currentComponent?.type || "chat",
+        questionId: compDisplayQId,
+        componentType: activeComp?.type || "chat",
         value: processedResponse,
         timestamp: new Date(),
         confidence: 80, // User confidence rating
+        question: compDisplayQ,
+        componentData: activeComp ?? undefined,
       };
 
       setUserResponses((prev) => [...prev, userResponse]);
@@ -328,16 +358,25 @@ export default function VotingAdvisor() {
                     </p>
                   </div>
                 ) : currentComponent ? (
-                  <ComponentRenderer
-                    componentData={currentComponent}
-                    onResponse={handleComponentResponse}
-                    disabled={isLoading}
-                    isLoading={isLoading}
-                    // followupQuestion={followupQuestion}
-                  />
+                  <>
+                    {/* Collapsible history of all completed Q&A steps */}
+                    {userResponses.length > 0 && (
+                      <ChatHistory steps={userResponses} />
+                    )}
+
+                    {/* Current active question */}
+                    <div className="flex-1 min-h-0" data-testid="active-step">
+                      <ComponentRenderer
+                        componentData={currentComponent}
+                        onResponse={handleComponentResponse}
+                        disabled={isLoading}
+                        isLoading={isLoading}
+                      />
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center py-8">
-                    <p className="text-muted-foreground">Loading...</p>
+                    <p className="text-muted-foreground">Loading…</p>
                   </div>
                 )}
               </CardContent>
