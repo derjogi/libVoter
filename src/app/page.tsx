@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ComponentRenderer } from "@/components/dynamic/ComponentRenderer";
-import { ChatHistory } from "@/components/dynamic/ChatHistory";
+import {
+  ChatHistory,
+  extractQuestionText,
+} from "@/components/dynamic/ChatHistory";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,12 +44,18 @@ export default function VotingAdvisor() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
+  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(true);
   const [
     availableCandidates,
     setAvailableCandidates,
     ,
     clearStoredAvailableCandidates,
   ] = usePersistedState<Candidate[]>("session:availableCandidates", []);
+  // Ref always reflects the latest userResponses (avoids stale closure in sendMessage).
+  const userResponsesRef = useRef<UserResponse[]>(userResponses);
+  useEffect(() => {
+    userResponsesRef.current = userResponses;
+  }, [userResponses]);
 
   // Pretty user-facing label for the seat ("ward" / "electorate") from the
   // current election config.
@@ -162,6 +172,22 @@ export default function VotingAdvisor() {
           "\n",
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 
+        // Append the ward-selection step to userResponses so ChatHistory shows it
+        // and the LLM receives it in the next turn.
+        const wardUserResponse: UserResponse = {
+          id: `response_${Date.now()}`,
+          questionId: currentComponent.data.questionId ?? "ward_selection",
+          componentType: "dropdown",
+          value: responseString,
+          timestamp: new Date(),
+          confidence: 80,
+          question:
+            currentComponent.data.question ??
+            extractQuestionText(currentComponent),
+          componentData: currentComponent,
+        };
+        setUserResponses((prev) => [...prev, wardUserResponse]);
+
         const componentResult = await selectNextComponent(conversationState);
 
         if (componentResult.success && componentResult.data) {
@@ -181,82 +207,76 @@ export default function VotingAdvisor() {
             },
           });
         }
-        // We don't need any additional AI questions after the initial ward selection.
-        return;
-      }
-
-      // Handle different response formats based on component type
-      const processedResponse: UserResponse["value"] =
-        typeof response === "string"
-          ? response
-          : typeof response === "number" || typeof response === "boolean"
+        // Ward step is handled — do not fall through to the general response
+        // processing path below (which Normalises response values and calls
+        // sendMessage).  The next turn starts fresh with the LLM-powered next
+        // question that selectNextComponent already set.
+      } else {
+        // Handle different response formats based on component type
+        const processedResponse: UserResponse["value"] =
+          typeof response === "string"
             ? response
-            : Array.isArray(response)
+            : typeof response === "number" || typeof response === "boolean"
               ? response
-              : typeof response === "object" && response !== null
-                ? JSON.stringify(response)
-                : String(response);
-      const questionId = `question_${Date.now()}`;
+              : Array.isArray(response)
+                ? response
+                : typeof response === "object" && response !== null
+                  ? JSON.stringify(response)
+                  : String(response);
+        const questionId = `question_${Date.now()}`;
 
-      // if (currentComponent?.type === 'yesno' && typeof response === 'object' && 'index' in response) {
-      //   // For yesno components, include the statement index in the question ID
-      //   questionId = `yesno_statement_${response.index}_${Date.now()}`;
-      //   processedResponse = response.response; // Extract the actual response ('agree' | 'disagree' | 'skip')
-      // }
+        // Store the question text and full component data snapshot before
+        // the dialog in the currentComponent.discriminated step panel
+        // can reconstruct each Q&A step without guessing.
+        const activeComp = currentComponent; // narrow from ComponentData | null
+        const compDisplayQ = extractQuestionText(activeComp ?? undefined);
+        // questionId is only present on dropdown/multiselect data; guard with type check.
+        const rawQuestionId = (
+          activeComp as { data?: { questionId?: string } } | null
+        )?.data?.questionId;
+        const compDisplayQId = rawQuestionId ?? questionId;
 
-      // Store the question text and full component data snapshot before
-      // the dialog in the currentComponent.discriminated step panel
-      // can reconstruct each Q&A step without guessing.
-      const activeComp = currentComponent; // narrow from ComponentData | null
-      const compDisplayQ =
-        activeComp?.type === "chat"
-          ? activeComp.data.prompt ??
-            activeComp.data.messages?.slice(-1)[0]?.content ??
-            ""
-          : (activeComp?.data as { question?: string })?.question ?? "";
+        const userResponse: UserResponse = {
+          id: `response_${Date.now()}`,
+          questionId: compDisplayQId,
+          componentType: activeComp?.type || "chat",
+          value: processedResponse,
+          timestamp: new Date(),
+          confidence: 80, // User confidence rating
+          question: compDisplayQ,
+          componentData: activeComp ?? undefined,
+        };
 
-      const compDisplayQId =
-        activeComp?.type === "chat"
-          ? "response_turn"
-          : (activeComp?.data as { questionId?: string })?.questionId ??
-            questionId;
+        setUserResponses((prev) => {
+          userResponsesRef.current = [...prev, userResponse];
+          return userResponsesRef.current;
+        });
 
-      const userResponse: UserResponse = {
-        id: `response_${Date.now()}`,
-        questionId: compDisplayQId,
-        componentType: activeComp?.type || "chat",
-        value: processedResponse,
-        timestamp: new Date(),
-        confidence: 80, // User confidence rating
-        question: compDisplayQ,
-        componentData: activeComp ?? undefined,
-      };
+        // Send message to AI and get response — always pass the latest history
+        // (userResponsesRef is updated synchronously in the setter above).
+        const aiResponse = await sendMessage(
+          typeof processedResponse === "string"
+            ? processedResponse
+            : JSON.stringify(processedResponse),
+          userResponsesRef.current,
+          availableCandidates,
+        );
 
-      setUserResponses((prev) => [...prev, userResponse]);
+        if (aiResponse) {
+          setConfidence(aiResponse.confidence);
+          setShowCandidates(aiResponse.shouldShowCandidates);
 
-      // Send message to AI and get response
-      const aiResponse = await sendMessage(
-        typeof processedResponse === "string"
-          ? processedResponse
-          : JSON.stringify(processedResponse),
-        userResponses,
-        availableCandidates,
-      );
+          // Update candidates if available
+          if (aiResponse.candidateMatches) {
+            setCandidates(aiResponse.candidateMatches);
+          }
 
-      if (aiResponse) {
-        setConfidence(aiResponse.confidence);
-        setShowCandidates(aiResponse.shouldShowCandidates);
-
-        // Update candidates if available
-        if (aiResponse.candidateMatches) {
-          setCandidates(aiResponse.candidateMatches);
+          // Update component if AI suggests a new one
+          if (aiResponse.nextComponent) {
+            setCurrentComponent(aiResponse.nextComponent);
+          }
         }
-
-        // Update component if AI suggests a new one
-        if (aiResponse.nextComponent) {
-          setCurrentComponent(aiResponse.nextComponent);
-        }
-      }
+      } // end else — general (non-ward) response path
     } catch (error) {
       console.error("Error processing response:", error);
     }
@@ -342,30 +362,51 @@ export default function VotingAdvisor() {
             className={`min-h-0 ${isMobile && showCandidates ? "hidden" : "flex flex-col"}`}
           >
             <Card className="flex-1 min-h-0 overflow-hidden">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <Badge variant="outline">
-                    {userResponses.length} responses
-                  </Badge>
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="flex items-center justify-between text-base">
+                  <span className="text-sm text-muted-foreground font-normal">
+                    Questioning progress
+                  </span>
+                  {userResponses.length > 0 && (
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {userResponses.length}{" "}
+                      {userResponses.length === 1 ? "answer" : "answers"}
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 min-h-0 flex flex-col">
+              <CardContent className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
                 {isLoadingSeats ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">
-                      Loading {electionConfig.seatLabelPlural}...
-                    </p>
+                  <div className="flex-1 flex items-center justify-center text-center py-8 px-4">
+                    <div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Loading {electionConfig.seatLabelPlural}...
+                      </p>
+                    </div>
                   </div>
                 ) : currentComponent ? (
                   <>
-                    {/* Collapsible history of all completed Q&A steps */}
                     {userResponses.length > 0 && (
-                      <ChatHistory steps={userResponses} />
+                      <div
+                        className="flex-shrink-0"
+                        style={{ maxHeight: "min(45vh, 360px)" }}
+                      >
+                        <ChatHistory
+                          steps={userResponses}
+                          isCollapsed={isHistoryCollapsed}
+                          onToggle={() =>
+                            setIsHistoryCollapsed(!isHistoryCollapsed)
+                          }
+                        />
+                      </div>
                     )}
 
-                    {/* Current active question */}
-                    <div className="flex-1 min-h-0" data-testid="active-step">
+                    {/* Current active question — never squished */}
+                    <div
+                      className="flex-shrink-0 p-4 pt-2"
+                      data-testid="active-step"
+                    >
                       <ComponentRenderer
                         componentData={currentComponent}
                         onResponse={handleComponentResponse}
@@ -375,8 +416,8 @@ export default function VotingAdvisor() {
                     </div>
                   </>
                 ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Loading…</p>
+                  <div className="flex-1 flex items-center justify-center py-8 px-4">
+                    <p className="text-muted-foreground text-sm">Loading…</p>
                   </div>
                 )}
               </CardContent>

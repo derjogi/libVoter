@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { X, Star, CheckCircle, XCircle } from 'lucide-react';
-import type { CandidateMatch } from '@/types';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { X, Star, CheckCircle, XCircle } from "lucide-react";
+import type { CandidateMatch } from "@/types";
 
 interface ComparisonViewProps {
   candidates: CandidateMatch[];
@@ -18,9 +18,9 @@ interface ComparisonViewProps {
 export function ComparisonView({
   candidates,
   onClose,
-  onSelectCandidate
+  onSelectCandidate,
 }: ComparisonViewProps) {
-  const [selectedTab, setSelectedTab] = useState('overview');
+  const [selectedTab, setSelectedTab] = useState("overview");
 
   if (candidates.length === 0) return null;
 
@@ -50,7 +50,9 @@ export function ComparisonView({
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <CardTitle className="text-lg">{candidate.candidate.name}</CardTitle>
+                            <CardTitle className="text-lg">
+                              {candidate.candidate.name}
+                            </CardTitle>
                             <Badge variant="secondary" className="mt-1">
                               {candidate.candidate.party}
                             </Badge>
@@ -69,7 +71,9 @@ export function ComparisonView({
                           <div>
                             <div className="flex justify-between text-sm mb-1">
                               <span>Match Score</span>
-                              <span className="font-bold">{candidate.score}%</span>
+                              <span className="font-bold">
+                                {candidate.score}%
+                              </span>
                             </div>
                             <Progress value={candidate.score} className="h-2" />
                           </div>
@@ -88,13 +92,20 @@ export function ComparisonView({
                   {candidates.map((candidate) => (
                     <div key={candidate.candidate.id} className="space-y-3">
                       <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold">{candidate.candidate.name}</h3>
-                        <Badge variant="secondary">{candidate.candidate.party}</Badge>
+                        <h3 className="font-semibold">
+                          {candidate.candidate.name}
+                        </h3>
+                        <Badge variant="secondary">
+                          {candidate.candidate.party}
+                        </Badge>
                       </div>
 
                       <div className="space-y-2">
                         {candidate.topMatchingPolicies.map((policy, index) => (
-                          <div key={index} className="flex items-center p-2 bg-muted rounded">
+                          <div
+                            key={index}
+                            className="flex items-center p-2 bg-muted rounded"
+                          >
                             <Star className="mr-2 h-4 w-4 text-yellow-500 flex-shrink-0" />
                             <span className="text-sm">{policy}</span>
                           </div>
@@ -110,8 +121,12 @@ export function ComparisonView({
                   {candidates.map((candidate) => (
                     <div key={candidate.candidate.id} className="space-y-4">
                       <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-lg">{candidate.candidate.name}</h3>
-                        <Badge variant="secondary">{candidate.candidate.party}</Badge>
+                        <h3 className="font-semibold text-lg">
+                          {candidate.candidate.name}
+                        </h3>
+                        <Badge variant="secondary">
+                          {candidate.candidate.party}
+                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">

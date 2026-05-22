@@ -1,11 +1,11 @@
 // Server-only AI model factory for centralized model instantiation
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { OpenAIEmbeddings } from '@langchain/openai';
-import { getAIConfig } from './config';
-import type { AIModelConfig } from './config';
+import { ChatOpenAI } from "@langchain/openai";
+import { ChatAnthropic } from "@langchain/anthropic";
+import { OpenAIEmbeddings } from "@langchain/openai";
+import { getAIConfig } from "./config";
+import type { AIModelConfig } from "./config";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
-import { MockChatModel, MockEmbeddings } from './mock-models';
+import { MockChatModel, MockEmbeddings } from "./mock-models";
 
 export type ChatModel = ChatOpenAI | ChatAnthropic | MockChatModel;
 export type EmbeddingModel =
@@ -15,7 +15,7 @@ export type EmbeddingModel =
 
 /** Returns true when AI_MODE=mock is set (free, deterministic responses). */
 export function isMockMode(): boolean {
-  return process.env.AI_MODE === 'mock';
+  return process.env.AI_MODE === "mock";
 }
 
 /**
@@ -23,7 +23,7 @@ export function isMockMode(): boolean {
  */
 export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
   if (isMockMode()) {
-    console.log('AI_MODE=mock — using MockChatModel');
+    console.log("AI_MODE=mock — using MockChatModel");
     return new MockChatModel();
   }
 
@@ -33,7 +33,7 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
   const { provider, model } = finalConfig;
 
   switch (provider) {
-    case 'openai':
+    case "openai":
       if (process.env.OPENAI_API_KEY) {
         console.log("Using OpenAI chat model:", model);
         return new ChatOpenAI({
@@ -45,9 +45,9 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
         });
       }
 
-    case 'anthropic':
+    case "anthropic":
       if (process.env.ANTHROPIC_API_KEY) {
-        console.log('Using Anthropic chat model:', model);
+        console.log("Using Anthropic chat model:", model);
         return new ChatAnthropic({
           modelName: model,
           temperature: config.limits.temperature,
@@ -57,23 +57,31 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
         });
       }
 
-    case 'openrouter':
+    case "openrouter":
       if (process.env.OPENROUTER_API_KEY) {
-        console.log('Using OpenRouter chat model:', model, '(routed from provider:', provider, ')');
+        console.log(
+          "Using OpenRouter chat model:",
+          model,
+          "(routed from provider:",
+          provider,
+          ")",
+        );
         return new ChatOpenAI({
           modelName: model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
           apiKey: process.env.OPENROUTER_API_KEY!,
           configuration: {
-            baseURL: 'https://openrouter.ai/api/v1'
+            baseURL: "https://openrouter.ai/api/v1",
           },
           streaming: false, // Disable streaming to ensure complete responses
         });
       }
 
     default:
-      throw new Error(`Unsupported AI provider or required API key not set: ${provider}`);
+      throw new Error(
+        `Unsupported AI provider or required API key not set: ${provider}`,
+      );
   }
 }
 

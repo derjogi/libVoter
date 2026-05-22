@@ -1,5 +1,5 @@
 // Server-only confidence calculation
-import type { UserResponse, ConversationMessage } from '@/types';
+import type { UserResponse, ConversationMessage } from "@/types";
 
 export interface ConfidenceResult {
   score: number; // 0-100
@@ -14,27 +14,33 @@ export interface ConfidenceResult {
 
 export class ConfidenceCalculator {
   private static readonly TOPICS = [
-    'economy', 'healthcare', 'education', 'environment',
-    'foreign policy', 'social issues', 'taxes', 'government'
+    "economy",
+    "healthcare",
+    "education",
+    "environment",
+    "foreign policy",
+    "social issues",
+    "taxes",
+    "government",
   ];
 
   static calculate(
     responses: UserResponse[],
-    conversationHistory: ConversationMessage[]
+    conversationHistory: ConversationMessage[],
   ): ConfidenceResult {
     const factors = {
       responseQuality: this.calculateResponseQuality(responses),
       topicCoverage: this.calculateTopicCoverage(responses),
       consistency: this.calculateConsistency(responses),
-      interactionCount: this.calculateInteractionCount(responses)
+      interactionCount: this.calculateInteractionCount(responses),
     };
 
     // Weighted average calculation
     const score = Math.round(
       factors.responseQuality * 0.3 +
-      factors.topicCoverage * 0.3 +
-      factors.consistency * 0.2 +
-      factors.interactionCount * 0.2
+        factors.topicCoverage * 0.3 +
+        factors.consistency * 0.2 +
+        factors.interactionCount * 0.2,
     );
 
     const reasoning = this.generateReasoning(factors, score);
@@ -42,7 +48,7 @@ export class ConfidenceCalculator {
     return {
       score: Math.min(100, Math.max(0, score)),
       factors,
-      reasoning
+      reasoning,
     };
   }
 
@@ -55,7 +61,7 @@ export class ConfidenceCalculator {
       let quality = 50; // Base quality
 
       // Check response length (longer = more detailed)
-      if (response.value && typeof response.value === 'string') {
+      if (response.value && typeof response.value === "string") {
         const length = response.value.length;
         if (length > 100) quality += 20;
         else if (length > 50) quality += 10;
@@ -110,8 +116,8 @@ export class ConfidenceCalculator {
       const currentTopics = this.extractTopics(currentText);
       const nextTopics = this.extractTopics(nextText);
 
-      const hasOverlap = currentTopics.some(topic =>
-        nextTopics.includes(topic)
+      const hasOverlap = currentTopics.some((topic) =>
+        nextTopics.includes(topic),
       );
 
       if (hasOverlap) consistentCount++;
@@ -129,10 +135,11 @@ export class ConfidenceCalculator {
   }
 
   private static extractTextFromResponse(response: UserResponse): string {
-    if (typeof response.value === 'string') return response.value;
-    if (Array.isArray(response.value)) return response.value.join(' ');
-    if (typeof response.value === 'object') return JSON.stringify(response.value);
-    return String(response.value || '');
+    if (typeof response.value === "string") return response.value;
+    if (Array.isArray(response.value)) return response.value.join(" ");
+    if (typeof response.value === "object")
+      return JSON.stringify(response.value);
+    return String(response.value || "");
   }
 
   private static extractTopics(text: string): string[] {
@@ -148,33 +155,36 @@ export class ConfidenceCalculator {
     return topics;
   }
 
-  private static generateReasoning(factors: ConfidenceResult['factors'], score: number): string {
+  private static generateReasoning(
+    factors: ConfidenceResult["factors"],
+    score: number,
+  ): string {
     const reasons: string[] = [];
 
     if (factors.responseQuality > 70) {
-      reasons.push('User provides detailed, thoughtful responses');
+      reasons.push("User provides detailed, thoughtful responses");
     } else if (factors.responseQuality < 40) {
-      reasons.push('Responses are brief or unclear');
+      reasons.push("Responses are brief or unclear");
     }
 
     if (factors.topicCoverage > 70) {
-      reasons.push('Good coverage of different policy areas');
+      reasons.push("Good coverage of different policy areas");
     } else if (factors.topicCoverage < 40) {
-      reasons.push('Limited exploration of policy topics');
+      reasons.push("Limited exploration of policy topics");
     }
 
     if (factors.consistency > 70) {
-      reasons.push('Consistent focus on related topics');
+      reasons.push("Consistent focus on related topics");
     } else if (factors.consistency < 40) {
-      reasons.push('Topics seem disconnected');
+      reasons.push("Topics seem disconnected");
     }
 
     if (factors.interactionCount > 70) {
-      reasons.push('Sufficient interaction history');
+      reasons.push("Sufficient interaction history");
     } else {
-      reasons.push('Need more responses for accurate assessment');
+      reasons.push("Need more responses for accurate assessment");
     }
 
-    return reasons.join('. ') + '.';
+    return reasons.join(". ") + ".";
   }
 }

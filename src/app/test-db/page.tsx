@@ -1,4 +1,4 @@
-import { loadCandidates } from '@/lib/actions/database';
+import { loadCandidates } from "@/lib/actions/database";
 
 export default async function TestDBPage() {
   const result = await loadCandidates();
@@ -11,8 +11,10 @@ export default async function TestDBPage() {
     <div>
       <h1>Database Test</h1>
       <ul>
-        {result.data?.map(candidate => (
-          <li key={candidate.id}>{candidate.name} - {candidate.party}</li>
+        {result.data?.map((candidate) => (
+          <li key={candidate.id}>
+            {candidate.name} - {candidate.party}
+          </li>
         ))}
       </ul>
     </div>

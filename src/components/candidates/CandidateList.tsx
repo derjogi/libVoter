@@ -1,13 +1,19 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, SortAsc, SortDesc } from 'lucide-react';
-import { CandidateCard } from './CandidateCard';
-import type { CandidateMatch } from '@/types';
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Filter, SortAsc, SortDesc } from "lucide-react";
+import { CandidateCard } from "./CandidateCard";
+import type { CandidateMatch } from "@/types";
 
 interface CandidateListProps {
   candidates: CandidateMatch[];
@@ -16,37 +22,45 @@ interface CandidateListProps {
   isLoading?: boolean;
 }
 
-type SortOption = 'score' | 'name' | 'party';
-type FilterOption = 'all' | 'high' | 'medium' | 'low';
+type SortOption = "score" | "name" | "party";
+type FilterOption = "all" | "high" | "medium" | "low";
 
 export function CandidateList({
   candidates,
   confidence,
   onSelectCandidate,
-  isLoading = false
+  isLoading = false,
 }: CandidateListProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortOption>('score');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [filterBy, setFilterBy] = useState<FilterOption>('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("score");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [filterBy, setFilterBy] = useState<FilterOption>("all");
 
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
 
   const filteredAndSortedCandidates = useMemo(() => {
-    let filtered = candidates.filter(candidate => {
+    let filtered = candidates.filter((candidate) => {
       // Search filter
-      const matchesSearch = !searchQuery ||
-        candidate.candidate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        candidate.candidate.party?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-        candidate.topMatchingPolicies.some(policy =>
-          policy.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchesSearch =
+        !searchQuery ||
+        candidate.candidate.name
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        candidate.candidate.party
+          ?.toLowerCase()
+          ?.includes(searchQuery.toLowerCase()) ||
+        candidate.topMatchingPolicies.some((policy) =>
+          policy.toLowerCase().includes(searchQuery.toLowerCase()),
         );
 
       // Score filter
-      const matchesFilter = filterBy === 'all' ||
-        (filterBy === 'high' && candidate.score >= 80) ||
-        (filterBy === 'medium' && candidate.score >= 60 && candidate.score < 80) ||
-        (filterBy === 'low' && candidate.score < 60);
+      const matchesFilter =
+        filterBy === "all" ||
+        (filterBy === "high" && candidate.score >= 80) ||
+        (filterBy === "medium" &&
+          candidate.score >= 60 &&
+          candidate.score < 80) ||
+        (filterBy === "low" && candidate.score < 60);
 
       return matchesSearch && matchesFilter;
     });
@@ -57,28 +71,28 @@ export function CandidateList({
       let bValue: string | number;
 
       switch (sortBy) {
-        case 'score':
+        case "score":
           aValue = a.score;
           bValue = b.score;
           break;
-        case 'name':
+        case "name":
           aValue = a.candidate.name.toLowerCase();
           bValue = b.candidate.name.toLowerCase();
           break;
-        case 'party':
-          aValue = a.candidate.party?.toLowerCase() || '';
-          bValue = b.candidate.party?.toLowerCase() || '';
+        case "party":
+          aValue = a.candidate.party?.toLowerCase() || "";
+          bValue = b.candidate.party?.toLowerCase() || "";
           break;
         default:
           return 0;
       }
 
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
       }
 
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc'
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return sortOrder === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
@@ -89,10 +103,10 @@ export function CandidateList({
     return filtered;
   }, [candidates, searchQuery, sortBy, sortOrder, filterBy]);
 
-  console.log("filtered Candidates: ", JSON.stringify(candidates))
+  console.log("filtered Candidates: ", JSON.stringify(candidates));
 
   const toggleSortOrder = () => {
-    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   };
 
   if (isLoading) {
@@ -124,7 +138,10 @@ export function CandidateList({
         <div className="flex flex-wrap gap-2">
           <div className="flex items-center space-x-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={filterBy} onValueChange={(value: FilterOption) => setFilterBy(value)}>
+            <Select
+              value={filterBy}
+              onValueChange={(value: FilterOption) => setFilterBy(value)}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -144,10 +161,17 @@ export function CandidateList({
               onClick={toggleSortOrder}
               className="flex items-center space-x-1"
             >
-              {sortOrder === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />}
+              {sortOrder === "asc" ? (
+                <SortAsc className="h-4 w-4" />
+              ) : (
+                <SortDesc className="h-4 w-4" />
+              )}
               <span>Sort</span>
             </Button>
-            <Select value={sortBy} onValueChange={(value: SortOption) => setSortBy(value)}>
+            <Select
+              value={sortBy}
+              onValueChange={(value: SortOption) => setSortBy(value)}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
@@ -165,12 +189,11 @@ export function CandidateList({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Badge variant="outline">
-            {filteredAndSortedCandidates.length} candidate{filteredAndSortedCandidates.length !== 1 ? 's' : ''}
+            {filteredAndSortedCandidates.length} candidate
+            {filteredAndSortedCandidates.length !== 1 ? "s" : ""}
           </Badge>
           {isLowConfidence && (
-            <Badge variant="secondary">
-              Building confidence...
-            </Badge>
+            <Badge variant="secondary">Building confidence...</Badge>
           )}
         </div>
       </div>
@@ -179,27 +202,30 @@ export function CandidateList({
       {filteredAndSortedCandidates.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-muted-foreground">
-            {searchQuery || filterBy !== 'all' ? (
+            {searchQuery || filterBy !== "all" ? (
               <p>No candidates match your current filters.</p>
             ) : (
-              <p>No candidates available yet. Continue answering questions to see matches.</p>
+              <p>
+                No candidates available yet. Continue answering questions to see
+                matches.
+              </p>
             )}
           </div>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-            {filteredAndSortedCandidates.map((candidate) => {
-              console.log("Candidate: ", candidate)
-              return (
-                <CandidateCard
-                  key={candidate.candidate.id}
-                  candidate={candidate}
-                  onSelect={onSelectCandidate}
-                  confidence={confidence}
-                  isLowConfidence={isLowConfidence}
-                />
-              )
-            })}
+          {filteredAndSortedCandidates.map((candidate) => {
+            console.log("Candidate: ", candidate);
+            return (
+              <CandidateCard
+                key={candidate.candidate.id}
+                candidate={candidate}
+                onSelect={onSelectCandidate}
+                confidence={confidence}
+                isLowConfidence={isLowConfidence}
+              />
+            );
+          })}
         </div>
       )}
     </div>

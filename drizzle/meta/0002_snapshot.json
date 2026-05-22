@@ -39,9 +39,7 @@
       "indexes": {
         "app_settings_key_unique": {
           "name": "app_settings_key_unique",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "isUnique": true
         }
       },
@@ -162,10 +160,7 @@
       "indexes": {
         "name_ward_unique": {
           "name": "name_ward_unique",
-          "columns": [
-            "name",
-            "ward"
-          ],
+          "columns": ["name", "ward"],
           "isUnique": true
         }
       },

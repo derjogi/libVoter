@@ -1,11 +1,16 @@
-'use client';
+"use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ExternalLink, CheckCircle, XCircle, Star } from 'lucide-react';
-import type { CandidateMatch } from '@/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ExternalLink, CheckCircle, XCircle, Star } from "lucide-react";
+import type { CandidateMatch } from "@/types";
 
 interface CandidateModalProps {
   candidate: CandidateMatch | null;
@@ -18,7 +23,7 @@ export function CandidateModal({
   candidate,
   isOpen,
   onClose,
-  onCompare
+  onCompare,
 }: CandidateModalProps) {
   if (!candidate) return null;
 
@@ -28,13 +33,17 @@ export function CandidateModal({
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div>
-              <DialogTitle className="text-2xl">{candidate.candidate.name}</DialogTitle>
+              <DialogTitle className="text-2xl">
+                {candidate.candidate.name}
+              </DialogTitle>
               <Badge variant="secondary" className="mt-2">
                 {candidate.candidate.party}
               </Badge>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary">{candidate.score}%</div>
+              <div className="text-3xl font-bold text-primary">
+                {candidate.score}%
+              </div>
               <div className="text-sm text-muted-foreground">Match Score</div>
             </div>
           </div>
@@ -44,7 +53,9 @@ export function CandidateModal({
           {/* Explanation */}
           <div>
             <h3 className="text-lg font-semibold mb-3">Why This Match?</h3>
-            <p className="text-muted-foreground leading-relaxed">{candidate.reasoning}</p>
+            <p className="text-muted-foreground leading-relaxed">
+              {candidate.reasoning}
+            </p>
           </div>
 
           <Separator />
@@ -86,10 +97,15 @@ export function CandidateModal({
 
           {/* Top Matching Policies */}
           <div>
-            <h3 className="text-lg font-semibold mb-3">Top Matching Policies</h3>
+            <h3 className="text-lg font-semibold mb-3">
+              Top Matching Policies
+            </h3>
             <div className="grid gap-3">
               {candidate.topMatchingPolicies.map((policy, index) => (
-                <div key={index} className="flex items-center p-3 bg-muted rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center p-3 bg-muted rounded-lg"
+                >
                   <Star className="mr-3 h-4 w-4 text-yellow-500 flex-shrink-0" />
                   <span className="text-sm">{policy}</span>
                 </div>
@@ -113,7 +129,9 @@ export function CandidateModal({
                       className="flex items-center p-3 border rounded-lg hover:bg-muted transition-colors"
                     >
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{source.title}</div>
+                        <div className="font-medium text-sm">
+                          {source.title}
+                        </div>
                         {source.date && (
                           <div className="text-xs text-muted-foreground">
                             {new Date(source.date).toLocaleDateString()}
@@ -135,9 +153,7 @@ export function CandidateModal({
                 Compare Candidates
               </Button>
             )}
-            <Button onClick={onClose}>
-              Close
-            </Button>
+            <Button onClick={onClose}>Close</Button>
           </div>
         </div>
       </DialogContent>

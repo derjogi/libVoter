@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { explainCandidateMatch } from '@/lib/actions/prompts';
+import { useState } from "react";
+import { explainCandidateMatch } from "@/lib/actions/prompts";
 
 export function usePromptActions() {
   const [loading, setLoading] = useState(false);
@@ -10,26 +10,26 @@ export function usePromptActions() {
   const generateQuestion = async (
     conversationHistory: any[],
     userResponses: any[],
-    questionType: string = 'chat'
+    questionType: string = "chat",
   ) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/prompts/question', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/prompts/question", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationHistory,
           userResponses,
-          questionType
-        })
+          questionType,
+        }),
       });
 
       const result = await response.json();
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(errorMessage);
       throw err;
     } finally {
@@ -40,16 +40,20 @@ export function usePromptActions() {
   const explainMatch = async (
     userProfile: string,
     candidateInfo: string,
-    matchScore: number
+    matchScore: number,
   ) => {
     setLoading(true);
     setError(null);
 
     try {
-      const result = await explainCandidateMatch(userProfile, candidateInfo, matchScore);
+      const result = await explainCandidateMatch(
+        userProfile,
+        candidateInfo,
+        matchScore,
+      );
       return result;
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(errorMessage);
       throw err;
     } finally {
@@ -61,6 +65,6 @@ export function usePromptActions() {
     generateQuestion,
     explainMatch,
     loading,
-    error
+    error,
   };
 }

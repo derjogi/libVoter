@@ -1,24 +1,33 @@
-import { sqliteTable, text, integer, uniqueIndex } from 'drizzle-orm/sqlite-core';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import {
+  sqliteTable,
+  text,
+  integer,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 // === Legacy / current candidates table ===
 //
 // `ward` is kept for the Auckland 2025 dataset so the running app keeps
 // working through the additive migration phase (spec 002). Newer code should
 // read seats from the `races` table via `candidacies` instead.
-export const candidates = sqliteTable('candidates', {
-  id: integer('id').primaryKey(),
-  name: text('name').notNull(),
-  party: text('party'),
-  ward: text('ward').notNull(),
-  candidate_statement: text('candidate_statement'),
-  key_positions: text('key_positions', { mode: 'json' }).$type<Record<string, string>>(),
-  why: text('why'),
-  key_skills: text('key_skills'),
-  top_issues: text('top_issues'),
-  supporting_links: text('supporting_links', { mode: 'json' }).$type<string[]>(),
-  photo_url: text('photo_url'),
-  created_at: integer('created_at', { mode: 'timestamp' }).notNull(),
+export const candidates = sqliteTable("candidates", {
+  id: integer("id").primaryKey(),
+  name: text("name").notNull(),
+  party: text("party"),
+  ward: text("ward").notNull(),
+  candidate_statement: text("candidate_statement"),
+  key_positions: text("key_positions", { mode: "json" }).$type<
+    Record<string, string>
+  >(),
+  why: text("why"),
+  key_skills: text("key_skills"),
+  top_issues: text("top_issues"),
+  supporting_links: text("supporting_links", { mode: "json" }).$type<
+    string[]
+  >(),
+  photo_url: text("photo_url"),
+  created_at: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
 // === Generic election data model (spec 002) ===
@@ -29,121 +38,127 @@ export const candidates = sqliteTable('candidates', {
 // `kind` on a race describes the seat type so the same table can model an
 // Auckland ward, a NZ electorate, a list seat, a mayor, etc.
 
-export const elections = sqliteTable('elections', {
-  id: text('id').primaryKey(), // e.g. 'auckland-2025', 'nz-2026'
-  name: text('name').notNull(),
-  country: text('country').notNull(),
-  region: text('region'),
-  year: integer('year').notNull(),
-  type: text('type').notNull(), // 'local' | 'national' | ...
-  votingSystem: text('voting_system'), // 'fpp' | 'mmp' | ...
-  keyTopics: text('key_topics', { mode: 'json' }).$type<string[]>(),
-  description: text('description'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+export const elections = sqliteTable("elections", {
+  id: text("id").primaryKey(), // e.g. 'auckland-2025', 'nz-2026'
+  name: text("name").notNull(),
+  country: text("country").notNull(),
+  region: text("region"),
+  year: integer("year").notNull(),
+  type: text("type").notNull(), // 'local' | 'national' | ...
+  votingSystem: text("voting_system"), // 'fpp' | 'mmp' | ...
+  keyTopics: text("key_topics", { mode: "json" }).$type<string[]>(),
+  description: text("description"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
 export const races = sqliteTable(
-  'races',
+  "races",
   {
-    id: text('id').primaryKey(),
-    electionId: text('election_id')
+    id: text("id").primaryKey(),
+    electionId: text("election_id")
       .notNull()
-      .references(() => elections.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull(), // 'mayor' | 'ward' | 'electorate' | 'list' | 'councillor'
-    name: text('name').notNull(), // human-readable label, e.g. 'Albany Ward'
-    district: text('district'), // ward / electorate name; null for list seats
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+      .references(() => elections.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // 'mayor' | 'ward' | 'electorate' | 'list' | 'councillor'
+    name: text("name").notNull(), // human-readable label, e.g. 'Albany Ward'
+    district: text("district"), // ward / electorate name; null for list seats
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (t) => ({
-    raceUnique: uniqueIndex('races_election_kind_district_unique').on(
+    raceUnique: uniqueIndex("races_election_kind_district_unique").on(
       t.electionId,
       t.kind,
-      t.district
+      t.district,
     ),
-  })
+  }),
 );
 
 // Parties, scoped to an election so manifestos can differ year-to-year.
 export const electionParties = sqliteTable(
-  'election_parties',
+  "election_parties",
   {
-    id: text('id').primaryKey(),
-    electionId: text('election_id')
+    id: text("id").primaryKey(),
+    electionId: text("election_id")
       .notNull()
-      .references(() => elections.id, { onDelete: 'cascade' }),
-    name: text('name').notNull(),
-    leader: text('leader'),
-    platform: text('platform', { mode: 'json' }),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+      .references(() => elections.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    leader: text("leader"),
+    platform: text("platform", { mode: "json" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (t) => ({
-    partyUnique: uniqueIndex('election_parties_election_name_unique').on(
+    partyUnique: uniqueIndex("election_parties_election_name_unique").on(
       t.electionId,
-      t.name
+      t.name,
     ),
-  })
+  }),
 );
 
 // The person, election-agnostic.
-export const people = sqliteTable('people', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  bio: text('bio'),
-  photoUrl: text('photo_url'),
-  socials: text('socials', { mode: 'json' }).$type<Record<string, string>>(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+export const people = sqliteTable("people", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  bio: text("bio"),
+  photoUrl: text("photo_url"),
+  socials: text("socials", { mode: "json" }).$type<Record<string, string>>(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
 // Join row: one (election, race, person) candidacy with their per-race pitch.
 export const candidacies = sqliteTable(
-  'candidacies',
+  "candidacies",
   {
-    id: text('id').primaryKey(),
-    electionId: text('election_id')
+    id: text("id").primaryKey(),
+    electionId: text("election_id")
       .notNull()
-      .references(() => elections.id, { onDelete: 'cascade' }),
-    raceId: text('race_id')
+      .references(() => elections.id, { onDelete: "cascade" }),
+    raceId: text("race_id")
       .notNull()
-      .references(() => races.id, { onDelete: 'cascade' }),
-    personId: text('person_id')
+      .references(() => races.id, { onDelete: "cascade" }),
+    personId: text("person_id")
       .notNull()
-      .references(() => people.id, { onDelete: 'cascade' }),
-    partyId: text('party_id').references(() => electionParties.id, {
-      onDelete: 'set null',
+      .references(() => people.id, { onDelete: "cascade" }),
+    partyId: text("party_id").references(() => electionParties.id, {
+      onDelete: "set null",
     }),
-    listRank: integer('list_rank'),
-    candidateStatement: text('candidate_statement'),
-    why: text('why'),
-    keySkills: text('key_skills'),
-    topIssues: text('top_issues'),
-    keyPositions: text('key_positions', { mode: 'json' }).$type<Record<string, string>>(),
-    supportingLinks: text('supporting_links', { mode: 'json' }).$type<string[]>(),
-    legacyCandidateId: integer('legacy_candidate_id').references(() => candidates.id),
-    createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+    listRank: integer("list_rank"),
+    candidateStatement: text("candidate_statement"),
+    why: text("why"),
+    keySkills: text("key_skills"),
+    topIssues: text("top_issues"),
+    keyPositions: text("key_positions", { mode: "json" }).$type<
+      Record<string, string>
+    >(),
+    supportingLinks: text("supporting_links", { mode: "json" }).$type<
+      string[]
+    >(),
+    legacyCandidateId: integer("legacy_candidate_id").references(
+      () => candidates.id,
+    ),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   },
   (t) => ({
-    candidacyUnique: uniqueIndex('candidacies_election_race_person_unique').on(
+    candidacyUnique: uniqueIndex("candidacies_election_race_person_unique").on(
       t.electionId,
       t.raceId,
-      t.personId
+      t.personId,
     ),
-  })
+  }),
 );
 
 // === Legacy parties table (kept for backward compat) ===
-export const parties = sqliteTable('parties', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  platformData: text('platform_data', { mode: 'json' }),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+export const parties = sqliteTable("parties", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  platformData: text("platform_data", { mode: "json" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
-export const appSettings = sqliteTable('app_settings', {
-  id: text('id').primaryKey(),
-  key: text('key').notNull().unique(),
-  value: text('value', { mode: 'json' }),
-  updated_at: integer('updated_at', { mode: 'timestamp' }).notNull(),
+export const appSettings = sqliteTable("app_settings", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value", { mode: "json" }),
+  updated_at: integer("updated_at", { mode: "timestamp" }).notNull(),
 });
 
 // Zod schemas for validation

@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CandidateList } from '@/components/candidates/CandidateList';
-import { CandidateModal } from '@/components/candidates/CandidateModal';
-import { ComparisonView } from '@/components/candidates/ComparisonView';
-import { TrendingUp, Users, User } from 'lucide-react';
-import { summarizeUserPreferences } from '@/lib/actions/prompts';
-import type { CandidateMatch, UserResponse } from '@/types';
-import { success } from 'zod';
-import { error } from 'console';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CandidateList } from "@/components/candidates/CandidateList";
+import { CandidateModal } from "@/components/candidates/CandidateModal";
+import { ComparisonView } from "@/components/candidates/ComparisonView";
+import { TrendingUp, Users, User } from "lucide-react";
+import { summarizeUserPreferences } from "@/lib/actions/prompts";
+import type { CandidateMatch, UserResponse } from "@/types";
+import { success } from "zod";
+import { error } from "console";
 
 interface RightPanelProps {
   candidates: CandidateMatch[];
@@ -36,10 +36,13 @@ export function RightPanel({
   userResponses = [],
   onReadyToDecide,
 }: RightPanelProps) {
-  const [selectedCandidate, setSelectedCandidate] = useState<CandidateMatch | null>(null);
-  const [comparisonCandidates, setComparisonCandidates] = useState<CandidateMatch[]>([]);
+  const [selectedCandidate, setSelectedCandidate] =
+    useState<CandidateMatch | null>(null);
+  const [comparisonCandidates, setComparisonCandidates] = useState<
+    CandidateMatch[]
+  >([]);
   const [showComparison, setShowComparison] = useState(false);
-  const [preferenceSummary, setPreferenceSummary] = useState<string>('');
+  const [preferenceSummary, setPreferenceSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
 
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
@@ -50,11 +53,15 @@ export function RightPanel({
   };
 
   const handleCompare = (candidate: CandidateMatch) => {
-    const existingIndex = comparisonCandidates.findIndex(c => c.candidate.id === candidate.candidate.id);
+    const existingIndex = comparisonCandidates.findIndex(
+      (c) => c.candidate.id === candidate.candidate.id,
+    );
     if (existingIndex >= 0) {
-      setComparisonCandidates(prev => prev.filter((_, i) => i !== existingIndex));
+      setComparisonCandidates((prev) =>
+        prev.filter((_, i) => i !== existingIndex),
+      );
     } else {
-      setComparisonCandidates(prev => [...prev, candidate]);
+      setComparisonCandidates((prev) => [...prev, candidate]);
     }
   };
 
@@ -66,23 +73,23 @@ export function RightPanel({
 
   const fetchPreferenceSummary = async (responses: UserResponse[]) => {
     if (responses.length === 0) {
-      setPreferenceSummary('');
+      setPreferenceSummary("");
       return;
     }
 
     setIsLoadingSummary(true);
     try {
       // const result = await summarizeUserPreferences(responses);
-      const result = { success: true, data: "Fake Summary", error: ""}
+      const result = { success: true, data: "Fake Summary", error: "" };
       if (result.success) {
-        setPreferenceSummary(result.data || '');
+        setPreferenceSummary(result.data || "");
       } else {
-        console.error('Failed to fetch preference summary:', result.error);
-        setPreferenceSummary('');
+        console.error("Failed to fetch preference summary:", result.error);
+        setPreferenceSummary("");
       }
     } catch (error) {
-      console.error('Error fetching preference summary:', error);
-      setPreferenceSummary('');
+      console.error("Error fetching preference summary:", error);
+      setPreferenceSummary("");
     } finally {
       setIsLoadingSummary(false);
     }
@@ -95,7 +102,7 @@ export function RightPanel({
 
   return (
     <>
-      <div className={`space-y-4 ${isMobile ? 'w-full' : ''}`}>
+      <div className={`space-y-4 ${isMobile ? "w-full" : ""}`}>
         {/* Preference Summary */}
         {userResponses.length > 0 && (
           <Card>
@@ -108,12 +115,16 @@ export function RightPanel({
             <CardContent>
               <div className="space-y-2">
                 {isLoadingSummary ? (
-                  <p className="text-sm text-muted-foreground">Generating summary...</p>
+                  <p className="text-sm text-muted-foreground">
+                    Generating summary...
+                  </p>
                 ) : preferenceSummary ? (
                   <p className="text-sm">{preferenceSummary}</p>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Based on your {userResponses.length} response{userResponses.length !== 1 ? 's' : ''}, we're analyzing your preferences...
+                    Based on your {userResponses.length} response
+                    {userResponses.length !== 1 ? "s" : ""}, we're analyzing
+                    your preferences...
                   </p>
                 )}
               </div>
@@ -138,11 +149,15 @@ export function RightPanel({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Building matches...</span>
-                <span>{candidates.length} candidate{candidates.length !== 1 ? 's' : ''} found</span>
+                <span>
+                  {candidates.length} candidate
+                  {candidates.length !== 1 ? "s" : ""} found
+                </span>
               </div>
               {isLowConfidence && (
                 <p className="text-sm text-muted-foreground">
-                  Continue answering questions to improve match accuracy and see more candidates.
+                  Continue answering questions to improve match accuracy and see
+                  more candidates.
                 </p>
               )}
             </div>
@@ -187,7 +202,8 @@ export function RightPanel({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium">
-                    {comparisonCandidates.length} candidate{comparisonCandidates.length !== 1 ? 's' : ''} selected
+                    {comparisonCandidates.length} candidate
+                    {comparisonCandidates.length !== 1 ? "s" : ""} selected
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Compare their positions and policies

@@ -14,33 +14,43 @@
 //   - flip electionConfig to NZ_2026 and exercise the UI/AI flow,
 //   - test the prompts under MMP language,
 //   - keep the seat dropdown working with a small representative sample.
-import { db } from '../src/lib/server/db';
+import { db } from "../src/lib/server/db";
 import {
   elections,
   races,
   electionParties,
   people,
   candidacies,
-} from '../src/lib/db/schema';
-import { NZ_2026 } from '../src/lib/config/election';
+} from "../src/lib/db/schema";
+import { NZ_2026 } from "../src/lib/config/election";
 
 // A small representative sample so the UI can be exercised end-to-end.
 // Replace with real data once elections.nz publishes 2026 candidate lists.
 const SAMPLE_ELECTORATES = [
-  'Auckland Central',
-  'Wellington Central',
-  'Christchurch Central',
-  'Mt Albert',
-  'Epsom',
-  'Hamilton East',
-  'Dunedin',
-  'Tauranga',
+  "Auckland Central",
+  "Wellington Central",
+  "Christchurch Central",
+  "Mt Albert",
+  "Epsom",
+  "Hamilton East",
+  "Dunedin",
+  "Tauranga",
 ];
 
-const SAMPLE_PARTIES = ['Labour', 'National', 'Green', 'ACT', 'Te Pāti Māori', 'NZ First'];
+const SAMPLE_PARTIES = [
+  "Labour",
+  "National",
+  "Green",
+  "ACT",
+  "Te Pāti Māori",
+  "NZ First",
+];
 
 function slug(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 async function main() {
@@ -73,7 +83,7 @@ async function main() {
       .values({
         id: `${election.id}-electorate-${slug(electorate)}`,
         electionId: election.id,
-        kind: 'electorate',
+        kind: "electorate",
         name: electorate,
         district: electorate,
         createdAt: now,
@@ -86,8 +96,8 @@ async function main() {
     .values({
       id: `${election.id}-list`,
       electionId: election.id,
-      kind: 'list',
-      name: 'Party List Seats',
+      kind: "list",
+      name: "Party List Seats",
       district: null,
       createdAt: now,
     })
@@ -134,13 +144,17 @@ async function main() {
     }
   }
 
-  console.log(`Seeded ${SAMPLE_ELECTORATES.length} electorates, ${SAMPLE_PARTIES.length} parties, ${count} candidacies (sample).`);
-  console.log('To switch the running app to NZ 2026:');
-  console.log("  1. Edit src/lib/config/election.ts: `export const electionConfig = NZ_2026;`");
-  console.log('  2. Restart dev server.');
+  console.log(
+    `Seeded ${SAMPLE_ELECTORATES.length} electorates, ${SAMPLE_PARTIES.length} parties, ${count} candidacies (sample).`,
+  );
+  console.log("To switch the running app to NZ 2026:");
+  console.log(
+    "  1. Edit src/lib/config/election.ts: `export const electionConfig = NZ_2026;`",
+  );
+  console.log("  2. Restart dev server.");
 }
 
 main().catch((err) => {
-  console.error('Scaffold failed:', err);
+  console.error("Scaffold failed:", err);
   process.exitCode = 1;
 });

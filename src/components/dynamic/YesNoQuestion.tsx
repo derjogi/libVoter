@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ThumbsUp, ThumbsDown, SkipForward } from 'lucide-react';
-import type { YesNoData } from '@/types';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThumbsUp, ThumbsDown, SkipForward } from "lucide-react";
+import type { YesNoData } from "@/types";
 
 interface YesNoQuestionProps {
   data: YesNoData;
@@ -12,15 +12,21 @@ interface YesNoQuestionProps {
   disabled?: boolean;
 }
 
-export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuestionProps) {
-  const [responses, setResponses] = useState<('agree' | 'disagree' | 'skip' | undefined)[]>(
-    new Array(data.statements.length).fill(undefined)
-  );
+export function YesNoQuestion({
+  data,
+  onResponse,
+  disabled = false,
+}: YesNoQuestionProps) {
+  const [responses, setResponses] = useState<
+    ("agree" | "disagree" | "skip" | undefined)[]
+  >(new Array(data.statements.length).fill(undefined));
 
-
-  const handleResponse = (index: number, response: 'agree' | 'disagree' | 'skip') => {
+  const handleResponse = (
+    index: number,
+    response: "agree" | "disagree" | "skip",
+  ) => {
     console.log(`Clicked ${response} on ${data.statements[index]}`);
-    setResponses(prev => {
+    setResponses((prev) => {
       const newResponses = [...prev];
       newResponses[index] = response;
       return newResponses;
@@ -28,11 +34,13 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
   };
 
   const handleSubmit = () => {
-    const finalResponses = responses.map(r => r || 'skip');
-    const formattedStatements = finalResponses.map((response, index) => {
-      const item = data.statements[index];
-      return `Statement ${index + 1}: "${item.statement}"${item.context ? ` (Context: "${item.context}")` : ''} - Response: ${response}`;
-    }).join('\n');
+    const finalResponses = responses.map((r) => r || "skip");
+    const formattedStatements = finalResponses
+      .map((response, index) => {
+        const item = data.statements[index];
+        return `Statement ${index + 1}: "${item.statement}"${item.context ? ` (Context: "${item.context}")` : ""} - Response: ${response}`;
+      })
+      .join("\n");
     const responseString = `Yes/No Questions:\n${formattedStatements}`;
     onResponse(responseString);
   };
@@ -50,24 +58,32 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
                 <div className="text-center">
                   <p className="text-base leading-relaxed">{item.statement}</p>
                   {item.context && (
-                    <p className="text-sm text-muted-foreground mt-2">{item.context}</p>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {item.context}
+                    </p>
                   )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    onClick={() => handleResponse(index, 'agree')}
+                    onClick={() => handleResponse(index, "agree")}
                     className="flex-1 h-12"
-                    variant={responses[index] === 'agree' ? 'default' : 'outline'}
+                    variant={
+                      responses[index] === "agree" ? "default" : "outline"
+                    }
                   >
                     <ThumbsUp className="mr-2 h-4 w-4" />
                     Agree
                   </Button>
 
                   <Button
-                    onClick={() => handleResponse(index, 'disagree')}
+                    onClick={() => handleResponse(index, "disagree")}
                     className="flex-1 h-12"
-                    variant={responses[index] === 'disagree' ? 'destructive' : 'outline'}
+                    variant={
+                      responses[index] === "disagree"
+                        ? "destructive"
+                        : "outline"
+                    }
                   >
                     <ThumbsDown className="mr-2 h-4 w-4" />
                     Disagree
@@ -75,8 +91,8 @@ export function YesNoQuestion({ data, onResponse, disabled = false }: YesNoQuest
                 </div>
 
                 <Button
-                  onClick={() => handleResponse(index, 'skip')}
-                  variant={responses[index] === 'skip' ? 'secondary' : 'ghost'}
+                  onClick={() => handleResponse(index, "skip")}
+                  variant={responses[index] === "skip" ? "secondary" : "ghost"}
                   className="w-full"
                 >
                   <SkipForward className="mr-2 h-4 w-4" />

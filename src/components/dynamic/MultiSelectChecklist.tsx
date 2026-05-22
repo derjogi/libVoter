@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import type { MultiSelectData, SelectOption } from '@/types';
+import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import type { MultiSelectData, SelectOption } from "@/types";
 
 interface MultiSelectChecklistProps {
   data: MultiSelectData;
@@ -13,7 +13,11 @@ interface MultiSelectChecklistProps {
   disabled?: boolean;
 }
 
-export function MultiSelectChecklist({ data, onResponse, disabled = false }: MultiSelectChecklistProps) {
+export function MultiSelectChecklist({
+  data,
+  onResponse,
+  disabled = false,
+}: MultiSelectChecklistProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const handleOptionToggle = (optionId: string, checked: boolean) => {
@@ -25,7 +29,7 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
       }
       newSelected = [...selectedIds, optionId];
     } else {
-      newSelected = selectedIds.filter(id => id !== optionId);
+      newSelected = selectedIds.filter((id) => id !== optionId);
     }
 
     setSelectedIds(newSelected);
@@ -36,7 +40,7 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
       const selectedLabels = selectedIds
         .map((id) => data.options.find((opt) => opt.id === id)?.label)
         .filter((label) => label !== undefined);
-      onResponse(`${selectedLabels.join('\n')}`);
+      onResponse(`${selectedLabels.join("\n")}`);
     }
   };
 
@@ -68,8 +72,8 @@ export function MultiSelectChecklist({ data, onResponse, disabled = false }: Mul
                 disabled={
                   disabled ||
                   (maxSelections !== undefined &&
-                   !selectedIds.includes(option.id) &&
-                   selectedIds.length >= maxSelections)
+                    !selectedIds.includes(option.id) &&
+                    selectedIds.length >= maxSelections)
                 }
                 className="mt-1"
               />

@@ -1,4 +1,4 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Environment variables that should be available at build time
@@ -8,10 +8,9 @@ const nextConfig: NextConfig = {
     DEBUG_AI_RESPONSES: process.env.DEBUG_AI_RESPONSES,
   },
 
-
   // Image optimization settings
   images: {
-    domains: ['localhost'],
+    domains: ["localhost"],
     remotePatterns: [
       // Add any remote patterns needed for your deployment
     ],
@@ -19,7 +18,7 @@ const nextConfig: NextConfig = {
 
   // TypeScript strict mode
   typescript: {
-    tsconfigPath: './tsconfig.json',
+    tsconfigPath: "./tsconfig.json",
   },
 
   // ESLint configuration

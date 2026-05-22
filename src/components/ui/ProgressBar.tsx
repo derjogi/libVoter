@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { RotateCcw, Undo2 } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { RotateCcw, Undo2 } from "lucide-react";
 
 interface ProgressBarProps {
   progress: number; // 0-100
@@ -11,12 +11,19 @@ interface ProgressBarProps {
   showUndo?: boolean;
 }
 
-export function ProgressBar({ progress, onReset, onUndo, showUndo = false }: ProgressBarProps) {
+export function ProgressBar({
+  progress,
+  onReset,
+  onUndo,
+  showUndo = false,
+}: ProgressBarProps) {
   return (
     <div className="w-full space-y-2">
       <div className="flex justify-between items-center">
         <span className="text-sm font-medium">Progress</span>
-        <span className="text-sm text-muted-foreground">{Math.round(progress)}%</span>
+        <span className="text-sm text-muted-foreground">
+          {Math.round(progress)}%
+        </span>
       </div>
 
       <Progress value={progress} className="w-full" />

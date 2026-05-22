@@ -1,14 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { queryRAGContext } from '@/lib/actions/rag';
+import { NextRequest, NextResponse } from "next/server";
+import { queryRAGContext } from "@/lib/actions/rag";
 
 export async function POST(request: NextRequest) {
   try {
     const { question, userContext } = await request.json();
 
-    if (!question || typeof question !== 'string') {
+    if (!question || typeof question !== "string") {
       return NextResponse.json(
-        { success: false, error: 'Question is required' },
-        { status: 400 }
+        { success: false, error: "Question is required" },
+        { status: 400 },
       );
     }
 
@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('RAG API error:', error);
+    console.error("RAG API error:", error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

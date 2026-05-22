@@ -4,7 +4,11 @@ export interface PromptTemplate {
   name: string;
   template: string;
   variables: string[];
-  category: 'matching' | 'question_generation' | 'component_selection' | 'analysis';
+  category:
+    | "matching"
+    | "question_generation"
+    | "component_selection"
+    | "analysis";
   description?: string;
   version?: string;
   tags?: string[];
@@ -59,7 +63,14 @@ Return ONLY a JSON array in this exact format:
     "concerns": ["potential issue1", "potential issue2"]
   }
 ]`,
-    variables: ["userResponses", "candidates", "electionYear", "electionType", "electionLocation", "electionKeyTopics"],
+    variables: [
+      "userResponses",
+      "candidates",
+      "electionYear",
+      "electionType",
+      "electionLocation",
+      "electionKeyTopics",
+    ],
     description:
       "Calculates compatibility scores between user preferences and candidates",
     version: "1.0",
@@ -97,7 +108,16 @@ Return JSON format:
   "context": "Why this question is important",
   "options": ["option1", "option2"] // if applicable
 }`,
-    variables: ["conversationHistory", "currentPreferences", "questionType", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
+    variables: [
+      "conversationHistory",
+      "currentPreferences",
+      "questionType",
+      "electionYear",
+      "electionType",
+      "electionLocation",
+      "electionKeyTopics",
+      "electionDescription",
+    ],
     description:
       "Generates contextually relevant questions based on conversation history",
     version: "1.0",
@@ -125,7 +145,15 @@ Return JSON format:
   "type": "chat",
   "reasoning": "Why this follow-up is valuable"
 }`,
-    variables: ["lastResponse", "context", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
+    variables: [
+      "lastResponse",
+      "context",
+      "electionYear",
+      "electionType",
+      "electionLocation",
+      "electionKeyTopics",
+      "electionDescription",
+    ],
     description: "Creates deeper follow-up questions based on user responses",
     version: "1.0",
     tags: ["followup", "questions", "deepening"],
@@ -194,7 +222,16 @@ Guidelines for data generation:
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
 - chat: Use empty messages array and a relevant placeholder text
 - freetext: Include a clear prompt, placeholder text, and optional maxLength`,
-    variables: ["conversationState", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription", "electionSeatLabelPlural", "electionSeats"],
+    variables: [
+      "conversationState",
+      "electionYear",
+      "electionType",
+      "electionLocation",
+      "electionKeyTopics",
+      "electionDescription",
+      "electionSeatLabelPlural",
+      "electionSeats",
+    ],
     description:
       "Determines optimal UI component for next user interaction and generates component data",
     version: "1.0",
@@ -225,7 +262,16 @@ Create an explanation that:
 - Considers the context of {electionDescription}
 
 Format as conversational explanation, not a list.`,
-    variables: ["userProfile", "candidateInfo", "matchScore", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
+    variables: [
+      "userProfile",
+      "candidateInfo",
+      "matchScore",
+      "electionYear",
+      "electionType",
+      "electionLocation",
+      "electionKeyTopics",
+      "electionDescription",
+    ],
     description: "Generates human-readable explanations for candidate matches",
     version: "1.0",
     tags: ["explanation", "analysis", "matches"],
@@ -248,7 +294,14 @@ Create a clear, organized summary that includes:
 - How their preferences relate to {electionDescription}
 
 Keep it neutral and descriptive, not prescriptive.`,
-    variables: ["allResponses", "electionYear", "electionType", "electionLocation", "electionKeyTopics", "electionDescription"],
+    variables: [
+      "allResponses",
+      "electionYear",
+      "electionType",
+      "electionLocation",
+      "electionKeyTopics",
+      "electionDescription",
+    ],
     description: "Creates readable summaries of user political preferences",
     version: "1.0",
     tags: ["summary", "analysis", "preferences"],
@@ -263,44 +316,52 @@ export function getPrompt(id: keyof typeof PROMPTS): PromptTemplate {
   return prompt;
 }
 
-export function getPromptsByCategory(category: PromptTemplate['category']): PromptTemplate[] {
-  return Object.values(PROMPTS).filter(prompt => prompt.category === category);
+export function getPromptsByCategory(
+  category: PromptTemplate["category"],
+): PromptTemplate[] {
+  return Object.values(PROMPTS).filter(
+    (prompt) => prompt.category === category,
+  );
 }
 
 export function getPromptsByTag(tag: string): PromptTemplate[] {
-  return Object.values(PROMPTS).filter(prompt => prompt.tags?.includes(tag));
+  return Object.values(PROMPTS).filter((prompt) => prompt.tags?.includes(tag));
 }
 
 export function formatPrompt(
   template: PromptTemplate,
-  variables: Record<string, any>
+  variables: Record<string, any>,
 ): FormattedPrompt {
   const validation = validatePromptVariables(template, variables);
   if (!validation.isValid) {
-    throw new Error(`Missing required variables: ${validation.missingVariables.join(', ')}`);
+    throw new Error(
+      `Missing required variables: ${validation.missingVariables.join(", ")}`,
+    );
   }
 
   let formatted = template.template;
 
-  template.variables.forEach(variable => {
+  template.variables.forEach((variable) => {
     const value = variables[variable];
     if (value === undefined || value === null) {
-      console.warn(`Variable '${variable}' is undefined/null in prompt '${template.id}'`);
+      console.warn(
+        `Variable '${variable}' is undefined/null in prompt '${template.id}'`,
+      );
     }
 
     // Handle different value types
     let stringValue: string;
-    if (typeof value === 'string') {
+    if (typeof value === "string") {
       stringValue = value;
-    } else if (typeof value === 'object') {
+    } else if (typeof value === "object") {
       stringValue = JSON.stringify(value, null, 2);
     } else {
-      stringValue = String(value || '');
+      stringValue = String(value || "");
     }
 
     formatted = formatted.replace(
-      new RegExp(`\\{${variable}\\}`, 'g'),
-      stringValue
+      new RegExp(`\\{${variable}\\}`, "g"),
+      stringValue,
     );
   });
 
@@ -310,28 +371,32 @@ export function formatPrompt(
       templateId: template.id,
       variables,
       timestamp: new Date(),
-      version: template.version
-    }
+      version: template.version,
+    },
   };
 }
 
 export function validatePromptVariables(
   template: PromptTemplate,
-  variables: Record<string, any>
+  variables: Record<string, any>,
 ): PromptValidationResult {
-  const missingVariables = template.variables.filter(variable =>
-    variables[variable] === undefined
+  const missingVariables = template.variables.filter(
+    (variable) => variables[variable] === undefined,
   );
 
   const errors: string[] = [];
   if (missingVariables.length > 0) {
-    errors.push(`Missing required variables: ${missingVariables.join(', ')}`);
+    errors.push(`Missing required variables: ${missingVariables.join(", ")}`);
   }
 
   // Check for type issues
-  template.variables.forEach(variable => {
+  template.variables.forEach((variable) => {
     const value = variables[variable];
-    if (value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
+    if (
+      value !== undefined &&
+      typeof value === "object" &&
+      !Array.isArray(value)
+    ) {
       // Objects should be serializable
       try {
         JSON.stringify(value);
@@ -344,26 +409,32 @@ export function validatePromptVariables(
   return {
     isValid: errors.length === 0,
     missingVariables,
-    errors
+    errors,
   };
 }
 
 export function getPromptStats() {
-  const categories = Object.values(PROMPTS).reduce((acc, prompt) => {
-    acc[prompt.category] = (acc[prompt.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const categories = Object.values(PROMPTS).reduce(
+    (acc, prompt) => {
+      acc[prompt.category] = (acc[prompt.category] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
-  const tags = Object.values(PROMPTS).reduce((acc, prompt) => {
-    prompt.tags?.forEach(tag => {
-      acc[tag] = (acc[tag] || 0) + 1;
-    });
-    return acc;
-  }, {} as Record<string, number>);
+  const tags = Object.values(PROMPTS).reduce(
+    (acc, prompt) => {
+      prompt.tags?.forEach((tag) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   return {
     total: Object.keys(PROMPTS).length,
     categories,
-    tags
+    tags,
   };
 }

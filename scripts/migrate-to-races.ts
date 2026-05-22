@@ -6,7 +6,7 @@
 // on natural-key unique indexes.
 //
 // Usage: `bun run scripts/migrate-to-races.ts`
-import { db } from '../src/lib/server/db';
+import { db } from "../src/lib/server/db";
 import {
   candidates,
   elections,
@@ -14,15 +14,15 @@ import {
   people,
   candidacies,
   electionParties,
-} from '../src/lib/db/schema';
-import { electionConfig, AUCKLAND_2025 } from '../src/lib/config/election';
-import { eq, and } from 'drizzle-orm';
+} from "../src/lib/db/schema";
+import { electionConfig, AUCKLAND_2025 } from "../src/lib/config/election";
+import { eq, and } from "drizzle-orm";
 
 function slug(s: string): string {
   return s
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 async function main() {
@@ -51,22 +51,25 @@ async function main() {
     .onConflictDoNothing();
 
   // 2. read all legacy candidate rows
-  const legacyRows = await db.select().from(candidates).orderBy(candidates.name);
+  const legacyRows = await db
+    .select()
+    .from(candidates)
+    .orderBy(candidates.name);
   console.log(`  Found ${legacyRows.length} legacy candidate rows`);
 
   // 3. distinct wards → races
   const distinctWards = [...new Set(legacyRows.map((r) => r.ward))];
   let raceCount = 0;
   for (const ward of distinctWards) {
-    const isMayor = ward === 'Mayor';
-    const id = `${election.id}-${slug(isMayor ? 'mayor' : ward)}`;
+    const isMayor = ward === "Mayor";
+    const id = `${election.id}-${slug(isMayor ? "mayor" : ward)}`;
     await db
       .insert(races)
       .values({
         id,
         electionId: election.id,
-        kind: isMayor ? 'mayor' : 'ward',
-        name: isMayor ? 'Mayor of Auckland' : ward,
+        kind: isMayor ? "mayor" : "ward",
+        name: isMayor ? "Mayor of Auckland" : ward,
         district: isMayor ? null : ward,
         createdAt: now,
       })
@@ -108,11 +111,9 @@ async function main() {
       .onConflictDoNothing();
     peopleCount++;
 
-    const isMayor = c.ward === 'Mayor';
-    const raceId = `${election.id}-${slug(isMayor ? 'mayor' : c.ward)}`;
-    const partyId = c.party
-      ? `${election.id}-party-${slug(c.party)}`
-      : null;
+    const isMayor = c.ward === "Mayor";
+    const raceId = `${election.id}-${slug(isMayor ? "mayor" : c.ward)}`;
+    const partyId = c.party ? `${election.id}-party-${slug(c.party)}` : null;
 
     await db
       .insert(candidacies)
@@ -134,7 +135,9 @@ async function main() {
       .onConflictDoNothing();
     candidacyCount++;
   }
-  console.log(`  Upserted ${peopleCount} people, ${candidacyCount} candidacies`);
+  console.log(
+    `  Upserted ${peopleCount} people, ${candidacyCount} candidacies`,
+  );
 
   // 6. sanity check
   const [{ raceTotal }] = await db
@@ -151,17 +154,17 @@ async function main() {
     .then((rows) => [{ candidacyTotal: rows.length }]);
 
   console.log(
-    `Done. races=${raceTotal}, candidacies=${candidacyTotal}, legacy=${legacyRows.length}`
+    `Done. races=${raceTotal}, candidacies=${candidacyTotal}, legacy=${legacyRows.length}`,
   );
   if (candidacyTotal !== legacyRows.length) {
     console.warn(
-      `⚠️  candidacy count (${candidacyTotal}) doesn't match legacy candidates (${legacyRows.length})`
+      `⚠️  candidacy count (${candidacyTotal}) doesn't match legacy candidates (${legacyRows.length})`,
     );
     process.exitCode = 1;
   }
 }
 
 main().catch((err) => {
-  console.error('Backfill failed:', err);
+  console.error("Backfill failed:", err);
   process.exitCode = 1;
 });

@@ -1,6 +1,6 @@
-'use server';
+"use server";
 
-import { RAGQueryEngine } from '@/lib/server/rag/query-engine';
+import { RAGQueryEngine } from "@/lib/server/rag/query-engine";
 
 let ragEngine: RAGQueryEngine | null = null;
 
@@ -18,18 +18,22 @@ export async function queryRAGContext(question: string, userContext?: string) {
 
     return {
       success: true,
-      data: context
+      data: context,
     };
   } catch (error) {
-    console.error('RAG query failed:', error, (await getRAGEngine()).chatModel.model);
+    console.error(
+      "RAG query failed:",
+      error,
+      (await getRAGEngine()).chatModel.model,
+    );
     return {
       success: false,
-      error: 'Failed to query knowledge base',
+      error: "Failed to query knowledge base",
       fallback: {
         rankedCandidates: [],
         relevantPolicies: [],
-        sources: []
-      }
+        sources: [],
+      },
     };
   }
 }
@@ -39,7 +43,7 @@ export async function searchPolicies(topic: string) {
     const engine = await getRAGEngine();
     const context = await engine.queryWithContext(
       `What are the positions on ${topic}?`,
-      `Searching for policy positions related to ${topic}`
+      `Searching for policy positions related to ${topic}`,
     );
 
     return {
@@ -47,14 +51,14 @@ export async function searchPolicies(topic: string) {
       data: {
         policies: context.relevantPolicies,
         rankedCandidates: context.rankedCandidates,
-        sources: context.sources
-      }
+        sources: context.sources,
+      },
     };
   } catch (error) {
-    console.error('Policy search failed:', error);
+    console.error("Policy search failed:", error);
     return {
       success: false,
-      error: 'Failed to search policies'
+      error: "Failed to search policies",
     };
   }
 }

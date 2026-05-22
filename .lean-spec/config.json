@@ -1,8 +1,8 @@
 {
   "specsDir": "specs",
-    "draftStatus": {
-        "enabled": false
-    },
+  "draftStatus": {
+    "enabled": false
+  },
   "validation": {
     "maxLines": 400,
     "warnLines": 200,

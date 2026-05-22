@@ -6,13 +6,19 @@ export type DeepPartial<T> = {
 };
 
 // Type guards
-export function isUserResponse(obj: any): obj is import('./index').UserResponse {
-  return obj && typeof obj.id === 'string' && typeof obj.questionId === 'string';
+export function isUserResponse(
+  obj: any,
+): obj is import("./index").UserResponse {
+  return (
+    obj && typeof obj.id === "string" && typeof obj.questionId === "string"
+  );
 }
 
 // Type assertions with validation
-export function assertIsUserSession(obj: any): asserts obj is import('./index').UserSession {
-  if (!obj || typeof obj.id !== 'string') {
-    throw new Error('Invalid UserSession object');
+export function assertIsUserSession(
+  obj: any,
+): asserts obj is import("./index").UserSession {
+  if (!obj || typeof obj.id !== "string") {
+    throw new Error("Invalid UserSession object");
   }
 }

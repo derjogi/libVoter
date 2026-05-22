@@ -1,8 +1,8 @@
-'use server';
+"use server";
 
-import { AIChatHandler, type ChatResponse } from '@/lib/server/ai/chat-handler';
-import type { ConversationMessage, UserResponse } from '@/types';
-import type { Candidate } from '@/lib/db/schema';
+import { AIChatHandler, type ChatResponse } from "@/lib/server/ai/chat-handler";
+import type { ConversationMessage, UserResponse } from "@/types";
+import type { Candidate } from "@/lib/db/schema";
 
 let chatHandler: AIChatHandler | null = null;
 
@@ -17,20 +17,26 @@ export async function processChatMessage(
   message: string,
   conversationHistory: ConversationMessage[],
   userResponseHistory: UserResponse[],
-  availableCandidates: Candidate[]
+  availableCandidates: Candidate[],
 ): Promise<ChatResponse> {
   try {
     const handler = getChatHandler();
-    console.log('processChatMessage: \n', message);
-    const response = await handler.processMessage(message, conversationHistory, userResponseHistory, availableCandidates);
+    console.log("processChatMessage: \n", message);
+    const response = await handler.processMessage(
+      message,
+      conversationHistory,
+      userResponseHistory,
+      availableCandidates,
+    );
 
     return response;
   } catch (error) {
-    console.error('Chat processing failed:', error);
+    console.error("Chat processing failed:", error);
     return {
-      message: 'I apologize, but I encountered an error processing your message. Please try again.',
+      message:
+        "I apologize, but I encountered an error processing your message. Please try again.",
       confidence: 0,
-      shouldShowCandidates: false
+      shouldShowCandidates: false,
     };
   }
 }

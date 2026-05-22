@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send } from 'lucide-react';
-import type { FreeTextData } from '@/types';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Send } from "lucide-react";
+import type { FreeTextData } from "@/types";
 
 interface FreeTextInputProps {
   data: FreeTextData;
@@ -13,8 +13,12 @@ interface FreeTextInputProps {
   disabled?: boolean;
 }
 
-export function FreeTextInput({ data, onResponse, disabled = false }: FreeTextInputProps) {
-  const [text, setText] = useState('');
+export function FreeTextInput({
+  data,
+  onResponse,
+  disabled = false,
+}: FreeTextInputProps) {
+  const [text, setText] = useState("");
   const characterCount = text.length;
   const maxLength = data.maxLength || 1000;
 
@@ -22,12 +26,12 @@ export function FreeTextInput({ data, onResponse, disabled = false }: FreeTextIn
     if (text.trim()) {
       const formattedResponse = `Prompt: ${data.prompt}\nResponse: ${text.trim()}`;
       onResponse(formattedResponse);
-      setText('');
+      setText("");
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSubmit();
     }
@@ -52,7 +56,9 @@ export function FreeTextInput({ data, onResponse, disabled = false }: FreeTextIn
           />
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Share your detailed thoughts</span>
-            <span>{characterCount}/{maxLength}</span>
+            <span>
+              {characterCount}/{maxLength}
+            </span>
           </div>
         </div>
 

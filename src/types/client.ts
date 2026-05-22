@@ -5,7 +5,7 @@ export interface ClientConfig {
 
 export interface LocalStorageData {
   sessionId: string;
-  userResponses: import('./index').UserResponse[];
-  conversationHistory: import('./index').ConversationMessage[];
+  userResponses: import("./index").UserResponse[];
+  conversationHistory: import("./index").ConversationMessage[];
   lastUpdated: Date;
 }

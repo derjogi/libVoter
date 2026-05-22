@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import type { DropdownData } from '@/types';
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import type { DropdownData } from "@/types";
 
 interface DropdownSelectProps {
   data: DropdownData;
@@ -12,8 +18,12 @@ interface DropdownSelectProps {
   disabled?: boolean;
 }
 
-export function DropdownSelect({ data, onResponse, disabled = false }: DropdownSelectProps) {
-  const [selectedId, setSelectedId] = useState<string>('');
+export function DropdownSelect({
+  data,
+  onResponse,
+  disabled = false,
+}: DropdownSelectProps) {
+  const [selectedId, setSelectedId] = useState<string>("");
 
   const handleValueChange = (value: string) => {
     setSelectedId(value);
@@ -21,9 +31,13 @@ export function DropdownSelect({ data, onResponse, disabled = false }: DropdownS
 
   const handleSubmit = () => {
     if (selectedId) {
-      const selectedOption = data.options.find(option => option.id === selectedId);
+      const selectedOption = data.options.find(
+        (option) => option.id === selectedId,
+      );
       if (selectedOption) {
-        onResponse(`Question: ${data.question}\nAnswer: ${selectedOption.label}`);
+        onResponse(
+          `Question: ${data.question}\nAnswer: ${selectedOption.label}`,
+        );
       }
     }
   };
@@ -34,9 +48,15 @@ export function DropdownSelect({ data, onResponse, disabled = false }: DropdownS
         <CardTitle className="text-lg">{data.question}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 min-h-0 flex flex-col gap-4">
-        <Select value={selectedId} onValueChange={handleValueChange} disabled={disabled}>
+        <Select
+          value={selectedId}
+          onValueChange={handleValueChange}
+          disabled={disabled}
+        >
           <SelectTrigger>
-            <SelectValue placeholder={data.placeholder || "Select an option..."} />
+            <SelectValue
+              placeholder={data.placeholder || "Select an option..."}
+            />
           </SelectTrigger>
           <SelectContent>
             {data.options.map((option) => (

@@ -39,9 +39,7 @@
       "indexes": {
         "app_settings_key_unique": {
           "name": "app_settings_key_unique",
-          "columns": [
-            "key"
-          ],
+          "columns": ["key"],
           "isUnique": true
         }
       },

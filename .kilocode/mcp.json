@@ -2,11 +2,7 @@
   "mcpServers": {
     "sqlite": {
       "command": "uvx",
-      "args": [
-        "mcp-server-sqlite",
-        "--db-path",
-        "voting-advisor.db"
-      ],
+      "args": ["mcp-server-sqlite", "--db-path", "voting-advisor.db"],
       "disabled": false,
       "alwaysAllow": []
     },
