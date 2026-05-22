@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { UserResponse } from "@/types";
@@ -147,12 +147,20 @@ export function ChatHistory({
   const isEmpty = steps.length === 0;
   const ref = useRef<HTMLUListElement>(null);
 
-  // Auto-scroll the history to the bottom whenever steps grow so the active
-  // question always has full vertical space.
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.scrollTop = ref.current.scrollHeight;
-    }
+  // Auto-scroll the history to the bottom whenever steps grow.
+  // useLayoutEffect runs synchronously after DOM mutations but *before*
+  // the browser paints, so the scroll adjustment is visible on the very
+  // first render pass.  A requestAnimationFrame guard covers the edge case
+  // where the browser increments scrollHeight after layout (e.g. font
+  // loading, late images).
+  useLayoutEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      if (ref.current) {
+        const last = ref.current.lastElementChild;
+        last?.scrollIntoView?.({ block: "end", behavior: "instant" });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
   }, [steps]);
 
   if (isEmpty) return null;
