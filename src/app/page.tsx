@@ -6,7 +6,6 @@ import {
   ChatHistory,
   extractQuestionText,
 } from "@/components/dynamic/ChatHistory";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,7 +43,6 @@ export default function VotingAdvisor() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
-  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(true);
   const [
     availableCandidates,
     setAvailableCandidates,
@@ -362,51 +360,30 @@ export default function VotingAdvisor() {
             className={`min-h-0 ${isMobile && showCandidates ? "hidden" : "flex flex-col"}`}
           >
             <Card className="flex-1 min-h-0 overflow-hidden">
-              <CardHeader className="py-2 px-3">
-                <CardTitle className="flex items-center justify-between text-base">
-                  <span className="text-sm text-muted-foreground font-normal">
-                    Questioning progress
-                  </span>
-                  {userResponses.length > 0 && (
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {userResponses.length}{" "}
-                      {userResponses.length === 1 ? "answer" : "answers"}
-                    </span>
-                  )}
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <Badge variant="outline">
+                    {userResponses.length} responses
+                  </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 min-h-0 flex flex-col p-0 overflow-hidden">
+              <CardContent className="space-y-4 flex-1 min-h-0 flex flex-col">
                 {isLoadingSeats ? (
-                  <div className="flex-1 flex items-center justify-center text-center py-8 px-4">
-                    <div>
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-                      <p className="text-muted-foreground">
-                        Loading {electionConfig.seatLabelPlural}...
-                      </p>
-                    </div>
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">
+                      Loading {electionConfig.seatLabelPlural}...
+                    </p>
                   </div>
                 ) : currentComponent ? (
                   <>
+                    {/* Collapsible history of all completed Q&A steps */}
                     {userResponses.length > 0 && (
-                      <div
-                        className="flex-shrink-0"
-                        style={{ maxHeight: "min(45vh, 360px)" }}
-                      >
-                        <ChatHistory
-                          steps={userResponses}
-                          isCollapsed={isHistoryCollapsed}
-                          onToggle={() =>
-                            setIsHistoryCollapsed(!isHistoryCollapsed)
-                          }
-                        />
-                      </div>
+                      <ChatHistory steps={userResponses} />
                     )}
 
-                    {/* Current active question — never squished */}
-                    <div
-                      className="flex-shrink-0 p-4 pt-2"
-                      data-testid="active-step"
-                    >
+                    {/* Current active question */}
+                    <div className="flex-1 min-h-0" data-testid="active-step">
                       <ComponentRenderer
                         componentData={currentComponent}
                         onResponse={handleComponentResponse}
@@ -416,8 +393,8 @@ export default function VotingAdvisor() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center py-8 px-4">
-                    <p className="text-muted-foreground text-sm">Loading…</p>
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Loading…</p>
                   </div>
                 )}
               </CardContent>

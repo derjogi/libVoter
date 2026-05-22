@@ -127,7 +127,6 @@ Every question and its full answer should be visible at a glance.
 - `extractQuestionText` was moved from a private helper to a named export so that `page.tsx` can use the same logic at capture-time (`handleComponentResponse`), eliminating the original `compDisplayQ` type-branch that gave blank strings for `multiselect`/`dropdown`.
 - `extractQuestionText(activeComp ?? undefined)` is the `compDisplayQ` value stored on every `UserResponse`. `ChatHistory` now renders `step.question` unconditionally — no fallback needed at render time, and the panel no longer calls `extractQuestionText` at all.
 - The flattened `ChatHistory` uses raw CSS: `white-space-pre-wrap break-words` on the `<p>` for the answer text rather than a helper function. This keeps freetext, slider numbers, comma-separated multi-select ids, and yesno stanzas all readable without special format functions per type.
-- **Scroll + collapse (follow-up):** `ChatHistory` gets an auto-scrolling `<ul>` (`scrollTop = scrollHeight` on every `steps` change) so new rows are always visible. A collapsible header bar (`ChevronDown`/`ChevronUp` toggle, `flex-shrink-0` outer wrapper, `max-height: min(45vh, 360px)`) was added so the history can be collapsed to a 32 px bar, freeing the active-question `div` below to expand naturally. Collapse state (`isHistoryCollapsed`) lives in `page.tsx` and is passed as `isCollapsed` + `onToggle` props.
 
 ## Notes
 

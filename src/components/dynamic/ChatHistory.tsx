@@ -1,18 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import { ChevronDown, ChevronUp, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { UserResponse } from "@/types";
 import type { ComponentData, YesNoData } from "@/types/components.zod";
 
 export interface ChatHistoryProps {
   /** Ordered list of completed user responses. */
   steps: UserResponse[];
-  /** Render collapsed (header only) unless overridden. */
-  isCollapsed?: boolean;
-  /** Called when the user toggles the collapse state from the header button. */
-  onToggle?: () => void;
 }
 
 /** Format the user's raw response value into a display string. */
@@ -139,66 +132,19 @@ function HistoryStep({ step, stepIndex }: HistoryStepProps) {
   );
 }
 
-export function ChatHistory({
-  steps,
-  isCollapsed,
-  onToggle,
-}: ChatHistoryProps) {
-  const isEmpty = steps.length === 0;
-  const ref = useRef<HTMLUListElement>(null);
-
-  // Auto-scroll the history to the bottom whenever steps grow.
-  // useLayoutEffect runs synchronously after DOM mutations but *before*
-  // the browser paints, so the scroll adjustment is visible on the very
-  // first render pass.  A requestAnimationFrame guard covers the edge case
-  // where the browser increments scrollHeight after layout (e.g. font
-  // loading, late images).
-  useLayoutEffect(() => {
-    const raf = requestAnimationFrame(() => {
-      if (ref.current) {
-        const last = ref.current.lastElementChild;
-        last?.scrollIntoView?.({ block: "end", behavior: "instant" });
-      }
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [steps]);
-
-  if (isEmpty) return null;
+export function ChatHistory({ steps }: ChatHistoryProps) {
+  if (steps.length === 0) return null;
 
   return (
-    <div className="flex flex-col min-h-0 border rounded-md overflow-hidden border-border/50">
-      {/* Collapsible header bar */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer w-full border-b border-border/30"
-        aria-expanded={!isCollapsed}
-      >
-        <span className="flex items-center gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
-          {steps.length} {steps.length === 1 ? "response" : "responses"}
-        </span>
-        {isCollapsed ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-      </button>
-
-      {/* Collapsible body */}
-      {!isCollapsed && (
-        <ul
-          ref={ref}
-          className="flex-1 min-h-0 overflow-y-auto divide-y divide-border/50 scroll-smooth"
-          aria-label="Answer history"
-        >
-          {steps.map((step, i) => (
-            <li key={step.id}>
-              <HistoryStep step={step} stepIndex={i} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <ul
+      className="divide-y divide-border/50 sm:border sm:border-border/50 sm:rounded-md"
+      aria-label="Answer history"
+    >
+      {steps.map((step, i) => (
+        <li key={step.id}>
+          <HistoryStep step={step} stepIndex={i} />
+        </li>
+      ))}
+    </ul>
   );
 }
