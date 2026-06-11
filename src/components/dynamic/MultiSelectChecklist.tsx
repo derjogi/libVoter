@@ -5,6 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { MultiSelectData, RawAnswer } from "@/types";
+import { SupplementalContextInput } from "./SupplementalContextInput";
+import {
+  formatSupplementalContext,
+  getInitialSupplementalContext,
+} from "./supplemental-context";
 
 interface MultiSelectChecklistProps {
   data: MultiSelectData;
@@ -23,6 +28,9 @@ export function MultiSelectChecklist({
 }: MultiSelectChecklistProps) {
   const initialIds = value?.kind === "multiselect" ? value.ids : [];
   const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
+  const [supplementalContext, setSupplementalContext] = useState(
+    getInitialSupplementalContext(value),
+  );
 
   const handleOptionToggle = (optionId: string, checked: boolean) => {
     if (checked) {
@@ -41,11 +49,15 @@ export function MultiSelectChecklist({
       .map((id) => data.options.find((opt) => opt.id === id))
       .filter((opt): opt is NonNullable<typeof opt> => opt !== undefined);
     const labels = selectedOptions.map((opt) => opt.label);
-    onResponse(labels.join("\n"), {
-      kind: "multiselect",
-      ids: selectedOptions.map((opt) => opt.id),
-      labels,
-    });
+    onResponse(
+      `${labels.join("\n")}${formatSupplementalContext(supplementalContext)}`,
+      {
+        kind: "multiselect",
+        ids: selectedOptions.map((opt) => opt.id),
+        labels,
+        additionalContext: supplementalContext.trim(),
+      },
+    );
   };
 
   const selectedCount = selectedIds.length;
@@ -105,6 +117,13 @@ export function MultiSelectChecklist({
           Continue ({selectedCount} selected)
         </Button>
       )}
+
+      <SupplementalContextInput
+        disabled={disabled}
+        locked={locked}
+        value={value}
+        onChange={setSupplementalContext}
+      />
     </div>
   );
 }

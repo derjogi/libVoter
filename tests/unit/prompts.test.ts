@@ -52,6 +52,17 @@ describe("prompt registry", () => {
     expect(tpl.category).toBe("component_selection");
   });
 
+  it("COMPONENT_SELECTOR instructs the model to ask one focused question", () => {
+    const tpl = getPrompt("COMPONENT_SELECTOR");
+
+    expect(tpl.template).toContain("Ask exactly one question");
+    expect(tpl.template).toContain(
+      "Do not bundle multiple independent questions",
+    );
+    expect(tpl.template).toContain("dropdown");
+    expect(tpl.template).toContain("After a multiselect answer");
+  });
+
   it("getPromptsByCategory returns matching templates", () => {
     const matching = getPromptsByCategory("matching");
     expect(matching.some((p) => p.id === "candidate_matching")).toBe(true);

@@ -4,6 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import type { RawAnswer, SliderData } from "@/types";
+import { SupplementalContextInput } from "./SupplementalContextInput";
+import {
+  formatSupplementalContext,
+  getInitialSupplementalContext,
+} from "./supplemental-context";
 
 interface QuantitativeSliderProps {
   data: SliderData;
@@ -23,10 +28,19 @@ export function QuantitativeSlider({
   const initialValue =
     value?.kind === "slider" ? value.value : (data.min + data.max) / 2;
   const [sliderValue, setSliderValue] = useState<number>(initialValue);
+  const [supplementalContext, setSupplementalContext] = useState(
+    getInitialSupplementalContext(value),
+  );
 
   const handleSubmit = () => {
-    const descriptiveString = `Question: ${data.label}\nAnswer: ${sliderValue}${data.unit ? ` ${data.unit}` : ""}${data.description ? ` (${data.description})` : ""}`;
-    onResponse(descriptiveString, { kind: "slider", value: sliderValue });
+    const descriptiveString = `Question: ${data.label}\nAnswer: ${sliderValue}${data.unit ? ` ${data.unit}` : ""}${data.description ? ` (${data.description})` : ""}${formatSupplementalContext(
+      supplementalContext,
+    )}`;
+    onResponse(descriptiveString, {
+      kind: "slider",
+      value: sliderValue,
+      additionalContext: supplementalContext.trim(),
+    });
   };
 
   const percentage = Math.round(
@@ -78,6 +92,13 @@ export function QuantitativeSlider({
           Confirm Selection
         </Button>
       )}
+
+      <SupplementalContextInput
+        disabled={disabled}
+        locked={locked}
+        value={value}
+        onChange={setSupplementalContext}
+      />
     </div>
   );
 }

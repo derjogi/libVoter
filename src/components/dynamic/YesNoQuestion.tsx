@@ -5,6 +5,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { RawAnswer, YesNoData } from "@/types";
+import { SupplementalContextInput } from "./SupplementalContextInput";
+import {
+  formatSupplementalContext,
+  getInitialSupplementalContext,
+} from "./supplemental-context";
 
 type YesNoResponse = "agree" | "disagree" | "skip" | undefined;
 
@@ -28,6 +33,9 @@ export function YesNoQuestion({
       ? value.responses
       : new Array(data.statements.length).fill(undefined);
   const [responses, setResponses] = useState<YesNoResponse[]>(initialResponses);
+  const [supplementalContext, setSupplementalContext] = useState(
+    getInitialSupplementalContext(value),
+  );
 
   const handleResponse = (
     index: number,
@@ -48,10 +56,16 @@ export function YesNoQuestion({
         return `Statement ${index + 1}: "${item.statement}"${item.context ? ` (Context: "${item.context}")` : ""} - Response: ${response}`;
       })
       .join("\n");
-    onResponse(`Yes/No Questions:\n${formattedStatements}`, {
-      kind: "yesno",
-      responses: finalResponses,
-    });
+    onResponse(
+      `Yes/No Questions:\n${formattedStatements}${formatSupplementalContext(
+        supplementalContext,
+      )}`,
+      {
+        kind: "yesno",
+        responses: finalResponses,
+        additionalContext: supplementalContext.trim(),
+      },
+    );
   };
 
   return (
@@ -113,6 +127,13 @@ export function YesNoQuestion({
           Submit
         </Button>
       )}
+
+      <SupplementalContextInput
+        disabled={disabled}
+        locked={locked}
+        value={value}
+        onChange={setSupplementalContext}
+      />
     </div>
   );
 }

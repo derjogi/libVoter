@@ -43,13 +43,27 @@ export type ResponseValue =
  * where component-internal React state would otherwise be lost.
  */
 export type RawAnswer =
-  | { kind: "dropdown"; id: string; label: string }
-  | { kind: "multiselect"; ids: string[]; labels: string[] }
-  | { kind: "priority"; rankedIds: string[]; rankedLabels: string[] }
-  | { kind: "slider"; value: number }
-  | { kind: "yesno"; responses: ("agree" | "disagree" | "skip")[] }
-  | { kind: "freetext"; text: string }
-  | { kind: "chat"; text: string };
+  | { kind: "dropdown"; id: string; label: string; additionalContext?: string }
+  | {
+      kind: "multiselect";
+      ids: string[];
+      labels: string[];
+      additionalContext?: string;
+    }
+  | { kind: "slider"; value: number; additionalContext?: string }
+  | {
+      kind: "yesno";
+      responses: ("agree" | "disagree" | "skip")[];
+      additionalContext?: string;
+    }
+  | { kind: "freetext"; text: string; additionalContext?: string }
+  | { kind: "chat"; text: string; additionalContext?: string }
+  | {
+      kind: "priority";
+      rankedIds: string[];
+      rankedLabels: string[];
+      additionalContext?: string;
+    };
 
 /**
  * One row in the chat transcript. The transcript is an ordered list of steps;

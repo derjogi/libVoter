@@ -4,6 +4,11 @@ import { GripVertical, MoveDown, MoveUp } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { PriorityRankingData, RawAnswer } from "@/types";
+import { SupplementalContextInput } from "./SupplementalContextInput";
+import {
+  formatSupplementalContext,
+  getInitialSupplementalContext,
+} from "./supplemental-context";
 
 interface PriorityRankingProps {
   data: PriorityRankingData;
@@ -32,6 +37,9 @@ export function PriorityRanking({
       : data.options.map((opt) => opt.id);
 
   const [rankedIds, setRankedIds] = useState<string[]>(initialOrder);
+  const [supplementalContext, setSupplementalContext] = useState(
+    getInitialSupplementalContext(value),
+  );
 
   const moveOption = (index: number, direction: "up" | "down") => {
     if (locked || disabled) return;
@@ -52,11 +60,15 @@ export function PriorityRanking({
       .map((id) => data.options.find((opt) => opt.id === id))
       .filter((opt): opt is NonNullable<typeof opt> => opt !== undefined);
     const labels = rankedOptions.map((opt) => opt.label);
-    onResponse(labels.join("\n"), {
-      kind: "priority",
-      rankedIds: rankedOptions.map((opt) => opt.id),
-      rankedLabels: labels,
-    });
+    onResponse(
+      `${labels.join("\n")}${formatSupplementalContext(supplementalContext)}`,
+      {
+        kind: "priority",
+        rankedIds: rankedOptions.map((opt) => opt.id),
+        rankedLabels: labels,
+        additionalContext: supplementalContext.trim(),
+      },
+    );
   };
 
   const getOptionById = (id: string) =>
@@ -134,6 +146,13 @@ export function PriorityRanking({
           Continue ({rankedIds.length} ranked)
         </Button>
       )}
+
+      <SupplementalContextInput
+        disabled={disabled}
+        locked={locked}
+        value={value}
+        onChange={setSupplementalContext}
+      />
     </div>
   );
 }

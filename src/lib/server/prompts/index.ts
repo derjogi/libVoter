@@ -130,10 +130,11 @@ Return JSON format:
     category: "question_generation",
     template: `Based on the user's last response: "{lastResponse}" for the {electionYear} {electionType} in {electionLocation}
 
-Generate a thoughtful follow-up question that:
-- Digs deeper into their reasoning on topics like {electionKeyTopics}
-- Explores related aspects of the topic
-- Helps clarify their position
+Generate exactly one thoughtful follow-up question that:
+- Focuses on one topic or clarification from the last response
+- Avoids mixing unrelated topics from {electionKeyTopics}
+- Helps clarify their reasoning, priority, or stance
+- Gives the user room to redirect the conversation or add context
 - Maintains conversational flow
 - Considers the context of {electionDescription}
 
@@ -169,12 +170,22 @@ Return JSON format:
 Current conversation state:
 {conversationState}
 
+Conversation discipline:
+- Ask exactly one question. Do not bundle multiple independent questions into one component.
+- After a multiselect answer, ask exactly one follow-up about a single selected topic. Do not ask another broad multiselect unless the user has not selected any priority topics yet.
+- Use multiselect only for broad discovery or genuinely parallel options. Keep follow-up multiselects short and focused.
+- Use dropdown when the user should choose one priority from several options.
+- Use yesno for one specific statement or a small set of closely related statements, not unrelated topics.
+- Use slider when measuring intensity, trade-offs, or quantitative preference.
+- Use chat when the user may need to redirect the conversation, correct the AI, or provide nuance.
+- If unsure, prefer a focused dropdown, chat, yesno, or slider over a broad multiselect.
+
 Available component types and their EXACT data structures:
 
 1. chat: Continue conversational interaction
    Data structure: { "messages": ConversationMessage[], "placeholder": string }
 
-2. yesno: Ask a yes/no question about multiple statements
+2. yesno: Ask a yes/no question about statements
     Data structure: { "statements": [{ "statement": string, "context": string }, ...] }
 
 3. multiselect: Allow user to select multiple options from a list
@@ -184,17 +195,25 @@ Available component types and their EXACT data structures:
      "maxSelections": number
    }
 
-4. priority: Allow user to drag-and-drop rank multiple options by preference
+4. dropdown: Ask the user to choose one option from a list
+   Data structure: {
+     "question": string,
+     "options": [{ "id": string, "label": string, "description": string }],
+     "placeholder": string,
+     "questionId": string
+   }
+
+5. priority: Allow user to drag-and-drop rank multiple options by preference
    Data structure: {
      "question": string,
      "options": [{ "id": string, "label": string, "description": string }],
      "description": string
    }
 
-5. freetext: Ask for open-ended text response
+6. freetext: Ask for open-ended text response
    Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
 
-6. slider: Use a slider for quantitative responses
+7. slider: Use a slider for quantitative responses
    Data structure: {
      "label": string,
      "min": number,
@@ -216,7 +235,7 @@ Your task: Choose the most appropriate next component type and generate the spec
 
 Return JSON format:
 {
-  "type": "chat|yesno|multiselect|priority|freetext|slider",
+  "type": "chat|yesno|multiselect|dropdown|priority|freetext|slider",
   "reasoning": "Why this component fits best for narrowing preferences",
   "data": {
     // Use the exact structure for the chosen component type - no extra fields
@@ -224,11 +243,12 @@ Return JSON format:
 }
 
 Guidelines for data generation:
+- dropdown: Generate 2-8 focused options with unique IDs, labels, and descriptions; include a short placeholder and a stable questionId when choosing one priority
 - priority: Generate 3-10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions; user will rank them by preference
-- multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
-- yesno: Generate up to 10 relevant political statements as an array of objects with statement and optional context
+- multiselect: Generate up to 6 options for follow-up questions and up to 10 only for broad discovery; include maxSelections appropriate to the question
+- yesno: Generate up to 3 relevant political statements as an array of objects with statement and optional context; keep them closely related
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description
-- chat: Use empty messages array and a relevant placeholder text
+- chat: Use empty messages array and a relevant placeholder text that invites the user to redirect, clarify, or add context
 - freetext: Include a clear prompt, placeholder text, and optional maxLength`,
     variables: [
       "conversationState",

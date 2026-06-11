@@ -10,6 +10,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { DropdownData, RawAnswer } from "@/types";
+import { SupplementalContextInput } from "./SupplementalContextInput";
+import {
+  formatSupplementalContext,
+  getInitialSupplementalContext,
+} from "./supplemental-context";
 
 interface DropdownSelectProps {
   data: DropdownData;
@@ -28,16 +33,25 @@ export function DropdownSelect({
 }: DropdownSelectProps) {
   const initialId = value?.kind === "dropdown" ? value.id : "";
   const [selectedId, setSelectedId] = useState<string>(initialId);
+  const [supplementalContext, setSupplementalContext] = useState(
+    getInitialSupplementalContext(value),
+  );
 
   const handleSubmit = () => {
     if (!selectedId) return;
     const selectedOption = data.options.find((o) => o.id === selectedId);
     if (!selectedOption) return;
-    onResponse(`Question: ${data.question}\nAnswer: ${selectedOption.label}`, {
-      kind: "dropdown",
-      id: selectedOption.id,
-      label: selectedOption.label,
-    });
+    onResponse(
+      `Question: ${data.question}\nAnswer: ${selectedOption.label}${formatSupplementalContext(
+        supplementalContext,
+      )}`,
+      {
+        kind: "dropdown",
+        id: selectedOption.id,
+        label: selectedOption.label,
+        additionalContext: supplementalContext.trim(),
+      },
+    );
   };
 
   return (
@@ -75,6 +89,13 @@ export function DropdownSelect({
           Continue
         </Button>
       )}
+
+      <SupplementalContextInput
+        disabled={disabled}
+        locked={locked}
+        value={value}
+        onChange={setSupplementalContext}
+      />
     </div>
   );
 }
