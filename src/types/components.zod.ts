@@ -64,6 +64,12 @@ export const SliderDataSchema = z.object({
   description: z.string().optional(),
 });
 
+export const PriorityRankingDataSchema = z.object({
+  question: z.string(),
+  options: z.array(SelectOptionSchema).min(2),
+  description: z.string().optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Discriminated union — a single ComponentData shape from end to end.
 // The discriminator is `type` (matches what the renderer switches on); the
@@ -102,6 +108,11 @@ export const ComponentDataSchema = z.discriminatedUnion("type", [
     data: SliderDataSchema,
     reasoning: z.string().optional(),
   }),
+  z.object({
+    type: z.literal("priority"),
+    data: PriorityRankingDataSchema,
+    reasoning: z.string().optional(),
+  }),
 ]);
 
 export type ComponentData = z.infer<typeof ComponentDataSchema>;
@@ -114,6 +125,7 @@ export type MultiSelectData = z.infer<typeof MultiSelectDataSchema>;
 export type DropdownData = z.infer<typeof DropdownDataSchema>;
 export type FreeTextData = z.infer<typeof FreeTextDataSchema>;
 export type SliderData = z.infer<typeof SliderDataSchema>;
+export type PriorityRankingData = z.infer<typeof PriorityRankingDataSchema>;
 export type SelectOption = z.infer<typeof SelectOptionSchema>;
 
 // ---------------------------------------------------------------------------

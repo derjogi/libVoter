@@ -5,10 +5,10 @@
 
 export const MOCK_RESPONSES: Record<string, string> = {
   COMPONENT_SELECTOR: JSON.stringify({
-    type: "multiselect",
-    reasoning: "mock — pick top issues",
+    type: "priority",
+    reasoning: "mock — rank top issues by priority",
     data: {
-      question: "Which issues matter most to you?",
+      question: "Rank these issues by importance to you:",
       options: [
         {
           id: "housing",
@@ -31,7 +31,6 @@ export const MOCK_RESPONSES: Record<string, string> = {
           description: "Healthcare and hospitals",
         },
       ],
-      maxSelections: 3,
     },
   }),
 

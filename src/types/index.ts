@@ -45,6 +45,7 @@ export type ResponseValue =
 export type RawAnswer =
   | { kind: "dropdown"; id: string; label: string }
   | { kind: "multiselect"; ids: string[]; labels: string[] }
+  | { kind: "priority"; rankedIds: string[]; rankedLabels: string[] }
   | { kind: "slider"; value: number }
   | { kind: "yesno"; responses: ("agree" | "disagree" | "skip")[] }
   | { kind: "freetext"; text: string }
@@ -122,6 +123,7 @@ import type {
   DropdownData,
   FreeTextData,
   MultiSelectData,
+  PriorityRankingData,
   SelectOption,
   SliderData,
   YesNoData,
@@ -134,6 +136,7 @@ export type {
   DropdownData,
   FreeTextData,
   MultiSelectData,
+  PriorityRankingData,
   SelectOption,
   SliderData,
   YesNoData,
@@ -210,6 +213,7 @@ export const UserSessionSchema = z.object({
           "dropdown",
           "freetext",
           "slider",
+          "priority",
         ]),
         value: z.union([
           z.string(),

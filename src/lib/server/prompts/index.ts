@@ -184,10 +184,17 @@ Available component types and their EXACT data structures:
      "maxSelections": number
    }
 
-4. freetext: Ask for open-ended text response
+4. priority: Allow user to drag-and-drop rank multiple options by preference
+   Data structure: {
+     "question": string,
+     "options": [{ "id": string, "label": string, "description": string }],
+     "description": string
+   }
+
+5. freetext: Ask for open-ended text response
    Data structure: { "prompt": string, "placeholder": string, "maxLength": number }
 
-5. slider: Use a slider for quantitative responses
+6. slider: Use a slider for quantitative responses
    Data structure: {
      "label": string,
      "min": number,
@@ -209,7 +216,7 @@ Your task: Choose the most appropriate next component type and generate the spec
 
 Return JSON format:
 {
-  "type": "chat|yesno|multiselect|freetext|slider",
+  "type": "chat|yesno|multiselect|priority|freetext|slider",
   "reasoning": "Why this component fits best for narrowing preferences",
   "data": {
     // Use the exact structure for the chosen component type - no extra fields
@@ -217,6 +224,7 @@ Return JSON format:
 }
 
 Guidelines for data generation:
+- priority: Generate 3-10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions; user will rank them by preference
 - multiselect: Generate up to 10 options with unique IDs (e.g., "opt_1", "opt_2"), labels, and descriptions
 - yesno: Generate up to 10 relevant political statements as an array of objects with statement and optional context
 - slider: Set appropriate min/max values (e.g., 0-10 for agreement levels, 0-100 for percentages), include unit and description

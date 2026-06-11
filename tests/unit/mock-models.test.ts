@@ -22,7 +22,7 @@ describe("MockChatModel.invoke", () => {
     ]);
     const { ok, spec } = parseComponentSpec(reply.content as string);
     expect(ok).toBe(true);
-    expect(spec.type).toBe("multiselect");
+    expect(spec.type).toBe("priority");
   });
 
   it("returns the FOLLOWUP_QUESTION fixture for follow-up prompts", async () => {

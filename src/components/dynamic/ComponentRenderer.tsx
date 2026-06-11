@@ -5,6 +5,7 @@ import { ChatInterface } from "./ChatInterface";
 import { DropdownSelect } from "./DropdownSelect";
 import { FreeTextInput } from "./FreeTextInput";
 import { MultiSelectChecklist } from "./MultiSelectChecklist";
+import { PriorityRanking } from "./PriorityRanking";
 import { QuantitativeSlider } from "./QuantitativeSlider";
 import { YesNoQuestion } from "./YesNoQuestion";
 
@@ -86,6 +87,17 @@ export function ComponentRenderer({
     case "slider":
       return (
         <QuantitativeSlider
+          data={componentData.data}
+          onResponse={onResponse}
+          disabled={disabled}
+          locked={locked}
+          value={value}
+        />
+      );
+
+    case "priority":
+      return (
+        <PriorityRanking
           data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}

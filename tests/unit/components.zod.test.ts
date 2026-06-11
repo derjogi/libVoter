@@ -58,6 +58,39 @@ describe("parseComponentSpec", () => {
     expect(ok).toBe(true);
   });
 
+  it("accepts a valid priority spec", () => {
+    const raw = JSON.stringify({
+      type: "priority",
+      reasoning: "rank issues by importance",
+      data: {
+        question: "Rank these issues by importance to you:",
+        options: [
+          { id: "housing", label: "Housing", description: "Affordable housing" },
+          { id: "transport", label: "Transport", description: "Public transport" },
+          { id: "climate", label: "Climate", description: "Climate action" },
+        ],
+      },
+    });
+    const { spec, ok } = parseComponentSpec(raw);
+    expect(ok).toBe(true);
+    expect(spec.type).toBe("priority");
+    if (spec.type === "priority") {
+      expect(spec.data.options).toHaveLength(3);
+    }
+  });
+
+  it("falls back when priority has fewer than 2 options", () => {
+    const raw = JSON.stringify({
+      type: "priority",
+      data: {
+        question: "Rank this",
+        options: [{ id: "only", label: "Only option" }],
+      },
+    });
+    const { ok } = parseComponentSpec(raw);
+    expect(ok).toBe(false);
+  });
+
   it("falls back when JSON is invalid", () => {
     const { spec, ok, error } = parseComponentSpec("not json {{{");
     expect(ok).toBe(false);
