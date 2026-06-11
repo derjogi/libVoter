@@ -12,12 +12,17 @@ import { YesNoQuestion } from "./YesNoQuestion";
  * Picks the right dynamic component for `componentData.type`. The discriminated
  * union from `components.zod.ts` means each `case` narrows `componentData.data`
  * to the right shape automatically — no casting needed.
+ *
+ * `locked` renders the widget non-interactive (an already-answered transcript
+ * step) and `value` supplies the raw answer to display in that state.
  */
 export function ComponentRenderer({
   componentData,
   onResponse,
   disabled = false,
   isLoading = false,
+  locked = false,
+  value,
   followupQuestion,
 }: ComponentRendererProps) {
   switch (componentData.type) {
@@ -26,9 +31,10 @@ export function ComponentRenderer({
         <ChatInterface
           data={componentData.data}
           onSendMessage={onResponse}
-          messages={componentData.data.messages ?? []}
           isLoading={isLoading}
           disabled={disabled}
+          locked={locked}
+          value={value}
           followupQuestion={followupQuestion}
         />
       );
@@ -39,6 +45,8 @@ export function ComponentRenderer({
           data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
+          locked={locked}
+          value={value}
         />
       );
 
@@ -48,6 +56,8 @@ export function ComponentRenderer({
           data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
+          locked={locked}
+          value={value}
         />
       );
 
@@ -57,6 +67,8 @@ export function ComponentRenderer({
           data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
+          locked={locked}
+          value={value}
         />
       );
 
@@ -66,6 +78,8 @@ export function ComponentRenderer({
           data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
+          locked={locked}
+          value={value}
         />
       );
 
@@ -75,6 +89,8 @@ export function ComponentRenderer({
           data={componentData.data}
           onResponse={onResponse}
           disabled={disabled}
+          locked={locked}
+          value={value}
         />
       );
 

@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ComponentRenderer } from "@/components/dynamic/ComponentRenderer";
-import {
-  ChatHistory,
-  extractQuestionText,
-} from "@/components/dynamic/ChatHistory";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Transcript } from "@/components/dynamic/Transcript";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,21 +12,22 @@ import {
   getSeatsForCurrentElection,
 } from "@/lib/actions/database";
 import { selectNextComponent } from "@/lib/actions/prompts";
+import { extractQuestionText } from "@/lib/client/extract-question-text";
 import { useChat } from "@/lib/client/hooks/useChat";
 import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
 import { electionConfig } from "@/lib/config/election";
 import type { Candidate } from "@/lib/db/schema";
-import type { CandidateMatch, ComponentData, UserResponse } from "@/types";
+import type {
+  CandidateMatch,
+  ComponentData,
+  RawAnswer,
+  TranscriptStep,
+  UserResponse,
+} from "@/types";
 
 export default function VotingAdvisor() {
-  const [
-    currentComponent,
-    setCurrentComponent,
-    isComponentHydrated,
-    clearStoredComponent,
-  ] = usePersistedState<ComponentData | null>("session:currentComponent", null);
-  const [userResponses, setUserResponses, , clearStoredResponses] =
-    usePersistedState<UserResponse[]>("session:userResponses", []);
+  const [steps, setSteps, isStepsHydrated, clearStoredSteps] =
+    usePersistedState<TranscriptStep[]>("session:steps", []);
   const [candidates, setCandidates, , clearStoredCandidates] =
     usePersistedState<CandidateMatch[]>("session:candidates", []);
   const [confidence, setConfidence, , clearStoredConfidence] =
@@ -38,294 +35,228 @@ export default function VotingAdvisor() {
   const [isMobile, setIsMobile] = useState(false);
   const [showCandidates, setShowCandidates, , clearStoredShowCandidates] =
     usePersistedState<boolean>("session:showCandidates", false);
-  const [preferenceSummary, setPreferenceSummary] =
-    useState<string>("Your Preferences");
-  const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
+  const [isCompiling, setIsCompiling] = useState(false);
   const [
     availableCandidates,
     setAvailableCandidates,
     ,
     clearStoredAvailableCandidates,
   ] = usePersistedState<Candidate[]>("session:availableCandidates", []);
-  // Ref always reflects the latest userResponses (avoids stale closure in sendMessage).
-  const userResponsesRef = useRef<UserResponse[]>(userResponses);
-  useEffect(() => {
-    userResponsesRef.current = userResponses;
-  }, [userResponses]);
 
-  // Pretty user-facing label for the seat ("ward" / "electorate") from the
-  // current election config.
+  // Pretty user-facing label for the seat ("ward" / "electorate").
   const seatLabel = electionConfig.seatLabel;
 
-  const { messages, isLoading, sendMessage, clearChat, followupQuestion } =
-    useChat();
+  const { isLoading, sendMessage, clearChat, followupQuestion } = useChat();
+
+  // `userResponses` is derived from the locked steps — it is what the LLM and
+  // the right panel consume, so the transcript stays the single source of truth.
+  const userResponses = useMemo<UserResponse[]>(
+    () =>
+      steps.filter((s) => s.response).map((s) => s.response as UserResponse),
+    [steps],
+  );
 
   // Check if mobile device
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Fetch seats (electorates / wards) on component mount
+  // Fetch seats (electorates / wards) on mount.
   useEffect(() => {
     const fetchSeats = async () => {
       try {
         const result = await getSeatsForCurrentElection();
-        if (result.success && result.data) {
-          setSeats(result.data);
-        }
+        if (result.success && result.data) setSeats(result.data);
       } catch (error) {
         console.error("Error fetching seats:", error);
       } finally {
         setIsLoadingSeats(false);
       }
     };
-
     fetchSeats();
   }, []);
 
-  // Initialize with seat selection component. Wait until the persisted
-  // session state has been read from localStorage; otherwise we'd briefly
-  // overwrite a restored `currentComponent` with the ward dropdown.
+  // Build the initial ward-selection step.
+  const buildWardStep = useCallback(
+    (): TranscriptStep => ({
+      id: `step_${Date.now()}`,
+      locked: false,
+      component: {
+        type: "dropdown",
+        data: {
+          question: `Which ${electionConfig.seatLabel} do you live in?`,
+          options: seats.map((seat) => ({
+            id: seat,
+            label: seat,
+            description: "",
+          })),
+          placeholder: `Select your ${electionConfig.seatLabel}...`,
+          questionId: "ward_selection",
+        },
+      },
+    }),
+    [seats],
+  );
+
+  // Seed the transcript with the ward step once persisted state has hydrated.
   useEffect(() => {
     if (
-      isComponentHydrated &&
-      !currentComponent &&
+      isStepsHydrated &&
+      steps.length === 0 &&
       !isLoadingSeats &&
       seats.length > 0
     ) {
-      const options = seats.map((seat) => ({
-        id: seat,
-        label: seat,
-        description: "",
-      }));
-      setCurrentComponent({
-        type: "dropdown",
-        data: {
-          question: `Which ${seatLabel} do you live in?`,
-          options,
-          placeholder: `Select your ${seatLabel}...`,
-          questionId: "ward_selection",
-        },
-      });
+      setSteps([buildWardStep()]);
     }
   }, [
-    isComponentHydrated,
-    currentComponent,
+    isStepsHydrated,
+    steps.length,
     isLoadingSeats,
     seats,
-    seatLabel,
-    setCurrentComponent,
+    buildWardStep,
+    setSteps,
   ]);
 
-  // Update messages in currentComponent when messages change
-  useEffect(() => {
-    if (currentComponent?.type === "chat") {
-      setCurrentComponent((prev) => {
-        if (!prev || prev.type !== "chat") return prev;
-        return {
-          ...prev,
-          data: {
-            ...prev.data,
-            messages,
-          },
-        };
-      });
-    }
-  }, [messages, currentComponent?.type, setCurrentComponent]);
-
-  const handleComponentResponse = async (response: unknown) => {
+  const handleComponentResponse = async (
+    response: unknown,
+    raw?: RawAnswer,
+  ) => {
     try {
-      console.log(`Got response for ${currentComponent?.type}:\n`, response);
+      const active = steps[steps.length - 1];
+      if (!active || active.locked) return;
+      const comp = active.component;
+
+      // Formatted value string fed to the LLM + stored on the response.
+      const formatted: UserResponse["value"] =
+        typeof response === "string"
+          ? response
+          : typeof response === "number" || typeof response === "boolean"
+            ? response
+            : Array.isArray(response)
+              ? response
+              : typeof response === "object" && response !== null
+                ? JSON.stringify(response)
+                : String(response);
+
+      const rawQuestionId = (comp as { data?: { questionId?: string } })?.data
+        ?.questionId;
+
+      const userResponse: UserResponse = {
+        id: active.id,
+        questionId: rawQuestionId ?? `question_${Date.now()}`,
+        componentType: comp.type,
+        value: formatted,
+        timestamp: new Date(),
+        confidence: 80,
+        question: extractQuestionText(comp),
+        componentData: comp,
+      };
+
+      // Lock the active step; compute the derived history synchronously.
+      const lockedSteps = steps.map((s, i) =>
+        i === steps.length - 1
+          ? { ...s, locked: true, answer: raw, response: userResponse }
+          : s,
+      );
+      setSteps(lockedSteps);
+      setIsCompiling(true);
+
+      const history = lockedSteps
+        .filter((s) => s.response)
+        .map((s) => s.response as UserResponse);
+
+      const fallbackChat: ComponentData = {
+        type: "chat",
+        data: {
+          prompt: "Please tell me what is important to you.",
+          placeholder: "Share some of your views…",
+        },
+      };
+
+      const appendActive = (component: ComponentData) =>
+        setSteps((prev) => [
+          ...prev,
+          { id: `step_${Date.now()}`, component, locked: false },
+        ]);
 
       if (
-        currentComponent?.type === "dropdown" &&
-        currentComponent.data.questionId === "ward_selection"
+        comp.type === "dropdown" &&
+        comp.data.questionId === "ward_selection"
       ) {
-        const responseString =
-          typeof response === "string" ? response : String(response);
-        // Fetch mayor candidates
+        const wardName =
+          raw?.kind === "dropdown" ? raw.label : String(response);
+
         const mayorResult = await getMayorCandidates();
         const mayorCandidates = mayorResult.success
           ? mayorResult.data || []
           : [];
-
-        // Fetch ward candidates
-        const wardResult = await getCandidatesByWard(responseString);
+        const wardResult = await getCandidatesByWard(wardName);
         const wardCandidates = wardResult.success ? wardResult.data || [] : [];
 
-        // Combine and store available candidates
         const allCandidates = [...mayorCandidates, ...wardCandidates];
         setAvailableCandidates(allCandidates);
 
         const candidateNames = allCandidates.map((c) => c.name);
-        const conversationState = `I am voting in the ${responseString} ${seatLabel}, and the following candidates are running: \n${candidateNames?.join(
+        const conversationState = `I am voting in the ${wardName} ${seatLabel}, and the following candidates are running: \n${candidateNames.join(
           "\n",
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 
-        // Append the ward-selection step to userResponses so ChatHistory shows it
-        // and the LLM receives it in the next turn.
-        const wardUserResponse: UserResponse = {
-          id: `response_${Date.now()}`,
-          questionId: currentComponent.data.questionId ?? "ward_selection",
-          componentType: "dropdown",
-          value: responseString,
-          timestamp: new Date(),
-          confidence: 80,
-          question:
-            currentComponent.data.question ??
-            extractQuestionText(currentComponent),
-          componentData: currentComponent,
-        };
-        setUserResponses((prev) => [...prev, wardUserResponse]);
-
         const componentResult = await selectNextComponent(conversationState);
-
         if (componentResult.success && componentResult.data) {
-          console.log("Component selection result:", componentResult.data);
-          // componentResult.data is already a validated ComponentData.
-          setCurrentComponent(componentResult.data);
+          appendActive(componentResult.data);
         } else {
           console.warn(
             "Component selection failed; using fallback chat. Error:",
             componentResult.error,
           );
-          setCurrentComponent({
-            type: "chat",
-            data: {
-              prompt: "Please tell me what is important to you.",
-              placeholder: "Hey, please let me know some of your views.",
-            },
-          });
+          appendActive(fallbackChat);
         }
-        // Ward step is handled — do not fall through to the general response
-        // processing path below (which Normalises response values and calls
-        // sendMessage).  The next turn starts fresh with the LLM-powered next
-        // question that selectNextComponent already set.
       } else {
-        // Handle different response formats based on component type
-        const processedResponse: UserResponse["value"] =
-          typeof response === "string"
-            ? response
-            : typeof response === "number" || typeof response === "boolean"
-              ? response
-              : Array.isArray(response)
-                ? response
-                : typeof response === "object" && response !== null
-                  ? JSON.stringify(response)
-                  : String(response);
-        const questionId = `question_${Date.now()}`;
-
-        // Store the question text and full component data snapshot before
-        // the dialog in the currentComponent.discriminated step panel
-        // can reconstruct each Q&A step without guessing.
-        const activeComp = currentComponent; // narrow from ComponentData | null
-        const compDisplayQ = extractQuestionText(activeComp ?? undefined);
-        // questionId is only present on dropdown/multiselect data; guard with type check.
-        const rawQuestionId = (
-          activeComp as { data?: { questionId?: string } } | null
-        )?.data?.questionId;
-        const compDisplayQId = rawQuestionId ?? questionId;
-
-        const userResponse: UserResponse = {
-          id: `response_${Date.now()}`,
-          questionId: compDisplayQId,
-          componentType: activeComp?.type || "chat",
-          value: processedResponse,
-          timestamp: new Date(),
-          confidence: 80, // User confidence rating
-          question: compDisplayQ,
-          componentData: activeComp ?? undefined,
-        };
-
-        setUserResponses((prev) => {
-          userResponsesRef.current = [...prev, userResponse];
-          return userResponsesRef.current;
-        });
-
-        // Send message to AI and get response — always pass the latest history
-        // (userResponsesRef is updated synchronously in the setter above).
         const aiResponse = await sendMessage(
-          typeof processedResponse === "string"
-            ? processedResponse
-            : JSON.stringify(processedResponse),
-          userResponsesRef.current,
+          typeof formatted === "string" ? formatted : JSON.stringify(formatted),
+          history,
           availableCandidates,
         );
 
         if (aiResponse) {
           setConfidence(aiResponse.confidence);
           setShowCandidates(aiResponse.shouldShowCandidates);
-
-          // Update candidates if available
           if (aiResponse.candidateMatches) {
             setCandidates(aiResponse.candidateMatches);
           }
-
-          // Update component if AI suggests a new one
-          if (aiResponse.nextComponent) {
-            setCurrentComponent(aiResponse.nextComponent);
-          }
+          appendActive(aiResponse.nextComponent ?? fallbackChat);
+        } else {
+          appendActive(fallbackChat);
         }
-      } // end else — general (non-ward) response path
+      }
     } catch (error) {
       console.error("Error processing response:", error);
+    } finally {
+      setIsCompiling(false);
     }
   };
 
   const handleCandidateSelect = (candidate: CandidateMatch) => {
     console.log("Selected candidate:", candidate);
-    // Handle candidate selection - could navigate to detailed view
   };
 
   const handleReset = () => {
     clearChat();
-    // Wipe persisted session state so a subsequent reload starts fresh.
-    clearStoredComponent();
-    clearStoredResponses();
+    clearStoredSteps();
     clearStoredCandidates();
     clearStoredConfidence();
     clearStoredShowCandidates();
     clearStoredAvailableCandidates();
+    setIsCompiling(false);
 
     if (seats.length > 0) {
-      const options = seats.map((seat) => ({
-        id: seat,
-        label: seat,
-        description: "",
-      }));
-      setCurrentComponent({
-        type: "dropdown",
-        data: {
-          question: `Which ${seatLabel} do you live in?`,
-          options,
-          placeholder: `Select your ${seatLabel}...`,
-          questionId: "ward_selection",
-        },
-      });
-    } else {
-      // Fallback to chat if seats not loaded
-      setCurrentComponent({
-        type: "chat",
-        data: {
-          messages: [],
-          placeholder: "Tell me about your political preferences...",
-        },
-      });
+      setSteps([buildWardStep()]);
     }
-  };
-
-  const handleUndo = () => {
-    // Remove last response and message
-    setUserResponses((prev) => prev.slice(0, -1));
-    // Note: In a real implementation, you'd also remove the last AI message
   };
 
   return (
@@ -355,7 +286,7 @@ export default function VotingAdvisor() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 flex-1 min-h-0 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full min-h-0">
-          {/* Left Side - Dynamic Input */}
+          {/* Left Side - Conversation transcript */}
           <div
             className={`min-h-0 ${isMobile && showCandidates ? "hidden" : "flex flex-col"}`}
           >
@@ -367,31 +298,22 @@ export default function VotingAdvisor() {
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4 flex-1 min-h-0 flex flex-col">
-                {isLoadingSeats ? (
+              <CardContent className="flex-1 min-h-0 flex flex-col">
+                {isLoadingSeats && steps.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
                     <p className="text-muted-foreground">
                       Loading {electionConfig.seatLabelPlural}...
                     </p>
                   </div>
-                ) : currentComponent ? (
-                  <>
-                    {/* Collapsible history of all completed Q&A steps */}
-                    {userResponses.length > 0 && (
-                      <ChatHistory steps={userResponses} />
-                    )}
-
-                    {/* Current active question */}
-                    <div className="flex-1 min-h-0" data-testid="active-step">
-                      <ComponentRenderer
-                        componentData={currentComponent}
-                        onResponse={handleComponentResponse}
-                        disabled={isLoading}
-                        isLoading={isLoading}
-                      />
-                    </div>
-                  </>
+                ) : steps.length > 0 ? (
+                  <Transcript
+                    steps={steps}
+                    onResponse={handleComponentResponse}
+                    isCompiling={isCompiling}
+                    isLoading={isLoading}
+                    followupQuestion={followupQuestion}
+                  />
                 ) : (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">Loading…</p>
@@ -411,11 +333,7 @@ export default function VotingAdvisor() {
               isMobile={isMobile}
               onCandidateSelect={handleCandidateSelect}
               userResponses={userResponses}
-              onReadyToDecide={() => {
-                // User has chosen to stop. Collapse the question panel by
-                // surfacing the right panel on mobile.
-                setShowCandidates(true);
-              }}
+              onReadyToDecide={() => setShowCandidates(true)}
             />
           </div>
         </div>

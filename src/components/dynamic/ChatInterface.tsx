@@ -1,18 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { Send, User } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Send, Bot, User } from "lucide-react";
-import type { ChatData, ConversationMessage } from "@/types";
+import type { ChatData, RawAnswer } from "@/types";
 
 interface ChatInterfaceProps {
   data: ChatData;
-  onSendMessage: (message: string) => void;
-  messages: ConversationMessage[];
+  onSendMessage: (message: string, raw?: RawAnswer) => void;
   isLoading?: boolean;
   disabled?: boolean;
+  locked?: boolean;
+  value?: RawAnswer;
   followupQuestion?: {
     question: string;
     type: string;
@@ -20,145 +20,89 @@ interface ChatInterfaceProps {
   };
 }
 
+/**
+ * Single-turn chat row for the transcript: when active it shows the prompt and
+ * an input; once locked it shows the message the user typed. The conversation
+ * history itself lives in the transcript (one step per turn), and `useChat`
+ * still tracks the full message list internally for the LLM.
+ */
 export function ChatInterface({
   data,
   onSendMessage,
-  messages,
   isLoading = false,
   disabled = false,
+  locked = false,
+  value,
   followupQuestion,
 }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = () => {
-    if (inputValue.trim() && !disabled && !isLoading) {
-      onSendMessage(inputValue.trim());
-      setInputValue("");
-    }
+  const send = (message: string) => {
+    const trimmed = message.trim();
+    if (!trimmed || disabled || isLoading) return;
+    onSendMessage(trimmed, { kind: "chat", text: trimmed });
+    setInputValue("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      send(inputValue);
     }
   };
 
-  return (
-    <Card className="flex flex-col h-full min-h-0">
-      <CardContent className="flex-1 flex flex-col p-4 min-h-0">
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground py-8">
-              <Bot className="mx-auto mb-2 h-8 w-8" />
-              <p>
-                Start a conversation to discover your political preferences!
-              </p>
-            </div>
-          )}
+  const prompt = data.prompt;
 
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex items-start space-x-2 ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              {message.role === "assistant" && (
-                <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-primary-foreground" />
-                </div>
-              )}
-
-              <div
-                className={`max-w-[80%] rounded-lg px-3 py-2 ${
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground ml-auto"
-                    : "bg-muted"
-                }`}
-              >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <span className="text-xs opacity-70 mt-1 block">
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
-              </div>
-
-              {message.role === "user" && (
-                <div className="flex-shrink-0 w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-secondary-foreground" />
-                </div>
-              )}
-            </div>
-          ))}
-
-          {isLoading && (
-            <div className="flex items-start space-x-2">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <Bot className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div className="bg-muted rounded-lg px-3 py-2">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-current rounded-full animate-bounce" />
-                  <div
-                    className="w-2 h-2 bg-current rounded-full animate-bounce"
-                    style={{ animationDelay: "0.1s" }}
-                  />
-                  <div
-                    className="w-2 h-2 bg-current rounded-full animate-bounce"
-                    style={{ animationDelay: "0.2s" }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Follow-up Question Suggestion */}
-        {followupQuestion && (
-          <div className="mb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onSendMessage(followupQuestion.question)}
-              disabled={disabled || isLoading}
-              className="text-xs"
-            >
-              💡 {followupQuestion.question}
-            </Button>
+  if (locked) {
+    const answer = value?.kind === "chat" ? value.text : "";
+    return (
+      <div className="flex flex-col gap-2">
+        {prompt && <h3 className="text-base font-medium">{prompt}</h3>}
+        <div className="flex items-start justify-end space-x-2">
+          <div className="max-w-[80%] rounded-lg bg-primary px-3 py-2 text-primary-foreground">
+            <p className="text-sm whitespace-pre-wrap">{answer}</p>
           </div>
-        )}
-
-        {/* Input Area */}
-        <div className="flex space-x-2">
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={data.placeholder || "Type your message..."}
-            disabled={disabled || isLoading}
-            className="flex-1"
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || disabled || isLoading}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+          <div className="flex-shrink-0 w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+            <User className="h-4 w-4 text-secondary-foreground" />
+          </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {prompt && <h3 className="text-base font-medium">{prompt}</h3>}
+
+      {followupQuestion && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => send(followupQuestion.question)}
+          disabled={disabled || isLoading}
+          className="self-start text-xs"
+        >
+          💡 {followupQuestion.question}
+        </Button>
+      )}
+
+      <div className="flex space-x-2">
+        <Input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder={data.placeholder || "Type your message..."}
+          disabled={disabled || isLoading}
+          className="flex-1"
+        />
+        <Button
+          onClick={() => send(inputValue)}
+          disabled={!inputValue.trim() || disabled || isLoading}
+          size="icon"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

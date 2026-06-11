@@ -1,107 +1,110 @@
 "use client";
 
 import { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { MultiSelectData, SelectOption } from "@/types";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import type { MultiSelectData, RawAnswer } from "@/types";
 
 interface MultiSelectChecklistProps {
   data: MultiSelectData;
-  onResponse: (selectedAnswers: string) => void;
+  onResponse: (selectedAnswers: string, raw?: RawAnswer) => void;
   disabled?: boolean;
+  locked?: boolean;
+  value?: RawAnswer;
 }
 
 export function MultiSelectChecklist({
   data,
   onResponse,
   disabled = false,
+  locked = false,
+  value,
 }: MultiSelectChecklistProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const initialIds = value?.kind === "multiselect" ? value.ids : [];
+  const [selectedIds, setSelectedIds] = useState<string[]>(initialIds);
 
   const handleOptionToggle = (optionId: string, checked: boolean) => {
-    let newSelected: string[];
-
     if (checked) {
       if (data.maxSelections && selectedIds.length >= data.maxSelections) {
         return; // Don't allow more selections than max
       }
-      newSelected = [...selectedIds, optionId];
+      setSelectedIds([...selectedIds, optionId]);
     } else {
-      newSelected = selectedIds.filter((id) => id !== optionId);
+      setSelectedIds(selectedIds.filter((id) => id !== optionId));
     }
-
-    setSelectedIds(newSelected);
   };
 
   const handleSubmit = () => {
-    if (selectedIds.length > 0) {
-      const selectedLabels = selectedIds
-        .map((id) => data.options.find((opt) => opt.id === id)?.label)
-        .filter((label) => label !== undefined);
-      onResponse(`${selectedLabels.join("\n")}`);
-    }
+    if (selectedIds.length === 0) return;
+    const selectedOptions = selectedIds
+      .map((id) => data.options.find((opt) => opt.id === id))
+      .filter((opt): opt is NonNullable<typeof opt> => opt !== undefined);
+    const labels = selectedOptions.map((opt) => opt.label);
+    onResponse(labels.join("\n"), {
+      kind: "multiselect",
+      ids: selectedOptions.map((opt) => opt.id),
+      labels,
+    });
   };
 
   const selectedCount = selectedIds.length;
   const maxSelections = data.maxSelections;
 
   return (
-    <Card className="w-full max-w-lg mx-auto h-full flex flex-col min-h-0">
-      <CardHeader>
-        <CardTitle className="text-lg">{data.question}</CardTitle>
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2">
+        <h3 className="text-base font-medium">{data.question}</h3>
         {maxSelections && (
-          <div className="flex items-center space-x-2">
-            <Badge variant="secondary">
-              {selectedCount}/{maxSelections} selected
-            </Badge>
-          </div>
+          <Badge variant="secondary" className="flex-shrink-0">
+            {selectedCount}/{maxSelections} selected
+          </Badge>
         )}
-      </CardHeader>
-      <CardContent className="flex-1 min-h-0 flex flex-col gap-4">
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
-          {data.options.map((option) => (
-            <div key={option.id} className="flex items-start space-x-3">
-              <Checkbox
-                id={option.id}
-                checked={selectedIds.includes(option.id)}
-                onCheckedChange={(checked) =>
-                  handleOptionToggle(option.id, checked as boolean)
-                }
-                disabled={
-                  disabled ||
-                  (maxSelections !== undefined &&
-                    !selectedIds.includes(option.id) &&
-                    selectedIds.length >= maxSelections)
-                }
-                className="mt-1"
-              />
-              <div className="flex-1">
-                <label
-                  htmlFor={option.id}
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  {option.label}
-                </label>
-                {option.description && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {option.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+      </div>
 
+      <div className="space-y-3">
+        {data.options.map((option) => (
+          <div key={option.id} className="flex items-start space-x-3">
+            <Checkbox
+              id={option.id}
+              checked={selectedIds.includes(option.id)}
+              onCheckedChange={(checked) =>
+                handleOptionToggle(option.id, checked as boolean)
+              }
+              disabled={
+                disabled ||
+                locked ||
+                (maxSelections !== undefined &&
+                  !selectedIds.includes(option.id) &&
+                  selectedIds.length >= maxSelections)
+              }
+              className="mt-1"
+            />
+            <div className="flex-1">
+              <label
+                htmlFor={option.id}
+                className="text-sm font-medium cursor-pointer"
+              >
+                {option.label}
+              </label>
+              {option.description && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {option.description}
+                </p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {!locked && (
         <Button
           onClick={handleSubmit}
-          disabled={disabled || selectedIds.length === 0}
-          className="w-full"
+          disabled={disabled || selectedCount === 0}
         >
-          Continue ({selectedIds.length} selected)
+          Continue ({selectedCount} selected)
         </Button>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

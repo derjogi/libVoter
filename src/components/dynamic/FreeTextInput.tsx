@@ -1,33 +1,38 @@
 "use client";
 
+import { Send } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send } from "lucide-react";
-import type { FreeTextData } from "@/types";
+import type { FreeTextData, RawAnswer } from "@/types";
 
 interface FreeTextInputProps {
   data: FreeTextData;
-  onResponse: (text: string) => void;
+  onResponse: (text: string, raw?: RawAnswer) => void;
   disabled?: boolean;
+  locked?: boolean;
+  value?: RawAnswer;
 }
 
 export function FreeTextInput({
   data,
   onResponse,
   disabled = false,
+  locked = false,
+  value,
 }: FreeTextInputProps) {
-  const [text, setText] = useState("");
+  const initialText = value?.kind === "freetext" ? value.text : "";
+  const [text, setText] = useState(initialText);
   const characterCount = text.length;
   const maxLength = data.maxLength || 1000;
 
   const handleSubmit = () => {
-    if (text.trim()) {
-      const formattedResponse = `Prompt: ${data.prompt}\nResponse: ${text.trim()}`;
-      onResponse(formattedResponse);
-      setText("");
-    }
+    if (!text.trim()) return;
+    const trimmed = text.trim();
+    onResponse(`Prompt: ${data.prompt}\nResponse: ${trimmed}`, {
+      kind: "freetext",
+      text: trimmed,
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -38,39 +43,34 @@ export function FreeTextInput({
   };
 
   return (
-    <Card className="w-full max-w-lg mx-auto h-full flex flex-col min-h-0">
-      <CardHeader>
-        <CardTitle className="text-lg">{data.prompt}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 min-h-0 flex flex-col gap-4">
-        <div className="flex-1 min-h-0 flex flex-col gap-2">
-          <Textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder={data.placeholder}
-            disabled={disabled}
-            maxLength={maxLength}
-            rows={6}
-            className="flex-1 min-h-0 resize-none"
-          />
+    <div className="flex flex-col gap-3">
+      <h3 className="text-base font-medium">{data.prompt}</h3>
+
+      <Textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={handleKeyPress}
+        placeholder={data.placeholder}
+        disabled={disabled || locked}
+        maxLength={maxLength}
+        rows={locked ? 3 : 5}
+        className="resize-none"
+      />
+
+      {!locked && (
+        <>
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Share your detailed thoughts</span>
             <span>
               {characterCount}/{maxLength}
             </span>
           </div>
-        </div>
-
-        <Button
-          onClick={handleSubmit}
-          disabled={disabled || !text.trim()}
-          className="w-full"
-        >
-          <Send className="mr-2 h-4 w-4" />
-          Submit Response
-        </Button>
-      </CardContent>
-    </Card>
+          <Button onClick={handleSubmit} disabled={disabled || !text.trim()}>
+            <Send className="mr-2 h-4 w-4" />
+            Submit Response
+          </Button>
+        </>
+      )}
+    </div>
   );
 }

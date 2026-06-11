@@ -36,6 +36,35 @@ export type ResponseValue =
   | string[]
   | { [key: string]: any };
 
+/**
+ * The raw, per-type selection captured when a widget is submitted. Stored on a
+ * locked {@link TranscriptStep} so the original widget can be re-rendered in a
+ * disabled state showing the user's answer — including after a page reload,
+ * where component-internal React state would otherwise be lost.
+ */
+export type RawAnswer =
+  | { kind: "dropdown"; id: string; label: string }
+  | { kind: "multiselect"; ids: string[]; labels: string[] }
+  | { kind: "slider"; value: number }
+  | { kind: "yesno"; responses: ("agree" | "disagree" | "skip")[] }
+  | { kind: "freetext"; text: string }
+  | { kind: "chat"; text: string };
+
+/**
+ * One row in the chat transcript. The transcript is an ordered list of steps;
+ * the last step with `locked === false` is the active question. Once answered a
+ * step is `locked` (greyed + disabled), keeps the raw `answer` so its widget can
+ * redraw the selection, and carries the derived `response` consumed by the LLM
+ * and the right panel.
+ */
+export interface TranscriptStep {
+  id: string;
+  component: ComponentData;
+  locked: boolean;
+  answer?: RawAnswer;
+  response?: UserResponse;
+}
+
 export interface UserPreferences {
   topics: string[];
   priorities: Record<string, number>; // topic -> priority weight
@@ -43,7 +72,7 @@ export interface UserPreferences {
 }
 
 // === Candidate Types ===
-import { Candidate } from "@/lib/db/schema";
+import type { Candidate } from "@/lib/db/schema";
 
 export interface CandidateProfile {
   // Extensible - can add more fields as data becomes available
