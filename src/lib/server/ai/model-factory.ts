@@ -2,10 +2,11 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { ChatAnthropic } from "@langchain/anthropic";
 import { OpenAIEmbeddings } from "@langchain/openai";
-import { getAIConfig } from "./config";
-import type { AIModelConfig } from "./config";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
 import { MockChatModel, MockEmbeddings } from "./mock-models";
+import type { Embeddings } from "@langchain/core/embeddings";
+import { getAIConfig } from "./config";
+import type { AIModelConfig } from "./config";
 
 export type ChatModel = ChatOpenAI | ChatAnthropic | MockChatModel;
 export type EmbeddingModel =
@@ -37,11 +38,11 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
       if (process.env.OPENAI_API_KEY) {
         console.log("Using OpenAI chat model:", model);
         return new ChatOpenAI({
-          modelName: model,
+          model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
           apiKey: process.env.OPENAI_API_KEY!,
-          streaming: false, // Disable streaming to ensure complete responses
+          streaming: false,
         });
       }
 
@@ -49,11 +50,11 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
       if (process.env.ANTHROPIC_API_KEY) {
         console.log("Using Anthropic chat model:", model);
         return new ChatAnthropic({
-          modelName: model,
+          model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          anthropicApiKey: process.env.ANTHROPIC_API_KEY!,
-          streaming: false, // Disable streaming to ensure complete responses
+          apiKey: process.env.ANTHROPIC_API_KEY!,
+          streaming: false,
         });
       }
 
@@ -67,14 +68,14 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           ")",
         );
         return new ChatOpenAI({
-          modelName: model,
+          model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
           apiKey: process.env.OPENROUTER_API_KEY!,
           configuration: {
             baseURL: "https://openrouter.ai/api/v1",
           },
-          streaming: false, // Disable streaming to ensure complete responses
+          streaming: false,
         });
       }
 
@@ -94,5 +95,7 @@ export function createEmbeddingModel(): EmbeddingModel {
   if (isMockMode()) {
     return new MockEmbeddings();
   }
-  return new HuggingFaceTransformersEmbeddings();
+  return new HuggingFaceTransformersEmbeddings({
+    model: process.env.HF_EMBEDDING_MODEL || "Xenova/all-MiniLM-L6-v2",
+  });
 }

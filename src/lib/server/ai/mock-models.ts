@@ -13,7 +13,7 @@ export class MockChatModel {
   async invoke(messages: any[]): Promise<AIMessage> {
     const text = extractPromptText(messages);
     const content = pickMockResponse(text);
-    return new AIMessage(content);
+    return new AIMessage({ content });
   }
 }
 

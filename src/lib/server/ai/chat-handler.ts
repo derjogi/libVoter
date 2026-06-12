@@ -12,12 +12,6 @@ import {
   explainCandidateMatch,
   generateFollowupQuestion,
 } from "@/lib/actions/prompts";
-import {
-  getUniqueWards,
-  getCandidatesByWard,
-  getMayorCandidates,
-  getCandidatesByIds,
-} from "@/lib/actions/database";
 import { queryRAGContext } from "@/lib/actions/rag";
 import { electionConfig } from "@/lib/config/election";
 import type {
@@ -83,13 +77,13 @@ Do not ask the user for candidate information or details about specific candidat
 
       const recentHistory = conversationHistory.slice(-10);
       const messages: (HumanMessage | AIMessage | SystemMessage)[] = [
-        new SystemMessage(systemPrompt),
+        new SystemMessage({ content: systemPrompt }),
         ...recentHistory.map((h) =>
           h.role === "user"
-            ? new HumanMessage(h.content)
-            : new AIMessage(h.content),
+            ? new HumanMessage({ content: h.content })
+            : new AIMessage({ content: h.content }),
         ),
-        new HumanMessage(userMessage),
+        new HumanMessage({ content: userMessage }),
       ];
 
       // Candidate ranking will move to spec 005; for now return [] so the client

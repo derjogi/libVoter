@@ -1,10 +1,10 @@
 // Server-only: Cannot be imported in client components
 import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-import { DirectoryLoader } from "langchain/document_loaders/fs/directory";
-import { JSONLoader } from "langchain/document_loaders/fs/json";
-import { TextLoader } from "langchain/document_loaders/fs/text";
-import { Document } from "langchain/document";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { DirectoryLoader } from "@langchain/classic/document_loaders/fs/directory";
+import { JSONLoader } from "@langchain/classic/document_loaders/fs/json";
+import { TextLoader } from "@langchain/classic/document_loaders/fs/text";
+import { Document } from "@langchain/core/documents";
 import path from "path";
 import { db } from "../db";
 import { candidates } from "../../db/schema";
@@ -61,7 +61,6 @@ class VectorStoreManager {
 
   async initialize() {
     try {
-      // Try to load existing collection
       this.vectorStore = await Chroma.fromExistingCollection(this.embeddings, {
         collectionName: "candidates",
         url: process.env.CHROMA_URL || "http://localhost:8000",
@@ -74,7 +73,6 @@ class VectorStoreManager {
         console.log(`✅ Loaded existing vector store with ${count} documents`);
       }
     } catch (error) {
-      // Create new collection if it doesn't exist
       console.log("📝 Collection not found, creating new vector store...");
       await this.createVectorStore();
     }
@@ -86,13 +84,11 @@ class VectorStoreManager {
       this.embeddings.model,
     );
 
-    // Create empty vector store first
     this.vectorStore = new Chroma(this.embeddings, {
       collectionName: "candidates",
       url: process.env.CHROMA_URL || "http://localhost:8000",
     });
 
-    // Then populate it
     await this.populateVectorStore();
   }
 

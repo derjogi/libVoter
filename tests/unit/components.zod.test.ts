@@ -65,8 +65,16 @@ describe("parseComponentSpec", () => {
       data: {
         question: "Rank these issues by importance to you:",
         options: [
-          { id: "housing", label: "Housing", description: "Affordable housing" },
-          { id: "transport", label: "Transport", description: "Public transport" },
+          {
+            id: "housing",
+            label: "Housing",
+            description: "Affordable housing",
+          },
+          {
+            id: "transport",
+            label: "Transport",
+            description: "Public transport",
+          },
           { id: "climate", label: "Climate", description: "Climate action" },
         ],
       },

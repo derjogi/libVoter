@@ -1,5 +1,6 @@
 // Server-only prompt manager
 
+import { SystemMessage, HumanMessage } from "@langchain/core/messages";
 import { getSeatsForCurrentElection } from "@/lib/actions/database";
 import { type ElectionConfig, electionConfig } from "@/lib/config/election";
 import type { ChatModel } from "@/lib/server/ai/model-factory";
@@ -65,8 +66,8 @@ export class PromptManager {
       console.time(`Time for: Prompt Execution: ${promptId}`);
       const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(", ")}.`;
       const response = await this.chatModel.invoke([
-        { role: "system", content: systemMessage },
-        { role: "user", content: formatted.content },
+        new SystemMessage({ content: systemMessage }),
+        new HumanMessage({ content: formatted.content }),
       ]);
       // const response = {content: "This is a not so very helpful message"}
       console.timeEnd(`Time for: Prompt Execution: ${promptId}`);

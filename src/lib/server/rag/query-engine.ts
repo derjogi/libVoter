@@ -1,4 +1,9 @@
 // Server-only RAG query engine
+import {
+  SystemMessage,
+  HumanMessage,
+  AIMessage,
+} from "@langchain/core/messages";
 import { getVectorStoreManager } from "./vector-store";
 import { createChatModel } from "@/lib/server/ai/model-factory";
 import type { PolicyPosition } from "@/types";
@@ -62,12 +67,11 @@ Format as JSON with candidates, policies, and sources arrays.
     console.log("RAG query started for contextPrompt: \n\n", contextPrompt);
     console.time("Time for: RAG Query ChatModel Invoke");
     const response = await this.chatModel.invoke([
-      {
-        role: "system",
+      new SystemMessage({
         content:
           "You are a political analysis expert. Provide accurate, neutral information.",
-      },
-      { role: "user", content: contextPrompt },
+      }),
+      new HumanMessage({ content: contextPrompt }),
     ]);
 
     // const response: BaseMessage = new AIMessage(JSON.stringify({
