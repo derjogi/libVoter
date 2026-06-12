@@ -66,6 +66,22 @@ export const MOCK_RESPONSES: Record<string, string> = {
 };
 
 /**
+ * Combined chat-turn fixture for the structured `withStructuredOutput` path
+ * used by AIChatHandler.generateChatTurn. Returned as a parsed object (not a
+ * JSON string) because withStructuredOutput resolves to the validated value.
+ */
+export const MOCK_CHAT_TURN = {
+  message:
+    "Thanks for sharing — that helps me understand your priorities. Let's dig into what matters most to you.",
+  nextComponent: JSON.parse(MOCK_RESPONSES.COMPONENT_SELECTOR),
+  followupQuestion: {
+    question: "Could you say a bit more about why that matters to you?",
+    type: "chat",
+    reasoning: "mock followup",
+  },
+};
+
+/**
  * Pick the right mock response by sniffing the prompt content for a marker
  * substring. Falls back to a generic chat response.
  */

@@ -4,16 +4,17 @@ import {
   AIMessage,
   SystemMessage,
 } from "@langchain/core/messages";
+import { z } from "zod";
 import { getAIConfig } from "./config";
 import { createChatModel } from "./model-factory";
 import { ConfidenceCalculator } from "./confidence-calculator";
-import {
-  selectNextComponent,
-  explainCandidateMatch,
-  generateFollowupQuestion,
-} from "@/lib/actions/prompts";
+import { explainCandidateMatch } from "@/lib/actions/prompts";
 import { queryRAGContext } from "@/lib/actions/rag";
 import { electionConfig } from "@/lib/config/election";
+import {
+  ComponentDataSchema,
+  SAFE_FALLBACK_COMPONENT,
+} from "@/types/components.zod";
 import type {
   ConversationMessage,
   UserResponse,
@@ -24,6 +25,26 @@ import type {
 import type { ChatModel } from "./model-factory";
 import type { RAGContext } from "../rag/query-engine";
 import type { Candidate } from "@/lib/db/schema";
+
+// A single turn of advisor output. One structured LLM call now produces the
+// conversational reply, the next UI component, and an optional follow-up chip —
+// replacing the previous 2–3 separate calls per user message.
+const ChatTurnSchema = z.object({
+  message: z.string().describe("Conversational, neutral reply to the user"),
+  nextComponent: ComponentDataSchema.describe(
+    "The next UI component to render; its data must match the chosen type",
+  ),
+  followupQuestion: z
+    .object({
+      question: z.string(),
+      type: z.string().optional(),
+      reasoning: z.string().optional(),
+    })
+    .optional()
+    .describe("Optional one-line follow-up suggestion the user can tap"),
+});
+
+type ChatTurn = z.infer<typeof ChatTurnSchema>;
 
 export interface ChatResponse {
   message: string;
@@ -55,89 +76,66 @@ export class AIChatHandler {
     availableCandidates: Candidate[],
   ): Promise<ChatResponse> {
     try {
-      // Calculate current confidence
+      // Confidence is computed deterministically — no LLM call needed.
       const confidenceResult = ConfidenceCalculator.calculate(
         userResponseHistory,
         conversationHistory,
       );
 
-      // Calculate available seats (electorates/wards) from available candidates
+      // Available seats (electorates/wards) derived from the candidate list.
       const availableSeats = [
         ...new Set(availableCandidates.map((c) => c.ward)),
       ];
 
-      // Build a minimal conversation context (no RAG yet — see spec 005)
-      const systemPrompt = `You are an AI political advisor helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
-Current confidence level: ${confidenceResult.score}/100
-Reasoning: ${confidenceResult.reasoning}
-
-Be conversational, neutral, and helpful. Ask follow-up questions to understand their views better.
-Focus on policy topics including ${electionConfig.keyTopics.join(", ")} and candidate positions.
-Do not ask the user for candidate information or details about specific candidates, as all relevant candidate data is provided in the context.`;
+      // Static, cache-friendly preamble first; only the per-turn dynamic data
+      // (confidence) goes in the final user message so the cached prefix stays
+      // byte-stable across turns (OpenAI/OpenRouter automatic prefix caching,
+      // Anthropic cache_control).
+      const systemPreamble = this.buildSystemPreamble(availableSeats);
 
       const recentHistory = conversationHistory.slice(-10);
       const messages: (HumanMessage | AIMessage | SystemMessage)[] = [
-        new SystemMessage({ content: systemPrompt }),
+        new SystemMessage({ content: systemPreamble }),
         ...recentHistory.map((h) =>
           h.role === "user"
             ? new HumanMessage({ content: h.content })
             : new AIMessage({ content: h.content }),
         ),
-        new HumanMessage({ content: userMessage }),
+        new HumanMessage({
+          content: `${userMessage}\n\n[advisor note — current confidence ${confidenceResult.score}/100: ${confidenceResult.reasoning}]`,
+        }),
       ];
 
-      // Candidate ranking will move to spec 005; for now return [] so the client
-      // keeps using its existing list rather than overwriting it.
-      const candidates: CandidateMatch[] = [];
+      // ONE structured call returns reply + next component (+ followup),
+      // replacing the previous 2–3 separate LLM round-trips per turn.
+      console.log("Processing message with combined structured AI call");
+      const turn = await this.generateChatTurn(messages);
+      console.log("Chat turn:", JSON.stringify(turn));
 
-      // Get AI response with validation
-      console.log(`Processing message with AI model`);
-      const responseText = await this.getValidatedAIResponse(messages);
-      console.log("AI response:", responseText);
-      // Determine next component based on context
-      const nextComponent = await this.determineNextComponent(
-        userMessage,
-        responseText,
-        confidenceResult,
-        conversationHistory,
-        userResponseHistory,
-        availableSeats,
-      );
-      console.log("Next component:", JSON.stringify(nextComponent));
-      // Check if we should show candidates
       const config = getAIConfig();
       const shouldShowCandidates =
         confidenceResult.score >= config.thresholds.confidence &&
         userResponseHistory.length >= config.thresholds.minInteractions;
 
-      // Generate followup question if confidence is low
-      let followupQuestion;
-      if (confidenceResult.score < 70) {
-        try {
-          const context = `AI Response: ${responseText}\nConfidence: ${confidenceResult.score}/100\nReasoning: ${confidenceResult.reasoning}`;
-          const followupResult = await generateFollowupQuestion(
-            userMessage,
-            context,
-            availableSeats,
-          );
-          if (followupResult.success && followupResult.data) {
-            followupQuestion = {
-              question: followupResult.data.question,
-              type: followupResult.data.type ?? "chat",
-              reasoning: followupResult.data.reasoning,
-            };
-          }
-        } catch (error) {
-          console.error("Failed to generate followup question:", error);
-        }
-      }
+      // Preserve previous UX: only surface a follow-up chip while confidence is
+      // still low.
+      const followupQuestion =
+        confidenceResult.score < 70 && turn.followupQuestion
+          ? {
+              question: turn.followupQuestion.question,
+              type: turn.followupQuestion.type ?? "chat",
+              reasoning: turn.followupQuestion.reasoning,
+            }
+          : undefined;
 
       return {
-        message: responseText,
+        message: turn.message,
         confidence: confidenceResult.score,
         shouldShowCandidates,
-        nextComponent,
-        candidateMatches: candidates,
+        nextComponent: turn.nextComponent,
+        // Candidate ranking lives in spec 005; return [] so the client keeps
+        // its existing list rather than overwriting it.
+        candidateMatches: [],
         followupQuestion,
       };
     } catch (error) {
@@ -146,34 +144,98 @@ Do not ask the user for candidate information or details about specific candidat
     }
   }
 
-  private async getValidatedAIResponse(
+  /**
+   * Static instructions shared by every turn. Stable within a session so the
+   * model provider can cache it as a prompt prefix.
+   */
+  private buildSystemPreamble(availableSeats: string[]): string {
+    return `You are an AI voting advisor for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
+
+Each turn you do two things:
+1. Reply to the user conversationally — neutral, concise, and helpful.
+2. Choose the single best next UI component to keep narrowing their political preferences, and generate its data.
+
+Key topics: ${electionConfig.keyTopics.join(", ")}.
+The voter's available ${electionConfig.seatLabelPlural}: ${availableSeats.join(", ") || "unknown"}.
+
+Conversation discipline:
+- Ask exactly one question per turn. Never bundle multiple independent questions into one component.
+- After a multiselect answer, ask one focused follow-up about a single selected topic — not another broad multiselect (unless no priorities were chosen yet).
+- Use multiselect only for broad discovery; dropdown to choose one priority; yesno for one or a few closely-related statements; slider for intensity/trade-offs; priority to rank options; freetext/chat when the user needs to add nuance or redirect.
+- When unsure, prefer a focused dropdown, chat, yesno, or slider over a broad multiselect.
+- Stay neutral and unbiased. Do not ask the user for candidate details — all candidate data is provided to you.
+
+Output fields:
+- message: your conversational reply.
+- nextComponent: the next component; its "data" MUST match the chosen "type".
+- followupQuestion: optional short suggestion chip the user can tap to continue.`;
+  }
+
+  /**
+   * Single structured LLM call returning a validated chat turn. withStructuredOutput
+   * constrains the model to ChatTurnSchema; on repeated failure it falls back to
+   * a plain reply + safe chat component so the UI keeps working.
+   */
+  private async generateChatTurn(
     messages: (HumanMessage | AIMessage | SystemMessage)[],
-  ): Promise<string> {
+  ): Promise<ChatTurn> {
     const maxRetries = 3;
     let lastError: Error | null = null;
 
+    // withStructuredOutput's typings differ across ChatOpenAI / ChatAnthropic /
+    // the mock; the cast keeps the call site simple.
+    const structured = (
+      this.chatModel as unknown as {
+        withStructuredOutput: (
+          schema: unknown,
+          config?: unknown,
+        ) => { invoke: (m: unknown) => Promise<ChatTurn> };
+      }
+    ).withStructuredOutput(ChatTurnSchema, {
+      name: "chat_turn",
+      // jsonSchema (response_format) is the most broadly supported transport on
+      // OpenRouter — many models (incl. the `:free` routes) reject tool/function
+      // calling with a 400. See model-factory for the configured provider.
+      method: "jsonSchema",
+    });
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      const timerLabel = `Time for: AI Chat Turn Attempt ${attempt}`;
+      console.time(timerLabel);
       try {
-        console.log(`getValidatedAIResponse: \n`, messages);
-        console.time(`Time for: AI Chat Invoke Attempt ${attempt}`);
-        const aiResponse = await this.chatModel.invoke(messages);
-        // const aiResponse = {content: "Test fake value from AIChatHandler"}
-        console.timeEnd(`Time for: AI Chat Invoke Attempt ${attempt}`);
-        const responseText = aiResponse.content as string;
-        return responseText;
+        const result = await structured.invoke(messages);
+        return result;
       } catch (error) {
-        console.error(`AI request attempt ${attempt} failed:`, error);
+        console.error(`AI chat turn attempt ${attempt} failed:`, error);
         lastError = error as Error;
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-          continue;
         }
+      } finally {
+        console.timeEnd(timerLabel);
       }
     }
 
-    // If all retries failed, return a fallback response
-    console.error("All AI request attempts failed, using fallback");
-    throw lastError || new Error("Failed to get AI response after retries");
+    // Last-resort fallback: a plain reply with a safe chat component.
+    console.error(
+      "All structured chat-turn attempts failed, using fallback:",
+      lastError,
+    );
+    try {
+      const plain = await this.chatModel.invoke(messages);
+      return {
+        message:
+          typeof plain.content === "string"
+            ? plain.content
+            : "Let's keep going — tell me more about what matters to you.",
+        nextComponent: SAFE_FALLBACK_COMPONENT,
+      };
+    } catch {
+      return {
+        message: "Let's keep going — tell me more about what matters to you.",
+        nextComponent: SAFE_FALLBACK_COMPONENT,
+      };
+    }
   }
 
   private async queryRAGContext(userMessage: string, userContext: string) {
@@ -305,131 +367,6 @@ Do not ask the user for candidate information or details about specific candidat
     }
 
     return ragInfo;
-  }
-
-  private async determineNextComponent(
-    userMessage: string,
-    aiResponse: string,
-    confidence: { score: number; reasoning: string },
-    history: ConversationMessage[],
-    userResponses: UserResponse[],
-    availableSeats: string[],
-  ): Promise<ComponentData | undefined> {
-    const config = getAIConfig();
-
-    // If confidence is low, continue with chat
-    if (confidence.score < config.thresholds.confidence) {
-      return {
-        type: "chat",
-        data: {
-          messages: [],
-          placeholder: "Tell me more about your views...",
-        },
-      };
-    }
-
-    // Create conversation state for the existing prompt system
-    const recentHistory = history
-      .slice(-5)
-      .map((h) => `${h.role}: ${h.content}`)
-      .join("\n");
-    const conversationState = `
-Current confidence: ${confidence.score}/100
-Reasoning: ${confidence.reasoning}
-
-Recent conversation:
-${recentHistory}
-
-Latest user message: "${userMessage}"
-AI response: "${aiResponse}"
-
-Please select the next component that will best help narrow down the user's political preferences.`;
-
-    try {
-      console.log("Calling selectNextComponent with conversation state");
-      const result = await selectNextComponent(
-        conversationState,
-        availableSeats,
-      );
-
-      if (result.success && result.data) {
-        console.log("Component selection result:", result.data);
-        // result.data is already a validated ComponentData (discriminated union
-        // shared end-to-end with the React renderer).
-        return result.data;
-      } else {
-        console.warn("Component selection failed:", result.error);
-      }
-    } catch (error) {
-      console.error("Error calling selectNextComponent:", error);
-    }
-
-    // Fallback to simple logic
-    const lastComponents = history
-      .slice(-3)
-      .map((h) => h.componentData?.type)
-      .filter(Boolean);
-
-    // Check if ward has been selected
-    if (!userResponses.some((r) => r.questionId === "ward_selection")) {
-      if (availableSeats.length > 0) {
-        const options = availableSeats.map((seat) => ({
-          id: seat,
-          label: seat,
-          description: "",
-        }));
-        return {
-          type: "multiselect",
-          data: {
-            question: `Which ${electionConfig.seatLabel} do you live in?`,
-            options,
-            maxSelections: 1,
-            questionId: "ward_selection",
-          },
-        };
-      }
-    }
-
-    if (!lastComponents.includes("multiselect")) {
-      return {
-        type: "multiselect",
-        data: {
-          question: "Which of these issues matter most to you?",
-          options: [
-            {
-              id: "economy",
-              label: "Economy & Jobs",
-              description: "Economic policy and employment",
-            },
-            {
-              id: "healthcare",
-              label: "Healthcare",
-              description: "Medical care and health policy",
-            },
-            {
-              id: "education",
-              label: "Education",
-              description: "Schools and learning opportunities",
-            },
-            {
-              id: "environment",
-              label: "Environment",
-              description: "Climate change and conservation",
-            },
-          ],
-          maxSelections: 3,
-        },
-      };
-    }
-
-    // Default to chat
-    return {
-      type: "chat",
-      data: {
-        messages: [],
-        placeholder: "What else would you like to know?",
-      },
-    };
   }
 
   private async generateCandidateMatches(

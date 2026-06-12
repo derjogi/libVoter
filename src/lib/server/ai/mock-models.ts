@@ -4,7 +4,7 @@
 
 import type { BaseMessage } from "@langchain/core/messages";
 import { AIMessage } from "@langchain/core/messages";
-import { pickMockResponse } from "./__mocks__/responses";
+import { MOCK_CHAT_TURN, pickMockResponse } from "./__mocks__/responses";
 
 export class MockChatModel {
   // Keep the public model property so callers that read it still work.
@@ -14,6 +14,20 @@ export class MockChatModel {
     const text = extractPromptText(messages);
     const content = pickMockResponse(text);
     return new AIMessage({ content });
+  }
+
+  /**
+   * Mirrors LangChain's withStructuredOutput: returns a runnable whose invoke
+   * resolves to a deterministic, schema-valid chat turn (AI_MODE=mock).
+   */
+  withStructuredOutput<T = typeof MOCK_CHAT_TURN>(
+    _schema: unknown,
+    _config?: unknown,
+  ): { invoke: (messages: unknown) => Promise<T> } {
+    return {
+      invoke: async (_messages: unknown): Promise<T> =>
+        MOCK_CHAT_TURN as unknown as T,
+    };
   }
 }
 
