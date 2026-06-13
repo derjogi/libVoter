@@ -25,6 +25,7 @@ import type {
 import type { ChatModel } from "./model-factory";
 import type { RAGContext } from "../rag/query-engine";
 import type { Candidate } from "@/lib/db/schema";
+import { spacing } from "happy-dom/lib/PropertySymbol";
 
 // A single turn of advisor output. One structured LLM call now produces the
 // conversational reply, the next UI component, and an optional follow-up chip —
@@ -109,6 +110,7 @@ export class AIChatHandler {
       // ONE structured call returns reply + next component (+ followup),
       // replacing the previous 2–3 separate LLM round-trips per turn.
       console.log("Processing message with combined structured AI call");
+      console.log("Messages:", JSON.stringify(messages, null, 2));
       const turn = await this.generateChatTurn(messages);
       console.log("Chat turn:", JSON.stringify(turn));
 
@@ -151,12 +153,11 @@ export class AIChatHandler {
   private buildSystemPreamble(availableSeats: string[]): string {
     return `You are an AI voting advisor for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
 
-Each turn you do two things:
-1. Reply to the user conversationally — neutral, concise, and helpful.
-2. Choose the single best next UI component to keep narrowing their political preferences, and generate its data.
+Each turn you produce two distinct things:
+1. message — a SHORT (one sentence), friendly, neutral reaction to the user's previous answer. Do NOT ask the next question here, and never list options or choices in the message.
+2. nextComponent — the actual next question (the question text and all options live inside this component, NOT in message).
 
 Key topics: ${electionConfig.keyTopics.join(", ")}.
-// The voter's available ${electionConfig.seatLabelPlural}: ${availableSeats.join(", ") || "unknown"}.
 
 Conversation discipline:
 - Ask exactly one question per turn. Never bundle multiple independent questions into one component.
@@ -176,8 +177,19 @@ Generating the component data (must match the chosen type exactly):
 - dropdown/multiselect/priority: generate 2–8 options, each with a unique "id", a short "label", and a one-line "description". multiselect also needs a sensible "maxSelections" (can be all); dropdown needs a "placeholder" and a stable "questionId".
 - slider: set a real numeric range (min < max, e.g. min 0 / max 10), a "step", a "unit", and a "label"/"description" that explain the scale.
 - yesno: provide 1–5 related statements, each as { statement, context }.
-- freetext: provide a "prompt" and "placeholder".
-- chat: empty messages array and an inviting "placeholder".
+- freetext: provide a "prompt" (the open-ended question) and a "placeholder".
+- chat: provide a "prompt" (the open-ended question to show the user) and an inviting "placeholder". Do NOT rely on message for the question.
+
+Examples of the right component for a question (the question text goes in the component, not in message):
+- "Which issue matters most to you?" (pick one from a list) → dropdown with 3–6 options.
+- "Which of these issues matter to you?" (pick several) → multiselect.
+- "Rank these issues by importance" → priority with the options.
+- "How strongly do you support more public-transport funding?" → slider, min 0, max 10.
+- "Do you agree that rates should be frozen?" → yesno with that statement.
+- "Is there anything else you'd like me to know?" (open-ended, no fixed answers) → chat or freetext.
+
+Example output shape:
+{ "message": "Thanks — good to know housing is a priority.", "nextComponent": { "type": "dropdown", "data": { "question": "Within housing, which matters most to you?", "options": [{ "id": "supply", "label": "Building more homes", "description": "Increase housing supply" }, { "id": "affordability", "label": "Affordability", "description": "Rents and first-home buyers" }], "placeholder": "Choose one…", "questionId": "housing_focus" } } }
 
 Output fields:
 - message: your conversational reply.
