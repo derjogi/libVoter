@@ -25,7 +25,6 @@ import type {
 import type { ChatModel } from "./model-factory";
 import type { RAGContext } from "../rag/query-engine";
 import type { Candidate } from "@/lib/db/schema";
-import { spacing } from "happy-dom/lib/PropertySymbol";
 
 // A single turn of advisor output. One structured LLM call now produces the
 // conversational reply, the next UI component, and an optional follow-up chip —
@@ -166,19 +165,18 @@ Conversation discipline:
 - Stay neutral and unbiased. Do not ask the user for candidate details — all candidate data is provided to you.
 
 Choosing the component type:
-- dropdown: pick ONE option from a named list (e.g. "which issue matters most"). This is the default for single-choice questions — NOT slider, chat, or freetext.
-- multiselect: choose several from a list; use only for broad discovery.
-- priority: rank several named options by preference.
-- yesno: one or a few closely-related statements to agree/disagree with.
-- slider: ONLY for a genuine quantitative scale or intensity/trade-off (e.g. 0–10 agreement, 0–100%). Never use a slider to choose among discrete named options. Its min MUST be strictly less than its max, and MAX MUST be at least 2 steps above MIN.
-- freetext / chat: when there is no fixed list of answers and the user must write something open-ended, add nuance, or redirect. Never embed a list of choices here.
+- chat: the DEFAULT. Almost always use chat unless there is a very clear, genuine reason to use a structured component.
+- dropdown: ONLY when the user truly benefits from selecting exactly one from a curated named list (e.g. picking their ward) — NOT for questions where a chat reply is equally informative and more natural.
+- multiselect: ONLY for broad discovery when a chat answer would be too vague — never as the default.
+- priority: ONLY when ranking several named options is genuinely important to the matching.
+- yesno: ONLY for a small set of closely-related statements where agreement/disagreement is meaningful.
+- slider: ONLY for a genuine quantitative scale (e.g. 0–10 agreement). Never use a slider to choose among discrete options.
 
 Generating the component data (must match the chosen type exactly):
+- chat: provide a "prompt" (the open-ended question to show the user) and an inviting "placeholder". Do NOT rely on message for the question.
 - dropdown/multiselect/priority: generate 2–8 options, each with a unique "id", a short "label", and a one-line "description". multiselect also needs a sensible "maxSelections" (can be all); dropdown needs a "placeholder" and a stable "questionId".
 - slider: set a real numeric range (min < max, e.g. min 0 / max 10), a "step", a "unit", and a "label"/"description" that explain the scale.
 - yesno: provide 1–5 related statements, each as { statement, context }.
-- freetext: provide a "prompt" (the open-ended question) and a "placeholder".
-- chat: provide a "prompt" (the open-ended question to show the user) and an inviting "placeholder". Do NOT rely on message for the question.
 
 Examples of the right component for a question (the question text goes in the component, not in message):
 - "Which issue matters most to you?" (pick one from a list) → dropdown with 3–6 options.
@@ -186,7 +184,7 @@ Examples of the right component for a question (the question text goes in the co
 - "Rank these issues by importance" → priority with the options.
 - "How strongly do you support more public-transport funding?" → slider, min 0, max 10.
 - "Do you agree that rates should be frozen?" → yesno with that statement.
-- "Is there anything else you'd like me to know?" (open-ended, no fixed answers) → chat or freetext.
+- "Is there anything else you'd like me to know?" (open-ended, no fixed answers) → chat.
 
 Example output shape:
 { "message": "Thanks — good to know housing is a priority.", "nextComponent": { "type": "dropdown", "data": { "question": "Within housing, which matters most to you?", "options": [{ "id": "supply", "label": "Building more homes", "description": "Increase housing supply" }, { "id": "affordability", "label": "Affordability", "description": "Rents and first-home buyers" }], "placeholder": "Choose one…", "questionId": "housing_focus" } } }
