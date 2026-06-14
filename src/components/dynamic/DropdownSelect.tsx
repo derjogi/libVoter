@@ -38,21 +38,23 @@ export function DropdownSelect({
   );
 
   const handleSubmit = () => {
-    if (!selectedId) return;
+    if (!selectedId && !supplementalContext.trim()) return;
     const selectedOption = data.options.find((o) => o.id === selectedId);
-    if (!selectedOption) return;
+    const label = selectedOption?.label ?? data.question;
     onResponse(
-      `Question: ${data.question}\nAnswer: ${selectedOption.label}${formatSupplementalContext(
+      `Question: ${data.question}\nAnswer: ${label}${formatSupplementalContext(
         supplementalContext,
       )}`,
       {
         kind: "dropdown",
-        id: selectedOption.id,
-        label: selectedOption.label,
+        id: selectedOption?.id ?? "",
+        label,
         additionalContext: supplementalContext.trim(),
       },
     );
   };
+
+  const canSubmit = !!selectedId || supplementalContext.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -84,18 +86,18 @@ export function DropdownSelect({
         </SelectContent>
       </Select>
 
-      {!locked && (
-        <Button onClick={handleSubmit} disabled={disabled || !selectedId}>
-          Continue
-        </Button>
-      )}
-
       <SupplementalContextInput
         disabled={disabled}
         locked={locked}
         value={value}
         onChange={setSupplementalContext}
       />
+
+      {!locked && (
+        <Button onClick={handleSubmit} disabled={disabled || !canSubmit}>
+          Continue
+        </Button>
+      )}
     </div>
   );
 }

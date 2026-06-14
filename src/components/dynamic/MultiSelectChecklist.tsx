@@ -44,11 +44,14 @@ export function MultiSelectChecklist({
   };
 
   const handleSubmit = () => {
-    if (selectedIds.length === 0) return;
+    if (selectedIds.length === 0 && !supplementalContext.trim()) return;
     const selectedOptions = selectedIds
       .map((id) => data.options.find((opt) => opt.id === id))
       .filter((opt): opt is NonNullable<typeof opt> => opt !== undefined);
-    const labels = selectedOptions.map((opt) => opt.label);
+    const labels =
+      selectedOptions.length > 0
+        ? selectedOptions.map((opt) => opt.label)
+        : [data.question];
     onResponse(
       `${labels.join("\n")}${formatSupplementalContext(supplementalContext)}`,
       {
@@ -62,6 +65,7 @@ export function MultiSelectChecklist({
 
   const selectedCount = selectedIds.length;
   const maxSelections = data.maxSelections;
+  const canSubmit = selectedCount > 0 || supplementalContext.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -109,21 +113,21 @@ export function MultiSelectChecklist({
         ))}
       </div>
 
-      {!locked && (
-        <Button
-          onClick={handleSubmit}
-          disabled={disabled || selectedCount === 0}
-        >
-          Continue ({selectedCount} selected)
-        </Button>
-      )}
-
       <SupplementalContextInput
         disabled={disabled}
         locked={locked}
         value={value}
         onChange={setSupplementalContext}
       />
+
+      {!locked && (
+        <Button
+          onClick={handleSubmit}
+          disabled={disabled || !canSubmit}
+        >
+          Continue ({selectedCount} selected)
+        </Button>
+      )}
     </div>
   );
 }

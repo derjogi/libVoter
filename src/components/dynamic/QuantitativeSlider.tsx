@@ -31,6 +31,7 @@ export function QuantitativeSlider({
   const [supplementalContext, setSupplementalContext] = useState(
     getInitialSupplementalContext(value),
   );
+  const canSubmit = true; // Slider always has a value
 
   const handleSubmit = () => {
     const descriptiveString = `Question: ${data.label}\nAnswer: ${sliderValue}${data.unit ? ` ${data.unit}` : ""}${data.description ? ` (${data.description})` : ""}${formatSupplementalContext(
@@ -87,18 +88,18 @@ export function QuantitativeSlider({
         </span>
       </div>
 
-      {!locked && (
-        <Button onClick={handleSubmit} disabled={disabled}>
-          Confirm Selection
-        </Button>
-      )}
-
       <SupplementalContextInput
         disabled={disabled}
         locked={locked}
         value={value}
         onChange={setSupplementalContext}
       />
+
+      {!locked && (
+        <Button onClick={handleSubmit} disabled={disabled}>
+          Confirm Selection
+        </Button>
+      )}
     </div>
   );
 }

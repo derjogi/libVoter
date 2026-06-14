@@ -12,7 +12,7 @@ interface SupplementalContextInputProps {
   disabled?: boolean;
   locked?: boolean;
   value?: RawAnswer;
-  onChange?: (text: string) => void;
+  onChange: (text: string) => void;
 }
 
 export function SupplementalContextInput({
@@ -31,7 +31,7 @@ export function SupplementalContextInput({
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const nextValue = event.target.value;
     setContext(nextValue);
-    onChange?.(nextValue);
+    onChange(nextValue);
   };
 
   return (

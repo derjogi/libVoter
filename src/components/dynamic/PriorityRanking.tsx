@@ -55,11 +55,14 @@ export function PriorityRanking({
   };
 
   const handleSubmit = () => {
-    if (rankedIds.length === 0) return;
+    if (rankedIds.length === 0 && !supplementalContext.trim()) return;
     const rankedOptions = rankedIds
       .map((id) => data.options.find((opt) => opt.id === id))
       .filter((opt): opt is NonNullable<typeof opt> => opt !== undefined);
-    const labels = rankedOptions.map((opt) => opt.label);
+    const labels =
+      rankedOptions.length > 0
+        ? rankedOptions.map((opt) => opt.label)
+        : [data.question];
     onResponse(
       `${labels.join("\n")}${formatSupplementalContext(supplementalContext)}`,
       {
@@ -73,6 +76,8 @@ export function PriorityRanking({
 
   const getOptionById = (id: string) =>
     data.options.find((opt) => opt.id === id);
+
+  const canSubmit = rankedIds.length > 0 || supplementalContext.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -137,22 +142,22 @@ export function PriorityRanking({
         })}
       </div>
 
-      {!locked && (
-        <Button
-          onClick={handleSubmit}
-          disabled={disabled || rankedIds.length === 0}
-          className="mt-2"
-        >
-          Continue ({rankedIds.length} ranked)
-        </Button>
-      )}
-
       <SupplementalContextInput
         disabled={disabled}
         locked={locked}
         value={value}
         onChange={setSupplementalContext}
       />
+
+      {!locked && (
+        <Button
+          onClick={handleSubmit}
+          disabled={disabled || !canSubmit}
+          className="mt-2"
+        >
+          Continue ({rankedIds.length} ranked)
+        </Button>
+      )}
     </div>
   );
 }

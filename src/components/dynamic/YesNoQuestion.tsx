@@ -68,6 +68,8 @@ export function YesNoQuestion({
     );
   };
 
+  const hasChanges = responses.some((r) => r !== undefined) || supplementalContext.trim();
+
   return (
     <div className="flex flex-col gap-4">
       {data.statements.map((item, index) => (
@@ -122,18 +124,18 @@ export function YesNoQuestion({
         </Card>
       ))}
 
-      {!locked && (
-        <Button onClick={handleSubmit} disabled={disabled} variant="default">
-          Submit
-        </Button>
-      )}
-
       <SupplementalContextInput
         disabled={disabled}
         locked={locked}
         value={value}
         onChange={setSupplementalContext}
       />
+
+      {!locked && (
+        <Button onClick={handleSubmit} disabled={disabled || !hasChanges} variant="default">
+          Submit
+        </Button>
+      )}
     </div>
   );
 }
