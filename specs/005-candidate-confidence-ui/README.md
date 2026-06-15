@@ -15,6 +15,14 @@ updated_at: 2026-05-03T01:39:17.326434544Z
 
 > **Status**: planned · **Priority**: medium · **Created**: 2026-05-03
 
+> ⚠️ **Superseded (RAG/ranking design) by [spec 009 — Evidence-retrieval
+> RAG](../009-candidate-evidence-rag/README.md).** The RAG-based candidate
+> *ranking* approach below is replaced: candidate selection is a structured
+> electorate filter, and RAG is repurposed for evidence retrieval +
+> citations. The UI/confidence concerns here (always-visible panel,
+> "keep asking" / "I'm ready to decide" buttons, margin-based confidence)
+> remain valid and are folded into spec 009's Phases 1, 5, 6.
+
 ## Overview
 
 Today the right panel reveals candidates when an aggregate confidence
