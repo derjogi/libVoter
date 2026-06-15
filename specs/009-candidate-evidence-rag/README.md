@@ -150,10 +150,15 @@ metadata above; associate each source with a `candidate_id` and/or
 > Big spec — implement incrementally. Phase 1 is independent of RAG and
 > unblocks the empty sidebar immediately.
 
-- [ ] **Phase 1 (no RAG):** map the already-loaded `availableCandidates`
+- [x] **Phase 1 (no RAG):** map the already-loaded `availableCandidates`
       (ward + mayor) into the right panel on seat selection in
       [`page.tsx`](../../src/app/page.tsx) so candidates are visible
       instantly. (Also covers spec 005's "always-visible panel".)
+      Done via `toUnrankedMatches()` in
+      [`src/lib/client/candidate-match.ts`](../../src/lib/client/candidate-match.ts);
+      shown with neutral score until ranking lands in Phase 5. Guarded the
+      post-answer `setCandidates` so the handler's empty `candidateMatches`
+      array no longer clobbers the seeded list.
 - [ ] **Phase 2 — data model:** add an evidence/source table (or chunk
       metadata) associating sources to `candidate_id` / `party_id` with
       `source_type`, `source_url`, `date`. Reuse parties from spec 002.

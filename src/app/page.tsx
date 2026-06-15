@@ -12,6 +12,7 @@ import {
   getSeatsForCurrentElection,
 } from "@/lib/actions/database";
 import { selectNextComponent } from "@/lib/actions/prompts";
+import { toUnrankedMatches } from "@/lib/client/candidate-match";
 import { extractQuestionText } from "@/lib/client/extract-question-text";
 import { useChat } from "@/lib/client/hooks/useChat";
 import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
@@ -201,6 +202,11 @@ export default function VotingAdvisor() {
         const allCandidates = [...mayorCandidates, ...wardCandidates];
         setAvailableCandidates(allCandidates);
 
+        // Phase 1 (spec 009): surface the electorate's candidates in the
+        // right panel immediately, before any ranking exists. Shown as
+        // unranked (neutral score) until later phases compute real matches.
+        setCandidates(toUnrankedMatches(allCandidates));
+
         const candidateNames = allCandidates.map((c) => c.name);
         const conversationState = `I am voting in the ${wardName} ${seatLabel}, and the following candidates are running: \n${candidateNames.join(
           "\n",
@@ -226,7 +232,14 @@ export default function VotingAdvisor() {
         if (aiResponse) {
           setConfidence(aiResponse.confidence);
           setShowCandidates(aiResponse.shouldShowCandidates);
-          if (aiResponse.candidateMatches) {
+          // Only overwrite the sidebar when the handler actually produced
+          // ranked matches. An empty array (the current Phase-1 default from
+          // chat-handler) must NOT clobber the unranked list we seeded on
+          // seat selection.
+          if (
+            aiResponse.candidateMatches &&
+            aiResponse.candidateMatches.length > 0
+          ) {
             setCandidates(aiResponse.candidateMatches);
           }
           appendActive(aiResponse.nextComponent ?? fallbackChat);
