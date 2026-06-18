@@ -1,7 +1,8 @@
 import {
+  index,
+  integer,
   sqliteTable,
   text,
-  integer,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
@@ -145,6 +146,62 @@ export const candidacies = sqliteTable(
   }),
 );
 
+// === Evidence sources (spec 009 Phase 2) ===
+//
+// Canonical store of scraped source documents — a candidate's voting record,
+// parliamentary statements, social posts, a party's manifesto / policy pages,
+// etc. This is the durable record we re-chunk and embed into the vector store
+// (Phase 4); keeping the full `content` here lets us re-embed at will and show
+// the original passage in-app, while `url` powers "link out to source".
+//
+// `candidateId` / `partyId` are intentionally SOFT references (no FK): during
+// the spec-002 migration candidate identity spans both the legacy `candidates`
+// table (integer id, stringified here) and the generic `people` / `candidacies`
+// model, and parties span `parties` / `electionParties`. At least one of the
+// two should be set. Harden into FKs once the generic model is the single
+// source of truth.
+export const SOURCE_TYPES = [
+  "voting_record",
+  "hansard",
+  "statement",
+  "social",
+  "manifesto",
+  "party_policy",
+] as const;
+
+export type SourceType = (typeof SOURCE_TYPES)[number];
+
+export const evidenceSources = sqliteTable(
+  "evidence_sources",
+  {
+    id: text("id").primaryKey(),
+    electionId: text("election_id")
+      .notNull()
+      .references(() => elections.id, { onDelete: "cascade" }),
+    // Soft references (see table comment). One of these should be present.
+    candidateId: text("candidate_id"),
+    partyId: text("party_id"),
+    sourceType: text("source_type").$type<SourceType>().notNull(),
+    title: text("title"),
+    url: text("url"),
+    author: text("author"),
+    // Date of the source content itself (e.g. when the speech was given),
+    // distinct from when we scraped it.
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    // Cleaned full text — source of truth for chunking + in-app expansion.
+    content: text("content").notNull(),
+    // Change-detection / dedup key for the background refresher (Phase 3).
+    contentHash: text("content_hash"),
+    fetchedAt: integer("fetched_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (t) => ({
+    byCandidate: index("evidence_sources_candidate_idx").on(t.candidateId),
+    byParty: index("evidence_sources_party_idx").on(t.partyId),
+    byElection: index("evidence_sources_election_idx").on(t.electionId),
+  }),
+);
+
 // === Legacy parties table (kept for backward compat) ===
 export const parties = sqliteTable("parties", {
   id: text("id").primaryKey(),
@@ -179,6 +236,8 @@ export const insertPersonSchema = createInsertSchema(people);
 export const selectPersonSchema = createSelectSchema(people);
 export const insertCandidacySchema = createInsertSchema(candidacies);
 export const selectCandidacySchema = createSelectSchema(candidacies);
+export const insertEvidenceSourceSchema = createInsertSchema(evidenceSources);
+export const selectEvidenceSourceSchema = createSelectSchema(evidenceSources);
 
 // Types are automatically inferred from the schema
 export type Candidate = typeof candidates.$inferSelect;
@@ -198,3 +257,5 @@ export type Person = typeof people.$inferSelect;
 export type NewPerson = typeof people.$inferInsert;
 export type Candidacy = typeof candidacies.$inferSelect;
 export type NewCandidacy = typeof candidacies.$inferInsert;
+export type EvidenceSource = typeof evidenceSources.$inferSelect;
+export type NewEvidenceSource = typeof evidenceSources.$inferInsert;

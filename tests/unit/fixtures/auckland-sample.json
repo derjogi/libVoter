@@ -1,0 +1,17 @@
+[
+  {
+    "name": "SMITH, Jane",
+    "ward": "Albany Ward",
+    "link": "https://voteauckland.co.nz/jane",
+    "details": {
+      "candidate_statement": "<p>Build more homes &amp; support tenants.</p>",
+      "key_positions": {
+        "Housing": "Pro density near transit.",
+        "Transport": "More frequent buses."
+      },
+      "why": "I love my community.",
+      "key_skills": "Planning, budgeting.",
+      "top_issues": "Housing, transport, climate."
+    }
+  }
+]

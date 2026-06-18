@@ -1,30 +1,30 @@
 // Server-only AI chat processing
 import {
-  HumanMessage,
   AIMessage,
+  HumanMessage,
   SystemMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
-import { getAIConfig } from "./config";
-import { createChatModel } from "./model-factory";
-import { ConfidenceCalculator } from "./confidence-calculator";
 import { explainCandidateMatch } from "@/lib/actions/prompts";
 import { queryRAGContext } from "@/lib/actions/rag";
 import { electionConfig } from "@/lib/config/election";
+import type { Candidate } from "@/lib/db/schema";
+import type {
+  CandidateMatch,
+  ComponentData,
+  ConversationMessage,
+  PolicyPosition,
+  UserResponse,
+} from "@/types";
 import {
   ComponentDataSchema,
   SAFE_FALLBACK_COMPONENT,
 } from "@/types/components.zod";
-import type {
-  ConversationMessage,
-  UserResponse,
-  ComponentData,
-  CandidateMatch,
-  PolicyPosition,
-} from "@/types";
-import type { ChatModel } from "./model-factory";
 import type { RAGContext } from "../rag/query-engine";
-import type { Candidate } from "@/lib/db/schema";
+import { ConfidenceCalculator } from "./confidence-calculator";
+import { getAIConfig } from "./config";
+import type { ChatModel } from "./model-factory";
+import { createChatModel } from "./model-factory";
 
 // A single turn of advisor output. One structured LLM call now produces the
 // conversational reply, the next UI component, and an optional follow-up chip —
@@ -45,6 +45,26 @@ const ChatTurnSchema = z.object({
 });
 
 type ChatTurn = z.infer<typeof ChatTurnSchema>;
+
+// Interim candidate ranking (spec 009 Phase 5). One structured call scores the
+// whole electorate pool at once — fine because a single ward/electorate has at
+// most a few dozen candidates. Replaced/augmented later by evidence-based
+// retrieval ranking (spec 009 Phases 2–4).
+const CandidateRankingSchema = z.object({
+  rankings: z
+    .array(
+      z.object({
+        id: z.string().describe("Candidate id exactly as provided"),
+        score: z.number().min(0).max(100).describe("Match score 0–100"),
+        reasoning: z
+          .string()
+          .describe("One short sentence explaining the score"),
+      }),
+    )
+    .describe("Exactly one entry per candidate id"),
+});
+
+type CandidateRanking = z.infer<typeof CandidateRankingSchema>;
 
 export interface ChatResponse {
   message: string;
@@ -93,7 +113,7 @@ export class AIChatHandler {
       // Anthropic cache_control).
       const systemPreamble = this.buildSystemPreamble(availableSeats);
 
-      const recentHistory = conversationHistory.slice(-10);
+      const recentHistory = conversationHistory.slice(-50); // we'll find out when we reach the limit.
       const messages: (HumanMessage | AIMessage | SystemMessage)[] = [
         new SystemMessage({ content: systemPreamble }),
         ...recentHistory.map((h) =>
@@ -106,22 +126,34 @@ export class AIChatHandler {
         }),
       ];
 
-      // ONE structured call returns reply + next component (+ followup),
-      // replacing the previous 2–3 separate LLM round-trips per turn.
-      console.log("Processing message with combined structured AI call");
-      console.log("Messages:", JSON.stringify(messages, null, 2));
-      const turn = await this.generateChatTurn(messages);
+      // The chat turn (reply + next component) and the candidate ranking are
+      // independent, so run them concurrently to avoid doubling per-turn
+      // latency.
+      console.log("Processing message: chat turn + candidate ranking");
+      const [turn, candidateMatches] = await Promise.all([
+        this.generateChatTurn(messages),
+        this.rankCandidates(userResponseHistory, availableCandidates),
+      ]);
       console.log("Chat turn:", JSON.stringify(turn));
+
+      // UI confidence now reflects how confident we are in the *ranking*
+      // (margin between the top candidates + topic coverage) rather than the
+      // older response-quality heuristic — see deriveConfidence. The heuristic
+      // calculator is still used above only for the in-prompt advisor note.
+      const confidence = this.deriveConfidence(
+        candidateMatches,
+        userResponseHistory,
+      );
 
       const config = getAIConfig();
       const shouldShowCandidates =
-        confidenceResult.score >= config.thresholds.confidence &&
+        confidence >= config.thresholds.confidence &&
         userResponseHistory.length >= config.thresholds.minInteractions;
 
       // Preserve previous UX: only surface a follow-up chip while confidence is
       // still low.
       const followupQuestion =
-        confidenceResult.score < 70 && turn.followupQuestion
+        confidence < 70 && turn.followupQuestion
           ? {
               question: turn.followupQuestion.question,
               type: turn.followupQuestion.type ?? "chat",
@@ -131,12 +163,12 @@ export class AIChatHandler {
 
       return {
         message: turn.message,
-        confidence: confidenceResult.score,
+        confidence,
         shouldShowCandidates,
         nextComponent: turn.nextComponent,
-        // Candidate ranking lives in spec 005; return [] so the client keeps
-        // its existing list rather than overwriting it.
-        candidateMatches: [],
+        // Empty when there is nothing to rank yet (e.g. right after seat
+        // selection); the client keeps its unranked list in that case.
+        candidateMatches,
         followupQuestion,
       };
     } catch (error) {
@@ -260,6 +292,122 @@ Output fields:
         nextComponent: SAFE_FALLBACK_COMPONENT,
       };
     }
+  }
+
+  /**
+   * Interim ranking (spec 009 Phase 5): score every candidate in the user's
+   * electorate pool against their stated preferences with a single structured
+   * LLM call, then sort. Returns [] when there's nothing to rank yet (no
+   * answers, or no candidates) so the client keeps its unranked list.
+   *
+   * Uses only the structured candidate data already in the DB — no vector
+   * retrieval. The evidence-based version arrives with spec 009 Phases 2–4.
+   */
+  private async rankCandidates(
+    userResponses: UserResponse[],
+    availableCandidates: Candidate[],
+  ): Promise<CandidateMatch[]> {
+    if (availableCandidates.length === 0 || userResponses.length === 0) {
+      return [];
+    }
+
+    try {
+      const userProfile = this.createUserProfileSummary(userResponses);
+      const candidateBlock = availableCandidates
+        .map(
+          (c) =>
+            `id=${c.id} | ${c.name} (${c.party || "Independent"})\n${this.createCandidateInfoSummary(c)}`,
+        )
+        .join("\n\n");
+
+      const system = `You rank ${electionConfig.type} candidates by how well they match a voter's stated preferences.
+Score EVERY candidate from 0-100 (100 = excellent match, 0 = poor or irrelevant match).
+Be discriminating — spread the scores out; do NOT give everyone a similar number.
+Base scores ONLY on the candidate information and the voter's preferences provided here.
+If a candidate has little relevant information, score them lower. Return exactly one entry per candidate id, using the ids exactly as given.`;
+
+      const human = `Voter preferences:\n${userProfile}\n\nCandidates:\n${candidateBlock}`;
+
+      const ranking = await this.generateRanking([
+        new SystemMessage({ content: system }),
+        new HumanMessage({ content: human }),
+      ]);
+
+      const byId = new Map(ranking.rankings.map((r) => [r.id, r]));
+
+      return availableCandidates
+        .map((candidate) => {
+          const r = byId.get(candidate.id.toString());
+          return {
+            candidate,
+            score: r ? Math.round(r.score) : 0,
+            reasoning: r?.reasoning ?? "",
+            pros: [],
+            cons: [],
+            topMatchingPolicies: this.extractTopPolicies(candidate),
+            sources: [],
+          } satisfies CandidateMatch;
+        })
+        .sort((a, b) => b.score - a.score);
+    } catch (error) {
+      console.error("Candidate ranking failed:", error);
+      // Empty → client keeps the unranked list rather than blanking the panel.
+      return [];
+    }
+  }
+
+  /** Single structured ranking call with one retry. Throws on repeated failure. */
+  private async generateRanking(
+    messages: (HumanMessage | AIMessage | SystemMessage)[],
+  ): Promise<CandidateRanking> {
+    const structured = (
+      this.chatModel as unknown as {
+        withStructuredOutput: (
+          schema: unknown,
+          config?: unknown,
+        ) => { invoke: (m: unknown) => Promise<CandidateRanking> };
+      }
+    ).withStructuredOutput(CandidateRankingSchema, {
+      name: "candidate_ranking",
+      method: "jsonSchema",
+    });
+
+    try {
+      return await structured.invoke(messages);
+    } catch (error) {
+      console.error("Candidate ranking attempt 1 failed, retrying:", error);
+      return await structured.invoke(messages);
+    }
+  }
+
+  /**
+   * UI confidence derived from the *ranking* (spec 009 Phase 5; interim,
+   * tunable). A clear leader (large gap to #2) drives most of the score; topic
+   * coverage adds a floor so we don't over-claim after one answer. Many
+   * similarly-matched candidates ⇒ small margin ⇒ low confidence, matching the
+   * maintainer's intent.
+   */
+  private deriveConfidence(
+    ranked: CandidateMatch[],
+    userResponses: UserResponse[],
+  ): number {
+    if (ranked.length === 0) return 0;
+
+    const top = ranked[0]?.score ?? 0;
+    const second = ranked[1]?.score ?? 0;
+    const margin = top - second; // 0..100
+
+    const text = userResponses
+      .map((r) => this.extractTextFromResponse(r))
+      .join(" ")
+      .toLowerCase();
+    const covered = electionConfig.keyTopics.filter((t) =>
+      text.includes(t.toLowerCase()),
+    ).length;
+    const coverage = covered / electionConfig.keyTopics.length; // 0..1
+
+    const confidence = margin + coverage * 30;
+    return Math.min(100, Math.max(0, Math.round(confidence)));
   }
 
   private async queryRAGContext(userMessage: string, userContext: string) {

@@ -82,6 +82,17 @@ export const MOCK_CHAT_TURN = {
 };
 
 /**
+ * Candidate-ranking fixture for the structured `withStructuredOutput` path used
+ * by AIChatHandler.rankCandidates. Empty by design: real candidate ids aren't
+ * known to the mock, so candidates stay at the neutral unranked score. Live
+ * mode produces the actual ranking. A future spec-006 fixture can populate this
+ * to drive ranking deterministically end-to-end.
+ */
+export const MOCK_CANDIDATE_RANKING: {
+  rankings: Array<{ id: string; score: number; reasoning: string }>;
+} = { rankings: [] };
+
+/**
  * Pick the right mock response by sniffing the prompt content for a marker
  * substring. Falls back to a generic chat response.
  */

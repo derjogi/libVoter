@@ -4,7 +4,11 @@
 
 import type { BaseMessage } from "@langchain/core/messages";
 import { AIMessage } from "@langchain/core/messages";
-import { MOCK_CHAT_TURN, pickMockResponse } from "./__mocks__/responses";
+import {
+  MOCK_CANDIDATE_RANKING,
+  MOCK_CHAT_TURN,
+  pickMockResponse,
+} from "./__mocks__/responses";
 
 export class MockChatModel {
   // Keep the public model property so callers that read it still work.
@@ -22,11 +26,18 @@ export class MockChatModel {
    */
   withStructuredOutput<T = typeof MOCK_CHAT_TURN>(
     _schema: unknown,
-    _config?: unknown,
+    config?: unknown,
   ): { invoke: (messages: unknown) => Promise<T> } {
+    const name = (config as { name?: string } | undefined)?.name;
     return {
-      invoke: async (_messages: unknown): Promise<T> =>
-        MOCK_CHAT_TURN as unknown as T,
+      invoke: async (_messages: unknown): Promise<T> => {
+        // Branch on the caller's schema name so each structured call gets a
+        // fixture of the right shape.
+        if (name === "candidate_ranking") {
+          return MOCK_CANDIDATE_RANKING as unknown as T;
+        }
+        return MOCK_CHAT_TURN as unknown as T;
+      },
     };
   }
 }

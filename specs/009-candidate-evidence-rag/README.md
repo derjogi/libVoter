@@ -159,19 +159,36 @@ metadata above; associate each source with a `candidate_id` and/or
       shown with neutral score until ranking lands in Phase 5. Guarded the
       post-answer `setCandidates` so the handler's empty `candidateMatches`
       array no longer clobbers the seeded list.
-- [ ] **Phase 2 — data model:** add an evidence/source table (or chunk
+- [x] **Phase 2 — data model:** add an evidence/source table (or chunk
       metadata) associating sources to `candidate_id` / `party_id` with
       `source_type`, `source_url`, `date`. Reuse parties from spec 002.
-- [ ] **Phase 3 — ingestion:** extend the scraper + a background
-      refresher to fetch voting records / statements / manifestos /
-      party policy, chunk + embed with the metadata above.
+      Done: `evidenceSources` table + `SOURCE_TYPES`/`SourceType` in
+      [`schema.ts`](../../src/lib/db/schema.ts) (canonical full-text store of
+      scraped sources; chunks/embeddings are derived into the vector store in
+      Phase 4). Migration `drizzle/0005_evidence_sources.sql` generated and
+      applied. `candidate_id`/`party_id` are soft references (indexed) during
+      the spec-002 migration; harden to FKs once the generic model is the
+      single source of truth.
+- [ ] **Phase 3 — ingestion:** **extracted to its own spec —
+      [010-scrape-sources](../010-scrape-sources/README.md)** (too large to
+      inline). Extend the scraper + a background refresher to fetch voting
+      records / statements / manifestos / party policy into
+      `evidenceSources`, then chunk + embed (handed to Phase 4).
 - [ ] **Phase 4 — retrieval:** rewrite `vector-store.ts` to index chunks
       and accept a metadata filter (`candidateIds` / `partyIds`);
       rewrite `query-engine.ts` to take that filter instead of a global
       search + LLM JSON pass. Fix the distance/similarity bug.
-- [ ] **Phase 5 — ranking + confidence:** rank the electorate pool from
+- [~] **Phase 5 — ranking + confidence:** rank the electorate pool from
       retrieved-evidence relevance; derive confidence from top-vs-second
       margin + topic/evidence coverage (carries over spec 005's formula).
+      **Interim done (no evidence retrieval yet):** `rankCandidates()` +
+      `generateRanking()` in
+      [`chat-handler.ts`](../../src/lib/server/ai/chat-handler.ts) score the
+      whole ward pool in one structured LLM call per turn (fine for ≤~40
+      candidates) using existing DB fields; `deriveConfidence()` implements
+      the margin + topic-coverage formula. Mock fixture
+      `MOCK_CANDIDATE_RANKING` added. **Still pending:** rank from retrieved
+      evidence (needs Phases 2–4) instead of raw DB fields.
 - [ ] **Phase 6 — gated summaries + UI:** for shortlisted candidates,
       generate individual + party summaries with citations; render
       expandable, source-linked cards (individual track record vs party

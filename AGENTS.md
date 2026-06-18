@@ -211,6 +211,7 @@ Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
 | `bun run lint` / `bun run format`                | Biome                                  |
 | `bun run setup-env [setup\|validate]`            | Env scaffolding / validation           |
 | `bun run scrape:candidates`                      | Playwright scraper (headed Chromium)   |
+| `bun run ingest:sources --source auckland`       | Evidence-source ETL → `evidence_sources` (spec 010) |
 | `bunx drizzle-kit generate / migrate`            | Drizzle migrations                     |
 | `bunx playwright test test-chat-flow.spec.ts`    | E2E spec (currently hits real LLMs)    |
 

@@ -36,6 +36,13 @@
       "when": 1777888724358,
       "tag": "0004_flexible_election_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781818456068,
+      "tag": "0005_evidence_sources",
+      "breakpoints": true
     }
   ]
 }
