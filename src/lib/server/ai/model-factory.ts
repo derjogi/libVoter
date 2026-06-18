@@ -59,6 +59,7 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
       }
 
     case "openrouter":
+    default: 
       if (process.env.OPENROUTER_API_KEY) {
         console.log(
           "Using OpenRouter chat model:",
@@ -77,12 +78,11 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           },
           streaming: false,
         });
+      } else {
+        throw new Error(
+          `Unsupported AI provider or required API key not set: ${provider}`,
+        );
       }
-
-    default:
-      throw new Error(
-        `Unsupported AI provider or required API key not set: ${provider}`,
-      );
   }
 }
 
