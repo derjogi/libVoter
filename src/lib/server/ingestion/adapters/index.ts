@@ -6,9 +6,11 @@
 
 import type { SourceAdapter } from "../types";
 import { AucklandCandidateAdapter } from "./auckland";
+import { WikipediaPartyAdapter } from "./wikipedia-party";
 
 export const adapterRegistry: Record<string, () => SourceAdapter> = {
   auckland: () => new AucklandCandidateAdapter(),
+  "nz-party-policy": () => new WikipediaPartyAdapter(),
 };
 
 export function getAdapters(names?: string[]): SourceAdapter[] {

@@ -82,4 +82,4 @@ export const NZ_2026: ElectionConfig = {
 
 // Active election. To switch, change this line and re-run the scraper /
 // migration for the new election.
-export const electionConfig: ElectionConfig = AUCKLAND_2025;
+export const electionConfig: ElectionConfig = NZ_2026;

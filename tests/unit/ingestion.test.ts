@@ -232,6 +232,65 @@ describe("runIngestion", () => {
   });
 });
 
+describe("WikipediaPartyAdapter (party-policy, linked by party)", () => {
+  const ctx = {
+    electionId: "nz-2026",
+    rateLimiter: new RateLimiter({ minIntervalMs: 0 }),
+    robots: { allowed: async () => true },
+  } as unknown as AdapterContext;
+
+  it("normalizes a party article into party_policy evidence and links by party", async () => {
+    const { WikipediaPartyAdapter } = await import(
+      "@/lib/server/ingestion/adapters/wikipedia-party"
+    );
+    const adapter = new WikipediaPartyAdapter(
+      [{ partyName: "ACT", wikiTitle: "ACT New Zealand" }],
+      async () =>
+        "ACT is a   classical-liberal party.\n\nIt supports lower taxes.",
+    );
+
+    const refs = await adapter.discover(ctx);
+    expect(refs).toHaveLength(1);
+    expect(refs[0].sourceType).toBe("party_policy");
+    expect(refs[0].url).toBe("https://en.wikipedia.org/wiki/ACT_New_Zealand");
+
+    const raw = await adapter.fetch(refs[0], ctx);
+    const normalized = await adapter.normalize(raw!, ctx);
+    expect(normalized.partyName).toBe("ACT");
+    expect(normalized.content).toBe(
+      "ACT is a classical-liberal party.\nIt supports lower taxes.",
+    );
+
+    // Links to the seeded nz-2026 party id via the resolver.
+    const resolver = resolverFor(
+      [],
+      [{ id: "nz-2026-party-act", name: "ACT" }],
+    );
+    const r = resolver.resolve({ partyName: normalized.partyName });
+    expect(r).toEqual({
+      candidateId: undefined,
+      partyId: "nz-2026-party-act",
+      matched: true,
+    });
+  });
+
+  it("skips a source when robots.txt disallows it", async () => {
+    const { WikipediaPartyAdapter } = await import(
+      "@/lib/server/ingestion/adapters/wikipedia-party"
+    );
+    const adapter = new WikipediaPartyAdapter(
+      [{ partyName: "ACT", wikiTitle: "ACT New Zealand" }],
+      async () => "should not be fetched",
+    );
+    const blocked = {
+      ...ctx,
+      robots: { allowed: async () => false },
+    } as unknown as AdapterContext;
+    const refs = await adapter.discover(blocked);
+    expect(await adapter.fetch(refs[0], blocked)).toBeNull();
+  });
+});
+
 describe("AucklandCandidateAdapter (golden HTML→text)", () => {
   it("normalizes a candidate JSON record into clean evidence content", async () => {
     // Write a tiny fixture and point the adapter at it.
