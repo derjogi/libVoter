@@ -141,12 +141,18 @@ where a source requires it (as the Auckland scraper does). Prefer official
   - [x] **Party platform (Wikipedia)** —
         [`adapters/wikipedia-party.ts`](../../src/lib/server/ingestion/adapters/wikipedia-party.ts).
         Real 2026 candidate lists aren't published yet, so the first NZ
-        adapter ingests the six seeded parties' platforms via the official
-        MediaWiki API (clean plain-text extracts, robots-aware, rate-limited)
-        as `party_policy` evidence linked by `partyId`. Live run populated 6
-        rows for nz-2026 (0 unmatched, idempotent re-run). The active
-        `electionConfig` is now `NZ_2026`. CC BY-SA text keeps `url` for
-        attribution + link-out. Source `nz-party-policy`.
+        adapter ingests every registered party contesting the election via the
+        official MediaWiki API (clean plain-text extracts, robots-aware,
+        rate-limited) as `party_policy` evidence linked by `partyId`. Covers
+        **all 13 parties** from the 2026 election's "Parties and candidates"
+        list — defined once in
+        [`src/lib/config/nz-parties.ts`](../../src/lib/config/nz-parties.ts)
+        and shared with the seeding script
+        ([`scripts/scrape-nz-2026.ts`](../../scripts/scrape-nz-2026.ts) seeds
+        the matching `election_parties` rows). Live run populated 13 rows for
+        nz-2026 (0 unmatched, idempotent re-run). The active `electionConfig`
+        is now `NZ_2026`. CC BY-SA text keeps `url` for attribution +
+        link-out. Source `nz-party-policy`.
   - [ ] Electoral Commission: candidate/party lists + donations/loans.
   - [ ] Parliament / Hansard: speeches & debate contributions (+ votes
         where available).

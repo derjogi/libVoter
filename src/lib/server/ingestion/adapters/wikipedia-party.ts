@@ -10,6 +10,7 @@
 //
 // Wikipedia text is CC BY-SA; we keep `url` so the UI attributes + links out.
 
+import { NZ_2026_PARTIES, type NzParty } from "../../../config/nz-parties";
 import { normalizeWhitespace } from "../text";
 import type {
   AdapterContext,
@@ -19,22 +20,9 @@ import type {
   SourceRef,
 } from "../types";
 
-interface PartySource {
-  /** Must match the electionParties.name for nz-2026 (used for linking). */
-  partyName: string;
-  /** Wikipedia article title. */
-  wikiTitle: string;
-}
-
-// partyName values match the seeded nz-2026 election_parties rows.
-const NZ_PARTY_SOURCES: PartySource[] = [
-  { partyName: "Labour", wikiTitle: "New Zealand Labour Party" },
-  { partyName: "National", wikiTitle: "New Zealand National Party" },
-  { partyName: "Green", wikiTitle: "Green Party of Aotearoa New Zealand" },
-  { partyName: "ACT", wikiTitle: "ACT New Zealand" },
-  { partyName: "NZ First", wikiTitle: "New Zealand First" },
-  { partyName: "Te Pāti Māori", wikiTitle: "Māori Party" },
-];
+// All registered parties contesting nz-2026 (canonical list shared with the
+// seeding script so adapter party names line up with election_parties rows).
+const NZ_PARTY_SOURCES: NzParty[] = NZ_2026_PARTIES;
 
 const API_BASE = "https://en.wikipedia.org/w/api.php";
 const USER_AGENT = "lib-voter-ingest/1.0 (GovHack demo; respectful)";
@@ -71,7 +59,7 @@ export class WikipediaPartyAdapter implements SourceAdapter {
   readonly elections = ["nz-2026"] as const;
 
   constructor(
-    private readonly sources: PartySource[] = NZ_PARTY_SOURCES,
+    private readonly sources: NzParty[] = NZ_PARTY_SOURCES,
     /** Injectable for tests. */
     private readonly fetchExtract: (
       title: string,
@@ -81,9 +69,9 @@ export class WikipediaPartyAdapter implements SourceAdapter {
   async discover(_ctx: AdapterContext): Promise<SourceRef[]> {
     return this.sources.map((s) => ({
       url: articleUrl(s.wikiTitle),
-      partyName: s.partyName,
+      partyName: s.name,
       sourceType: "party_policy" as const,
-      title: `${s.partyName} — party platform (Wikipedia)`,
+      title: `${s.name} — party platform (Wikipedia)`,
       meta: { wikiTitle: s.wikiTitle },
     }));
   }

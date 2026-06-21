@@ -14,15 +14,17 @@
 //   - flip electionConfig to NZ_2026 and exercise the UI/AI flow,
 //   - test the prompts under MMP language,
 //   - keep the seat dropdown working with a small representative sample.
-import { db } from "../src/lib/server/db";
-import {
-  elections,
-  races,
-  electionParties,
-  people,
-  candidacies,
-} from "../src/lib/db/schema";
+
 import { NZ_2026 } from "../src/lib/config/election";
+import { NZ_2026_PARTIES } from "../src/lib/config/nz-parties";
+import {
+  candidacies,
+  electionParties,
+  elections,
+  people,
+  races,
+} from "../src/lib/db/schema";
+import { db } from "../src/lib/server/db";
 
 // A small representative sample so the UI can be exercised end-to-end.
 // Replace with real data once elections.nz publishes 2026 candidate lists.
@@ -37,14 +39,9 @@ const SAMPLE_ELECTORATES = [
   "Tauranga",
 ];
 
-const SAMPLE_PARTIES = [
-  "Labour",
-  "National",
-  "Green",
-  "ACT",
-  "Te Pāti Māori",
-  "NZ First",
-];
+// Real registered parties contesting nz-2026 (canonical list, shared with the
+// evidence adapter so party names line up for identity resolution).
+const SAMPLE_PARTIES = NZ_2026_PARTIES.map((p) => p.name);
 
 function slug(s: string): string {
   return s

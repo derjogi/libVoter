@@ -244,7 +244,7 @@ describe("WikipediaPartyAdapter (party-policy, linked by party)", () => {
       "@/lib/server/ingestion/adapters/wikipedia-party"
     );
     const adapter = new WikipediaPartyAdapter(
-      [{ partyName: "ACT", wikiTitle: "ACT New Zealand" }],
+      [{ name: "ACT", wikiTitle: "ACT New Zealand" }],
       async () =>
         "ACT is a   classical-liberal party.\n\nIt supports lower taxes.",
     );
@@ -279,7 +279,7 @@ describe("WikipediaPartyAdapter (party-policy, linked by party)", () => {
       "@/lib/server/ingestion/adapters/wikipedia-party"
     );
     const adapter = new WikipediaPartyAdapter(
-      [{ partyName: "ACT", wikiTitle: "ACT New Zealand" }],
+      [{ name: "ACT", wikiTitle: "ACT New Zealand" }],
       async () => "should not be fetched",
     );
     const blocked = {
