@@ -92,6 +92,34 @@ The scraper is currently mostly commented-out in `scripts/scrape-candidates.ts`
 > ⚠️ Scraping uses **headed** Chromium (`headless: false`). On a headless CI
 > machine you'll need to flip that or run under Xvfb.
 
+## Ingesting evidence sources
+
+The shared evidence ETL writes normalized source documents to
+`evidence_sources`. To preview the Parliament 54 Hansard corpus without
+writing to SQLite:
+
+```bash
+bun run ingest:sources --source nz-hansard --election nz-2026 \
+  --since 2023-12-05 --limit 20 --dry-run
+```
+
+Remove `--limit` to discover the complete term and remove `--dry-run` to
+persist it. The adapter searches the official Parliament endpoint for
+individual `Speech`, `Question`, and `Vote` sections, excluding combined
+Daily transcripts. Speeches and questions become `hansard`; votes become
+`voting_record`. Records retain Parliament's stable section ID, publication
+status (`draft`, `corrected`, or `final`), sitting date, speaker when supplied,
+and a canonical Parliament URL. They are deliberately stored without a
+candidate association; participant linking belongs to the later enrichment
+step.
+
+The official client uses `POST /api/data/search` for discovery and
+`GET /api/resources/transcript/YYYY-MM-DD` for transcript HTML. Parliament's
+browser-verification service may reject direct server requests in some
+environments. In that case ingestion reports a clear non-JSON or request
+error and stops; it does not bypass the challenge. Canonical URLs and the
+`New Zealand Parliament` fallback author preserve source attribution.
+
 ## Database
 
 - Default: local SQLite file `./voting-advisor.db`.
@@ -116,6 +144,7 @@ The scraper is currently mostly commented-out in `scripts/scrape-candidates.ts`
 | `bun run setup-env [setup|validate]` | env scaffolding / validation                        |
 | `bun run validate-env`               | run `setup-env validate`                            |
 | `bun run scrape:candidates`          | Playwright scraper (see above)                      |
+| `bun run ingest:sources --source nz-hansard --election nz-2026` | ingest the Parliament 54 Hansard corpus |
 | `bun run test:election-config`       | sanity-check the election config                    |
 | `bunx playwright test test-chat-flow.spec.ts` | run the E2E spec (currently hits real LLMs) |
 

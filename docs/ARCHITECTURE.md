@@ -163,8 +163,18 @@ lib-voter/
 
 - **`src/lib/db/schema.ts`** — `candidates(id, name, party, ward,
   candidate_statement, key_positions JSON, why, key_skills, top_issues,
-  supporting_links JSON, photo_url, created_at)`, plus `parties` and
-  `app_settings`. Drizzle generates Zod schemas via `drizzle-zod`.
+  supporting_links JSON, photo_url, created_at)`, plus `parties`,
+  `app_settings`, and election-scoped `evidence_sources`. Evidence rows can
+  be candidate/party-owned or corpus-level and retain source-system identity,
+  document type/status, and legislative term. Drizzle generates Zod schemas
+  via `drizzle-zod`.
+
+- **`src/lib/server/ingestion/`** — Shared evidence ETL: adapter discovery,
+  robots/rate-limit guards, normalization, optional identity resolution, and
+  stable-ID upsert. `nz-hansard` discovers Parliament 54 transcript sections
+  from the official Hansard client API, caches each daily transcript fetch,
+  and extracts individual speeches/questions/votes rather than duplicating
+  full Daily records.
 
 - **`scripts/scrape-candidates.ts`** — Playwright (headed Chromium) scraper
   that walks `voteauckland.co.nz` candidate pages, persists rows into the
