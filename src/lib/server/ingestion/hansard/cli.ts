@@ -10,6 +10,7 @@ export interface FetchHansardArgs {
 }
 
 export function parseFetchHansardArgs(args: string[]): FetchHansardArgs {
+  validateOptions(args);
   const cache = arg(args, "cache") ?? path.join("data", "hansard-cache");
   const since = arg(args, "since") ?? "2023-12-05";
   if (!isDateOnly(since)) throw new Error(`Invalid --since value: ${since}`);
@@ -22,6 +23,31 @@ export function parseFetchHansardArgs(args: string[]): FetchHansardArgs {
     refresh: args.includes("--refresh"),
     minIntervalMs: optionalInteger(args, "min-interval-ms", 0) ?? 1_000,
   };
+}
+
+const VALUE_OPTIONS = new Set([
+  "cache",
+  "since",
+  "limit-pages",
+  "limit-dates",
+  "min-interval-ms",
+]);
+const BOOLEAN_OPTIONS = new Set(["refresh"]);
+
+function validateOptions(args: string[]): void {
+  for (let index = 0; index < args.length; index += 1) {
+    const token = args[index];
+    if (!token.startsWith("--")) {
+      throw new Error(`Unexpected argument: ${token}`);
+    }
+    const name = token.slice(2).split("=", 1)[0];
+    if (!VALUE_OPTIONS.has(name) && !BOOLEAN_OPTIONS.has(name)) {
+      throw new Error(
+        `Unknown option --${name}. To fetch a small sample, use --limit-pages and --limit-dates.`,
+      );
+    }
+    if (!token.includes("=") && VALUE_OPTIONS.has(name)) index += 1;
+  }
 }
 
 export function arg(args: string[], name: string): string | undefined {

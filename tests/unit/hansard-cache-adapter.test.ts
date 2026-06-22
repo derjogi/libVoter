@@ -41,6 +41,27 @@ async function buildCache(complete: boolean): Promise<string> {
   return dir;
 }
 
+async function buildPaginatedCache(): Promise<string> {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "hansard-adapter-cache-"));
+  tempDirs.push(dir);
+  const manifest = createManifest({ since: "2024-01-01", pageSize: 3 });
+  manifest.completedPages = [1, 2];
+  manifest.totalDocuments = 5;
+  manifest.complete = true;
+  await writeSearchPage(dir, 1, {
+    ...searchSample.pages[0],
+    "@odata.count": 5,
+  });
+  await writeSearchPage(dir, 2, {
+    ...searchSample.pages[1],
+    "@odata.count": 5,
+    pageSize: 2,
+    value: searchSample.pages[1].value.slice(0, 2),
+  });
+  await writeManifest(dir, manifest);
+  return dir;
+}
+
 afterEach(async () => {
   await Promise.all(
     tempDirs.splice(0).map((dir) => rm(dir, { recursive: true })),
@@ -54,14 +75,15 @@ function context() {
   const wait = vi.fn(async () => {
     throw new Error("cache mode must not rate-limit local reads");
   });
+  const ctx: AdapterContext = {
+    electionId: "nz-2026",
+    since: new Date("2024-01-01T00:00:00Z"),
+    limit: 1,
+    robots: { allowed } as unknown as AdapterContext["robots"],
+    rateLimiter: { wait } as unknown as AdapterContext["rateLimiter"],
+  };
   return {
-    ctx: {
-      electionId: "nz-2026",
-      since: new Date("2024-01-01T00:00:00Z"),
-      limit: 1,
-      robots: { allowed } as unknown as AdapterContext["robots"],
-      rateLimiter: { wait } as unknown as AdapterContext["rateLimiter"],
-    },
+    ctx,
     allowed,
     wait,
   };
@@ -100,5 +122,37 @@ describe("cached NzHansardAdapter", () => {
 
     await expect(strict.discover(context().ctx)).rejects.toThrow("incomplete");
     await expect(partial.discover(context().ctx)).resolves.toHaveLength(1);
+  });
+
+  it("uses manifest pagination and treats a newer since and limit as filters", async () => {
+    const cacheDir = await buildPaginatedCache();
+    const adapter = new NzHansardAdapter({ cacheDir });
+    const { ctx } = context();
+    ctx.since = new Date("2024-02-01T00:00:00Z");
+    ctx.limit = 1;
+
+    const refs = await adapter.discover(ctx);
+
+    expect(refs).toHaveLength(1);
+    expect(refs[0].id).toBe("44444444-4444-4444-4444-444444444444");
+  });
+
+  it("warns and uses available coverage when since predates the manifest", async () => {
+    const cacheDir = await buildPaginatedCache();
+    const adapter = new NzHansardAdapter({ cacheDir });
+    const { ctx } = context();
+    const log = vi.fn();
+    ctx.since = new Date("2023-01-01T00:00:00Z");
+    ctx.limit = undefined;
+    ctx.log = log;
+
+    const refs = await adapter.discover(ctx);
+
+    expect(refs).toHaveLength(3);
+    expect(log).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /requested --since 2023-01-01.*available from 2024-01-01/,
+      ),
+    );
   });
 });

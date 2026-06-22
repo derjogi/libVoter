@@ -1,7 +1,7 @@
 // Unit tests for the spec 010 ingestion pipeline: text cleaning, robots +
 // rate-limit guards, identity resolution, and runner dedup/idempotency.
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AucklandCandidateAdapter } from "@/lib/server/ingestion/adapters/auckland";
 import { contentHash } from "@/lib/server/ingestion/hash";
 import {
@@ -160,6 +160,32 @@ describe("runIngestion", () => {
     sourceType: "statement",
     url,
     content,
+  });
+
+  it("makes the ingestion logger available to adapters", async () => {
+    const log = vi.fn();
+    const adapter: SourceAdapter = {
+      name: "warning-source",
+      async discover(ctx) {
+        ctx.log?.("cached coverage starts later than requested");
+        return [];
+      },
+      async fetch() {
+        return null;
+      },
+      async normalize() {
+        throw new Error("not reached");
+      },
+    };
+
+    await runIngestion([adapter], {
+      ...baseRunOpts(new InMemoryEvidenceStore(), resolverFor()),
+      log,
+    });
+
+    expect(log).toHaveBeenCalledWith(
+      "cached coverage starts later than requested",
+    );
   });
 
   it("inserts matched rows and reports unmatched ones (not stored)", async () => {

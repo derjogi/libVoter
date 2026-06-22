@@ -28,6 +28,8 @@ export interface AcquireHansardOptions {
   limitDates?: number;
   refresh?: boolean;
   minIntervalMs?: number;
+  maxAttempts?: number;
+  retryDelayMs?: number;
   sleep?: (ms: number) => Promise<void>;
   onProgress?: (message: string) => void;
 }
@@ -39,6 +41,8 @@ export async function acquireHansardCorpus(
   const pageSize = options.pageSize ?? 100;
   const sleep = options.sleep ?? defaultSleep;
   const interval = options.minIntervalMs ?? 1_000;
+  const maxAttempts = options.maxAttempts ?? 3;
+  const retryDelayMs = options.retryDelayMs ?? 1_000;
   const manifest = await loadManifest(options.cacheDir, since, pageSize);
   if (manifest.complete && !options.refresh) return manifest;
 
@@ -53,8 +57,19 @@ export async function acquireHansardCorpus(
       pageSize,
       sleep,
       interval,
+      maxAttempts,
+      retryDelayMs,
     );
-    await acquireTranscripts(options, manifest, pages, since, sleep, interval);
+    await acquireTranscripts(
+      options,
+      manifest,
+      pages,
+      since,
+      sleep,
+      interval,
+      maxAttempts,
+      retryDelayMs,
+    );
     updateCompleteness(manifest, pages, options);
     await checkpoint(options.cacheDir, manifest);
     return manifest;
@@ -70,6 +85,8 @@ async function acquirePages(
   pageSize: number,
   sleep: (ms: number) => Promise<void>,
   interval: number,
+  maxAttempts: number,
+  retryDelayMs: number,
 ): Promise<HansardSearchResponse[]> {
   const pages: HansardSearchResponse[] = [];
   let page = 1;
@@ -90,12 +107,18 @@ async function acquirePages(
         response = await readSearchPage(options.cacheDir, page);
       } else {
         await pace(sleep, interval);
-        response = await options.browser.search(
-          buildHansardSearchRequest(
-            new Date(`${since}T00:00:00.000Z`),
-            page,
-            pageSize,
-          ),
+        response = await retry(
+          () =>
+            options.browser.search(
+              buildHansardSearchRequest(
+                new Date(`${since}T00:00:00.000Z`),
+                page,
+                pageSize,
+              ),
+            ),
+          maxAttempts,
+          retryDelayMs,
+          sleep,
         );
         await writeSearchPage(options.cacheDir, page, response);
         addUnique(manifest.completedPages, page);
@@ -103,7 +126,11 @@ async function acquirePages(
       }
       pages.push(response);
       manifest.totalDocuments = response["@odata.count"];
-      expectedPages = Math.ceil(response["@odata.count"] / response.pageSize);
+      expectedPages = Math.ceil(response["@odata.count"] / pageSize);
+      manifest.failures = manifest.failures.filter(
+        (failure) =>
+          failure.kind !== "search" || Number(failure.key) <= expectedPages,
+      );
       await checkpoint(options.cacheDir, manifest);
       options.onProgress?.(`Hansard search page ${page}/${expectedPages}`);
       page += 1;
@@ -123,6 +150,8 @@ async function acquireTranscripts(
   since: string,
   sleep: (ms: number) => Promise<void>,
   interval: number,
+  maxAttempts: number,
+  retryDelayMs: number,
 ): Promise<void> {
   const dates = eligibleDates(pages, since);
   let processed = 0;
@@ -136,11 +165,13 @@ async function acquireTranscripts(
         continue;
       }
       await pace(sleep, interval);
-      await writeTranscript(
-        options.cacheDir,
-        date,
-        await options.browser.transcript(date),
+      const transcript = await retry(
+        () => options.browser.transcript(date),
+        maxAttempts,
+        retryDelayMs,
+        sleep,
       );
+      await writeTranscript(options.cacheDir, date, transcript);
       addUnique(manifest.completedDates, date);
       clearFailure(manifest, "transcript", date);
       await checkpoint(options.cacheDir, manifest);
@@ -182,7 +213,8 @@ async function loadManifest(
     const manifest = await readManifest(cacheDir);
     if (manifest.since !== since || manifest.pageSize !== pageSize) {
       throw new Error(
-        `Hansard cache contract mismatch: expected since=${since} pageSize=${pageSize}`,
+        `Hansard cache contract mismatch: expected since=${since} pageSize=${pageSize},
+        but was since=${manifest.since} & pageSize = ${manifest.pageSize}`,
       );
     }
     return manifest;
@@ -265,3 +297,23 @@ async function pace(
 
 const defaultSleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function retry<T>(
+  operation: () => Promise<T>,
+  maxAttempts: number,
+  delayMs: number,
+  sleep: (ms: number) => Promise<void>,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt < maxAttempts && delayMs > 0) await sleep(delayMs);
+    }
+  }
+  const message =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`failed after ${maxAttempts} attempts: ${message}`);
+}

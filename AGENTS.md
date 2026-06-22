@@ -219,6 +219,8 @@ Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
 
 - **Package manager**: Bun (`bun.lock`). npm/pnpm probably work but aren't
   tested.
+- **Subagents**: Agents may delegate suitable independent tasks to subagents
+  and run them in parallel.
 - **Version control**: Jujutsu (`.jj/`) on top of git (`.git/`). The original
   spec asks for `jj describe` after each step.
 - **Lint/format**: Biome (`biome.json`). Run `bun run lint` before

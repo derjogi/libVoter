@@ -69,6 +69,8 @@ export interface AdapterContext {
   limit?: number;
   /** Only ingest sources published on/after this date, when supported. */
   since?: Date;
+  /** Emit adapter diagnostics through the runner's configured logger. */
+  log?: (message: string) => void;
   rateLimiter: RateLimiter;
   robots: RobotsGuard;
 }

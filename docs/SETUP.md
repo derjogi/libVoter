@@ -123,6 +123,13 @@ material. Transcripts are stored once per sitting date as gzip files under the
 gitignored `data/hansard-cache/`; final disk usage should be measured before a
 full cache is distributed. Remove `--dry-run` to persist evidence.
 
+Acquisition parameters define the cache layout and must match its manifest
+when resuming. Ingestion does not redefine that layout: `--limit` and
+`--since` only filter the records already available in the cache. A newer
+`--since` selects a smaller date range. If `--since` predates the cache,
+ingestion warns and starts at the manifest's earliest available date. An
+incomplete cache still requires `--allow-partial-cache`.
+
 The adapter selects individual `Speech`, `Question`, and `Vote` sections,
 excluding combined Daily transcripts. Speeches and questions become
 `hansard`; votes become `voting_record`. Records retain Parliament's stable

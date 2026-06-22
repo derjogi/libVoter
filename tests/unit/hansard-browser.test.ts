@@ -113,6 +113,26 @@ describe("AgentBrowserHansardClient", () => {
     expect(await client.search(request)).toEqual(page);
     expect(await client.transcript("2024-01-02")).toBe("<p>Transcript</p>");
   });
+
+  it("reports structured stdout when a browser command exits unsuccessfully", async () => {
+    const runner: BrowserCommandRunner = async () => ({
+      stdout: JSON.stringify({
+        success: false,
+        data: null,
+        error: "browser target closed unexpectedly",
+      }),
+      stderr: "",
+      exitCode: 1,
+    });
+    const client = new AgentBrowserHansardClient({
+      runner,
+      session: "failure-details",
+    });
+
+    await expect(client.search(request)).rejects.toThrow(
+      /agent-browser eval failed.*browser target closed unexpectedly/,
+    );
+  });
 });
 
 describe("parseAgentBrowserJson", () => {

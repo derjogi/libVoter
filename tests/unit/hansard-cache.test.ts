@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   cachePaths,
+  createHansardCacheTransport,
   createManifest,
   readManifest,
   readSearchPage,
@@ -65,6 +66,46 @@ describe("Hansard cache storage", () => {
     expect(await readdir(path.join(dir, "transcripts"))).toEqual([
       "2024-01-02.html.gz",
     ]);
+  });
+
+  it("uses manifest metadata as the stored cache layout", async () => {
+    const dir = await tempCache();
+    const manifest = createManifest({ since: "2024-01-01", pageSize: 3 });
+    manifest.completedPages = [1];
+    manifest.totalDocuments = 3;
+    manifest.complete = true;
+    await writeSearchPage(dir, 1, {
+      ...searchSample.pages[0],
+      "@odata.count": 3,
+    });
+    await writeManifest(dir, manifest);
+    const transport = createHansardCacheTransport(dir);
+
+    await expect(transport.metadata()).resolves.toMatchObject({
+      since: "2024-01-01",
+      pageSize: 3,
+      totalDocuments: 3,
+    });
+    await expect(
+      transport.search({
+        searchTab: 1,
+        keyword: null,
+        types: ["DebateItem"],
+        subtypes: ["Speech"],
+        parliament: 54,
+        dateFrom: "2024-02-01",
+        dateTo: null,
+        portfolios: [],
+        datePeriod: null,
+        restrictedFrom: null,
+        restrictedTo: null,
+        members: [],
+        orderByFields: ["SittingDate"],
+        pageSize: 100,
+        page: 1,
+        direction: 1,
+      }),
+    ).resolves.toMatchObject({ page: 1, pageSize: 3 });
   });
 
   it("reports missing and corrupt cache files with their identity", async () => {

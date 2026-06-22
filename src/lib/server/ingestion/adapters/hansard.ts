@@ -4,7 +4,10 @@
 // extracts only that section from the sitting day's transcript, avoiding both
 // Daily/Debate duplicates and premature candidate attribution.
 
-import { createHansardCacheTransport } from "../hansard/cache";
+import {
+  createHansardCacheTransport,
+  type HansardCacheTransport,
+} from "../hansard/cache";
 import { htmlToText } from "../text";
 import type {
   AdapterContext,
@@ -83,6 +86,7 @@ export class NzHansardAdapter implements SourceAdapter {
   private readonly transcript: FetchTranscript;
   private readonly pageSize: number;
   private readonly localCache: boolean;
+  private readonly cache?: HansardCacheTransport;
   private readonly transcriptCache = new Map<string, Promise<string>>();
 
   constructor(options: HansardAdapterOptions = {}) {
@@ -92,6 +96,7 @@ export class NzHansardAdapter implements SourceAdapter {
           options.allowPartialCache ?? false,
         )
       : undefined;
+    this.cache = cache;
     this.search = options.search ?? cache?.search ?? searchHansard;
     this.transcript =
       options.transcript ?? cache?.transcript ?? fetchTranscript;
@@ -102,12 +107,28 @@ export class NzHansardAdapter implements SourceAdapter {
   async discover(ctx: AdapterContext): Promise<SourceRef[]> {
     if (!this.localCache && !(await ctx.robots.allowed(SEARCH_URL))) return [];
 
-    const from = laterDate(ctx.since, TERM_START);
+    let from = laterDate(ctx.since, TERM_START);
+    let pageSize = this.pageSize;
+    const cacheMetadata = await this.cache?.metadata();
+    if (cacheMetadata) {
+      const cacheStart = new Date(`${cacheMetadata.since}T00:00:00.000Z`);
+      if (from < cacheStart) {
+        const requestedSince = ctx.since
+          ? toDateOnly(ctx.since)
+          : toDateOnly(TERM_START);
+        ctx.log?.(
+          `[nz-hansard] WARNING: requested --since ${requestedSince}, but cached Hansard is only available from ${cacheMetadata.since}; ingesting available coverage`,
+        );
+        from = cacheStart;
+      }
+      pageSize = cacheMetadata.pageSize;
+    }
     const refs: SourceRef[] = [];
     let page = 1;
 
     while (ctx.limit === undefined || refs.length < ctx.limit) {
-      const request = buildHansardSearchRequest(from, page, this.pageSize);
+      if (cacheMetadata && !cacheMetadata.completedPages.includes(page)) break;
+      const request = buildHansardSearchRequest(from, page, pageSize);
       if (!this.localCache) await ctx.rateLimiter.wait(SEARCH_URL);
       const response = await this.search(request);
 
@@ -119,7 +140,7 @@ export class NzHansardAdapter implements SourceAdapter {
 
       const exhausted =
         response.value.length === 0 ||
-        response.page * response.pageSize >= response["@odata.count"];
+        response.page * pageSize >= response["@odata.count"];
       if (exhausted) break;
       page += 1;
     }

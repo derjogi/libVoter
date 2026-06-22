@@ -112,12 +112,32 @@ export class AgentBrowserHansardClient implements HansardBrowser {
   private async runChecked(args: string[]) {
     const result = await this.runner(args);
     if (result.exitCode !== 0) {
+      const detail = browserFailureDetail(result.stdout, result.stderr);
       throw new Error(
-        `agent-browser failed (${result.exitCode}): ${result.stderr.slice(0, 2_000)}`,
+        `agent-browser ${browserCommandName(args)} failed (${result.exitCode}): ${detail}`,
       );
     }
     return result;
   }
+}
+
+function browserFailureDetail(stdout: string, stderr: string): string {
+  const stderrText = stderr.trim();
+  if (stderrText) return stderrText.slice(0, 2_000);
+  const stdoutText = stdout.trim();
+  if (!stdoutText) return "no diagnostic output";
+  try {
+    const value = JSON.parse(stdoutText) as { error?: unknown };
+    if (value.error) return String(value.error).slice(0, 2_000);
+  } catch {
+    // Fall through to bounded raw stdout.
+  }
+  return stdoutText.slice(0, 2_000);
+}
+
+function browserCommandName(args: string[]): string {
+  const commands = new Set(["open", "get", "eval", "close"]);
+  return args.find((arg) => commands.has(arg)) ?? args[0] ?? "command";
 }
 
 export function parseAgentBrowserJson(output: string): unknown {

@@ -43,4 +43,10 @@ describe("parseFetchHansardArgs", () => {
   ])("rejects invalid %s values before acquisition", (flag, value) => {
     expect(() => parseFetchHansardArgs([flag, value])).toThrow(flag);
   });
+
+  it("rejects unknown options and explains how to bound a sample", () => {
+    expect(() => parseFetchHansardArgs(["--pageSize=100"])).toThrow(
+      /Unknown option --pageSize.*--limit-pages.*--limit-dates/,
+    );
+  });
 });

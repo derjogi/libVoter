@@ -4,7 +4,11 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { acquireHansardCorpus } from "@/lib/server/ingestion/hansard/acquire";
 import type { HansardBrowser } from "@/lib/server/ingestion/hansard/agent-browser";
-import { readManifest } from "@/lib/server/ingestion/hansard/cache";
+import {
+  createManifest,
+  readManifest,
+  writeManifest,
+} from "@/lib/server/ingestion/hansard/cache";
 import searchSample from "./fixtures/hansard-search-sample.json";
 
 const tempDirs: string[] = [];
@@ -64,6 +68,46 @@ describe("acquireHansardCorpus", () => {
     expect(result.completedDates).toHaveLength(3);
   });
 
+  it("uses the requested page capacity when the final page reports its shorter length", async () => {
+    const cacheDir = await tempCache();
+    const manifest = createManifest({ since: "2024-01-01", pageSize: 3 });
+    manifest.failures.push({
+      kind: "search",
+      key: "3",
+      message: "final empty page failed validation",
+    });
+    await writeManifest(cacheDir, manifest);
+    const browser = fakeBrowser();
+    const firstPage = {
+      ...searchSample.pages[0],
+      "@odata.count": 5,
+    };
+    const finalPage = {
+      ...searchSample.pages[1],
+      "@odata.count": 5,
+      pageSize: 2,
+      value: searchSample.pages[1].value.slice(0, 2),
+    };
+    browser.search.mockImplementation(async (request) => {
+      if (request.page === 1) return firstPage;
+      if (request.page === 2) return finalPage;
+      throw new Error(`unexpected search page ${request.page}`);
+    });
+
+    const result = await acquireHansardCorpus({
+      cacheDir,
+      browser,
+      since: "2024-01-01",
+      pageSize: 3,
+      minIntervalMs: 0,
+    });
+
+    expect(browser.search).toHaveBeenCalledTimes(2);
+    expect(result.completedPages).toEqual([1, 2]);
+    expect(result.failures).toEqual([]);
+    expect(result.complete).toBe(true);
+  });
+
   it("resumes a complete cache without opening the browser", async () => {
     const cacheDir = await tempCache();
     await acquireHansardCorpus({
@@ -113,7 +157,7 @@ describe("acquireHansardCorpus", () => {
   it("records transcript failures and still closes the browser", async () => {
     const cacheDir = await tempCache();
     const browser = fakeBrowser();
-    browser.transcript.mockRejectedValueOnce(new Error("temporary failure"));
+    browser.transcript.mockRejectedValue(new Error("persistent failure"));
 
     const result = await acquireHansardCorpus({
       cacheDir,
@@ -121,13 +165,36 @@ describe("acquireHansardCorpus", () => {
       since: "2024-01-01",
       pageSize: 3,
       minIntervalMs: 0,
+      maxAttempts: 2,
+      retryDelayMs: 0,
     });
 
     expect(result.complete).toBe(false);
     expect(result.failures[0]).toMatchObject({
       kind: "transcript",
-      message: "temporary failure",
+      message: "failed after 2 attempts: persistent failure",
     });
+    expect(browser.transcript).toHaveBeenCalledTimes(6);
     expect(browser.close).toHaveBeenCalledOnce();
+  });
+
+  it("retries transient browser failures before recording an error", async () => {
+    const cacheDir = await tempCache();
+    const browser = fakeBrowser();
+    browser.search.mockRejectedValueOnce(new Error("browser daemon restarted"));
+
+    const result = await acquireHansardCorpus({
+      cacheDir,
+      browser,
+      since: "2024-01-01",
+      pageSize: 3,
+      minIntervalMs: 0,
+      maxAttempts: 2,
+      retryDelayMs: 0,
+    });
+
+    expect(result.failures).toEqual([]);
+    expect(result.complete).toBe(true);
+    expect(browser.search).toHaveBeenCalledTimes(3);
   });
 });

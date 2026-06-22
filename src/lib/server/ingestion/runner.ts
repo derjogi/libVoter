@@ -74,6 +74,7 @@ export async function runIngestion(
     electionId: opts.electionId,
     limit: opts.limit,
     since: opts.since,
+    log,
     rateLimiter:
       opts.rateLimiter ??
       new RateLimiter({

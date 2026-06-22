@@ -65,6 +65,7 @@ export interface CreateManifestOptions {
 }
 
 export interface HansardCacheTransport {
+  metadata(): Promise<HansardCacheManifest>;
   search(request: HansardSearchRequest): Promise<HansardSearchResponse>;
   transcript(date: string): Promise<string>;
 }
@@ -85,14 +86,13 @@ export function createHansardCacheTransport(
     return value;
   };
   return {
+    metadata: manifest,
     async search(request) {
       const metadata = await manifest();
-      if (
-        request.parliament !== metadata.parliamentNumber ||
-        request.pageSize !== metadata.pageSize ||
-        request.dateFrom !== metadata.since
-      ) {
-        throw new Error(`Hansard cache contract mismatch at ${cacheDir}`);
+      if (request.parliament !== metadata.parliamentNumber) {
+        throw new Error(
+          `Hansard cache contract mismatch at ${cacheDir}: expected parliament=${metadata.parliamentNumber}, but got parliament=${request.parliament}`,
+        );
       }
       return readSearchPage(cacheDir, request.page);
     },
