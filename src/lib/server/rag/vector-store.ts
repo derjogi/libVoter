@@ -1,57 +1,104 @@
-// Server-only: Cannot be imported in client components
+// Server-only: Cannot be imported in client components.
+//
+// Evidence-retrieval vector store (spec 009 Phase 4). Indexes *chunks* of the
+// `evidence_sources` table — each chunk carries metadata (candidate_id,
+// party_id, source_type, source_url, …) so retrieval can be restricted to one
+// electorate's candidates + their parties and every chunk can be cited and
+// expanded. This is NOT used to pick candidates (that is a structured SQL
+// filter); it answers "what does this candidate / party believe or do?".
+
 import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { DirectoryLoader } from "@langchain/classic/document_loaders/fs/directory";
-import { JSONLoader } from "@langchain/classic/document_loaders/fs/json";
-import { TextLoader } from "@langchain/classic/document_loaders/fs/text";
 import { Document } from "@langchain/core/documents";
-import path from "path";
-import { db } from "../db";
-import { candidates } from "../../db/schema";
-import { createEmbeddingModel, isMockMode } from "../ai/model-factory";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { evidenceSources } from "../../db/schema";
 import type { EmbeddingModel } from "../ai/model-factory";
+import { createEmbeddingModel, isMockMode } from "../ai/model-factory";
+import { db } from "../db";
 
-/**
- * In-memory mock vector store used when AI_MODE=mock. Skips Chroma entirely
- * (no docker, no embeddings) and returns three deterministic candidate
- * snippets regardless of the query. Just enough for tests to exercise the
- * RAG codepath without network/state.
- */
-class MockVectorStoreManager {
-  async query(_question: string, maxResults: number = 5) {
-    const docs: Array<{
-      content: string;
-      metadata: Record<string, any>;
-      score: number;
-    }> = [
-      {
-        content:
-          "Mock Candidate Alpha (Independent) - Central Ward. Housing-first platform with focus on transit-oriented development.",
-        metadata: { ward: "Central", party: "Independent", id: "mock-1" },
-        score: 0.92,
-      },
-      {
-        content:
-          "Mock Candidate Beta (Green Party) - North Ward. Climate-action and affordable housing.",
-        metadata: { ward: "North", party: "Green", id: "mock-2" },
-        score: 0.81,
-      },
-      {
-        content:
-          "Mock Candidate Gamma (Labour) - West Ward. Public transport investment and health services.",
-        metadata: { ward: "West", party: "Labour", id: "mock-3" },
-        score: 0.74,
-      },
-    ];
-    return docs.slice(0, maxResults);
-  }
+const COLLECTION = "evidence";
 
-  async addDocuments(_docs: any[]) {
-    // No-op in mock mode.
-  }
+/** Structured pre-filter applied to the vector search (Stage 1 → Stage 2). */
+export interface EvidenceFilter {
+  electionId?: string;
+  /** Restrict to evidence for these candidates (soft ids). */
+  candidateIds?: string[];
+  /** …and/or these parties. */
+  partyIds?: string[];
+  sourceTypes?: string[];
 }
 
-class VectorStoreManager {
+/** A retrieved evidence chunk with everything needed to cite + expand it. */
+export interface EvidenceChunk {
+  content: string;
+  /** Similarity in (0,1], higher = closer. */
+  score: number;
+  candidateId?: string;
+  partyId?: string;
+  sourceType: string;
+  sourceUrl?: string;
+  sourceTitle?: string;
+  date?: string;
+  electionId?: string;
+}
+
+export interface EvidenceVectorStore {
+  query(
+    text: string,
+    filter?: EvidenceFilter,
+    maxResults?: number,
+  ): Promise<EvidenceChunk[]>;
+  populate(): Promise<number>;
+}
+
+/**
+ * Chroma distance → similarity. Chroma's `similaritySearchWithScore` returns a
+ * *distance* (lower = closer); the old code treated it as a similarity and
+ * sorted descending, inverting every ranking. `1/(1+distance)` is monotonically
+ * decreasing in distance, so higher always means closer regardless of metric.
+ */
+export function distanceToSimilarity(distance: number): number {
+  if (!Number.isFinite(distance) || distance < 0) return 0;
+  return 1 / (1 + distance);
+}
+
+/**
+ * Translate an EvidenceFilter into a Chroma `where` clause. Candidate/party
+ * scoping is an OR (a chunk matches if it belongs to one of the electorate's
+ * candidates OR one of their parties). Returns undefined when there is nothing
+ * to filter on.
+ */
+export function buildWhereFilter(
+  filter?: EvidenceFilter,
+): Record<string, unknown> | undefined {
+  if (!filter) return undefined;
+  const clauses: Record<string, unknown>[] = [];
+
+  if (filter.electionId) clauses.push({ election_id: filter.electionId });
+
+  if (filter.sourceTypes && filter.sourceTypes.length > 0) {
+    clauses.push({ source_type: { $in: filter.sourceTypes } });
+  }
+
+  const idClauses: Record<string, unknown>[] = [];
+  if (filter.candidateIds && filter.candidateIds.length > 0) {
+    idClauses.push({ candidate_id: { $in: filter.candidateIds } });
+  }
+  if (filter.partyIds && filter.partyIds.length > 0) {
+    idClauses.push({ party_id: { $in: filter.partyIds } });
+  }
+  if (idClauses.length === 1) clauses.push(idClauses[0]);
+  else if (idClauses.length > 1) clauses.push({ $or: idClauses });
+
+  if (clauses.length === 0) return undefined;
+  if (clauses.length === 1) return clauses[0];
+  return { $and: clauses };
+}
+
+function str(v: unknown): string {
+  return typeof v === "string" ? v : v == null ? "" : String(v);
+}
+
+class VectorStoreManager implements EvidenceVectorStore {
   private vectorStore: Chroma | null = null;
   private embeddings: EmbeddingModel;
 
@@ -62,295 +109,186 @@ class VectorStoreManager {
   async initialize() {
     try {
       this.vectorStore = await Chroma.fromExistingCollection(this.embeddings, {
-        collectionName: "candidates",
+        collectionName: COLLECTION,
         url: process.env.CHROMA_URL || "http://localhost:8000",
       });
-      const count = await this.vectorStore!.collection!.count();
-      if (count === 0) {
-        console.log("📝 Vector store is empty, populating with data...");
-        await this.populateVectorStore();
+      const count = await this.vectorStore.collection?.count();
+      if (!count) {
+        console.log("📝 Evidence vector store empty, populating…");
+        await this.populate();
       } else {
-        console.log(`✅ Loaded existing vector store with ${count} documents`);
+        console.log(`✅ Loaded evidence vector store (${count} chunks)`);
       }
-    } catch (error) {
-      console.log("📝 Collection not found, creating new vector store...");
-      await this.createVectorStore();
+    } catch {
+      console.log("📝 Evidence collection not found, creating…");
+      this.vectorStore = new Chroma(this.embeddings, {
+        collectionName: COLLECTION,
+        url: process.env.CHROMA_URL || "http://localhost:8000",
+      });
+      await this.populate();
     }
   }
 
-  private async createVectorStore() {
-    console.log(
-      "⚙️ Creating vector store with embedding model: ",
-      this.embeddings.model,
-    );
-
-    this.vectorStore = new Chroma(this.embeddings, {
-      collectionName: "candidates",
-      url: process.env.CHROMA_URL || "http://localhost:8000",
-    });
-
-    await this.populateVectorStore();
-  }
-
-  private async populateVectorStore() {
-    let docs: Document[] = [];
-    const dataDir = path.join(process.cwd(), "data", "candidates");
-
-    try {
-      // Load documents from data directory
-      const loader = new DirectoryLoader(dataDir, {
-        ".json": (filePath: string) => new JSONLoader(filePath),
-        ".md": (filePath: string) => new TextLoader(filePath),
-        ".txt": (filePath: string) => new TextLoader(filePath),
+  async populate(): Promise<number> {
+    if (!this.vectorStore) {
+      this.vectorStore = new Chroma(this.embeddings, {
+        collectionName: COLLECTION,
+        url: process.env.CHROMA_URL || "http://localhost:8000",
       });
-
-      docs.push(...(await loader.load()));
-    } catch (error: any) {
-      // Probably the data dir doesn't exist or something like that. Ignore.
-      console.warn(`Failed to load documents from ${dataDir}: `, error.Error);
     }
 
-    // ... and now also check the database and get all candidates from there:
-    try {
-      const allCandidates = await db.select().from(candidates);
-      console.log(`📊 Loaded ${allCandidates.length} candidates from database`);
+    const rows = await db.select().from(evidenceSources).all();
+    console.log(`📊 ${rows.length} evidence sources from DB`);
 
-      const validCandidates = allCandidates.filter(
-        (candidate) => candidate.name && candidate.ward,
-      );
-      console.log(
-        `✅ ${validCandidates.length} candidates passed validation (${
-          allCandidates.length - validCandidates.length
-        } filtered out)`,
-      );
-
-      if (allCandidates.length !== validCandidates.length) {
-        const invalidCandidates = allCandidates.filter(
-          (candidate) => !candidate.name || !candidate.ward,
-        );
-        console.log(
-          "❌ Invalid candidates:",
-          invalidCandidates.map((c) => ({
-            id: c.id,
-            name: c.name,
-            ward: c.ward,
-          })),
-        );
-      }
-
-      docs = validCandidates.map((candidate) => {
-        // Safely parse key_positions
-        let keyPositions: Record<string, string> = {};
-        if (candidate.key_positions) {
-          try {
-            keyPositions =
-              typeof candidate.key_positions === "string"
-                ? JSON.parse(candidate.key_positions)
-                : candidate.key_positions;
-          } catch (error) {
-            console.warn(
-              `Failed to parse key_positions for candidate ${candidate.id}:`,
-              error,
-            );
-            console.warn("Raw key_positions value:", candidate.key_positions);
-          }
-        }
-
-        // Safely parse supporting_links
-        let supportingLinks: string[] = [];
-        if (candidate.supporting_links) {
-          try {
-            supportingLinks =
-              typeof candidate.supporting_links === "string"
-                ? JSON.parse(candidate.supporting_links)
-                : candidate.supporting_links;
-          } catch (error) {
-            console.warn(
-              `Failed to parse supporting_links for candidate ${candidate.id}:`,
-              error,
-            );
-          }
-        }
-
-        const content = `${candidate.name} - ${
-          candidate.party || "Independent"
-        } - ${candidate.ward}\n\nStatement: ${
-          candidate.candidate_statement || ""
-        }\n\nKey Positions: ${Object.entries(keyPositions)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ")}\n\nWhy: ${candidate.why || ""}\n\nKey Skills: ${
-          candidate.key_skills || ""
-        }\n\nTop Issues: ${candidate.top_issues || ""}`;
-
-        const metadata = {
-          ward: candidate.ward,
-          party: candidate.party || "Independent",
-          id: candidate.id.toString(),
-        };
-
-        // Validate the document before returning
-        if (!content || content.trim().length === 0) {
-          console.warn(`Empty content for candidate ${candidate.id}`);
-        }
-
-        return new Document({ pageContent: content, metadata });
-      });
-
-      console.log(
-        `📄 Created ${docs.length} documents from database candidates`,
+    const docs = rows
+      .filter((r) => r.content?.trim())
+      .map(
+        (r) =>
+          new Document({
+            pageContent: r.content,
+            metadata: {
+              evidence_id: r.id,
+              election_id: str(r.electionId),
+              candidate_id: str(r.candidateId),
+              party_id: str(r.partyId),
+              source_type: str(r.sourceType),
+              source_url: str(r.url),
+              source_title: str(r.title),
+              date: r.publishedAt ? new Date(r.publishedAt).toISOString() : "",
+            },
+          }),
       );
 
-      // Log first few documents for inspection
-      console.log("🔍 Sample documents:");
-      docs.slice(0, 3).forEach((doc, index) => {
-        console.log(`  Doc ${index + 1}:`, {
-          contentLength: doc.pageContent?.length || 0,
-          contentPreview: doc.pageContent?.substring(0, 100),
-          metadata: doc.metadata,
-        });
-      });
-    } catch (error) {
-      console.error("Failed to load candidates from database:", error);
-    }
-
-    // Split documents into chunks
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
       chunkOverlap: 200,
     });
+    const chunks = await splitter.splitDocuments(docs);
+    console.log(`📄 Split ${docs.length} sources into ${chunks.length} chunks`);
 
-    const splitDocs = await splitter.splitDocuments(docs);
-
-    console.log(
-      `📄 Loaded and split ${docs.length} documents into ${splitDocs.length} chunks.`,
-    );
-
-    // Validate splitDocs before adding to vector store
-    console.log("🔍 Validating splitDocs...");
-    const invalidDocs = splitDocs.filter((doc, index) => {
-      if (!doc.pageContent || doc.pageContent.trim().length === 0) {
-        console.error(`Invalid document at index ${index}:`, {
-          pageContent: doc.pageContent,
-          metadata: doc.metadata,
-        });
-        return true;
-      }
-      return false;
-    });
-
-    if (invalidDocs.length > 0) {
-      console.error(
-        `Found ${invalidDocs.length} invalid documents out of ${splitDocs.length}`,
-      );
-    } else {
-      console.log("✅ All splitDocs are valid");
-    }
-
-    console.log(
-      "⚙️ Adding documents to vector store with embedding model: ",
-      this.embeddings.model,
-    );
-
-    console.log("Initiated adding documents in batches...");
-    console.time("Time for: Add Documents");
-
-    // Process documents in batches to avoid overwhelming the system
-    const BATCH_SIZE = 50; // Process 50 documents at a time
-    let processedCount = 0;
-
-    for (let i = 0; i < splitDocs.length; i += BATCH_SIZE) {
-      const batch = splitDocs.slice(i, i + BATCH_SIZE);
-      console.log(
-        `📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(
-          splitDocs.length / BATCH_SIZE,
-        )} (${batch.length} documents)`,
-      );
-
+    const BATCH = 100;
+    let added = 0;
+    for (let i = 0; i < chunks.length; i += BATCH) {
+      const batch = chunks.slice(i, i + BATCH);
       try {
-        await this.vectorStore!.addDocuments(batch);
-        processedCount += batch.length;
-        console.log(
-          `✅ Successfully added batch. Total processed: ${processedCount}/${splitDocs.length}`,
-        );
-
-        // Add a small delay between batches to prevent overwhelming the system
-        if (i + BATCH_SIZE < splitDocs.length) {
-          await new Promise((resolve) => setTimeout(resolve, 100)); // 100ms delay
-        }
-      } catch (error) {
-        console.error(
-          `❌ Failed to add batch ${Math.floor(i / BATCH_SIZE) + 1}:`,
-          error,
-        );
-        console.error(
-          `   Batch contained ${batch.length} documents starting from index ${i}`,
-        );
-        // Continue with the next batch instead of failing entirely
+        await this.vectorStore.addDocuments(batch);
+        added += batch.length;
+        console.log(`  ✅ ${added}/${chunks.length}`);
+      } catch (err) {
+        console.error(`  ❌ batch at ${i} failed:`, err);
       }
     }
-
-    console.timeEnd("Time for: Add Documents");
-    console.log(
-      `✅ Added ${processedCount}/${splitDocs.length} documents to vector store`,
-    );
-
-    // Persistence verification: Check final count after adding documents
-    const finalCount = await this.vectorStore!.collection!.count();
-    console.log(
-      `🔍 Persistence verification: Final document count is ${finalCount}`,
-    );
-    if (finalCount === 0) {
-      throw new Error(
-        "Persistence failed: No documents found in vector store after population",
-      );
-    }
+    return added;
   }
 
-  async query(question: string, maxResults: number = 5) {
-    if (!this.vectorStore) {
-      throw new Error("Vector store not initialized");
-    }
-
-    console.time("Time for: Similarity Search");
+  async query(
+    text: string,
+    filter?: EvidenceFilter,
+    maxResults = 8,
+  ): Promise<EvidenceChunk[]> {
+    if (!this.vectorStore) throw new Error("Vector store not initialized");
+    const where = buildWhereFilter(filter);
     const results = await this.vectorStore.similaritySearchWithScore(
-      question,
+      text,
       maxResults,
+      // Chroma's typed `Where` doesn't model our $and/$or/$in composition;
+      // the runtime accepts it, so cast.
+      where as Parameters<Chroma["similaritySearchWithScore"]>[2],
     );
-    console.timeEnd("Time for: Similarity Search");
-
-    if (!results) {
-      console.error("❌ similaritySearchWithScore returned undefined");
-      return [];
-    }
-
-    console.log("Found RAG results with scores: ", JSON.stringify(results));
-    return results.map(([doc, score]) => ({
-      content: doc.pageContent,
-      metadata: doc.metadata,
-      score: score, // Now using actual similarity score
-    }));
-  }
-
-  async addDocuments(docs: any[]) {
-    if (!this.vectorStore) {
-      throw new Error("Vector store not initialized");
-    }
-
-    await this.vectorStore.addDocuments(docs);
+    return results
+      .map(([doc, distance]) => ({
+        content: doc.pageContent,
+        score: distanceToSimilarity(distance),
+        candidateId: doc.metadata.candidate_id || undefined,
+        partyId: doc.metadata.party_id || undefined,
+        sourceType: String(doc.metadata.source_type || ""),
+        sourceUrl: doc.metadata.source_url || undefined,
+        sourceTitle: doc.metadata.source_title || undefined,
+        date: doc.metadata.date || undefined,
+        electionId: doc.metadata.election_id || undefined,
+      }))
+      .sort((a, b) => b.score - a.score);
   }
 }
 
-// Singleton instance
-let vectorStoreManager: VectorStoreManager | MockVectorStoreManager | null =
-  null;
+/**
+ * In-memory mock used when AI_MODE=mock. Honours the election/party filter so
+ * tests can assert electorate scoping without Chroma or embeddings.
+ */
+class MockVectorStoreManager implements EvidenceVectorStore {
+  private fixtures: EvidenceChunk[] = [
+    {
+      content:
+        "ACT supports lower taxes, deregulation and choice in education. Classical-liberal platform.",
+      score: 0.92,
+      partyId: "nz-2026-party-act",
+      sourceType: "party_policy",
+      sourceUrl: "https://en.wikipedia.org/wiki/ACT_New_Zealand",
+      sourceTitle: "ACT — party platform (Wikipedia)",
+      electionId: "nz-2026",
+    },
+    {
+      content:
+        "The Green Party prioritises climate action, public transport and affordable housing.",
+      score: 0.88,
+      partyId: "nz-2026-party-green",
+      sourceType: "party_policy",
+      sourceUrl:
+        "https://en.wikipedia.org/wiki/Green_Party_of_Aotearoa_New_Zealand",
+      sourceTitle: "Green — party platform (Wikipedia)",
+      electionId: "nz-2026",
+    },
+    {
+      content:
+        "Labour focuses on health funding, workers' rights and cost-of-living support.",
+      score: 0.81,
+      partyId: "nz-2026-party-labour",
+      sourceType: "party_policy",
+      sourceUrl: "https://en.wikipedia.org/wiki/New_Zealand_Labour_Party",
+      sourceTitle: "Labour — party platform (Wikipedia)",
+      electionId: "nz-2026",
+    },
+  ];
 
-export async function getVectorStoreManager() {
+  async populate(): Promise<number> {
+    return this.fixtures.length;
+  }
+
+  async query(
+    _text: string,
+    filter?: EvidenceFilter,
+    maxResults = 8,
+  ): Promise<EvidenceChunk[]> {
+    let out = this.fixtures;
+    if (filter?.electionId) {
+      out = out.filter((c) => c.electionId === filter.electionId);
+    }
+    if (filter?.partyIds?.length || filter?.candidateIds?.length) {
+      const parties = new Set(filter.partyIds ?? []);
+      const cands = new Set(filter.candidateIds ?? []);
+      out = out.filter(
+        (c) =>
+          (c.partyId && parties.has(c.partyId)) ||
+          (c.candidateId && cands.has(c.candidateId)),
+      );
+    }
+    if (filter?.sourceTypes?.length) {
+      const types = new Set(filter.sourceTypes);
+      out = out.filter((c) => types.has(c.sourceType));
+    }
+    return out.slice(0, maxResults);
+  }
+}
+
+let vectorStoreManager: EvidenceVectorStore | null = null;
+
+export async function getVectorStoreManager(): Promise<EvidenceVectorStore> {
   if (!vectorStoreManager) {
     if (isMockMode()) {
       console.log("AI_MODE=mock — using MockVectorStoreManager");
       vectorStoreManager = new MockVectorStoreManager();
     } else {
-      console.log("Creating new VectorStoreManager");
+      console.log("Creating VectorStoreManager (evidence)");
       const real = new VectorStoreManager();
       await real.initialize();
       vectorStoreManager = real;

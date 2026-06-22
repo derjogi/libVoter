@@ -1,13 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import type { RAGContext } from "@/lib/server/rag/query-engine";
+// Type-only import (erased at build) — the evidence-chunk shape returned by
+// the /api/rag/query endpoint.
+import type {
+  EvidenceChunk,
+  EvidenceFilter,
+} from "@/lib/server/rag/query-engine";
 
 export function useRAGQuery() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const queryContext = async (question: string, userContext?: string) => {
+  const queryEvidence = async (
+    question: string,
+    filter?: EvidenceFilter,
+    maxResults?: number,
+  ): Promise<EvidenceChunk[]> => {
     setLoading(true);
     setError(null);
 
@@ -15,16 +24,12 @@ export function useRAGQuery() {
       const response = await fetch("/api/rag/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, userContext }),
+        body: JSON.stringify({ question, filter, maxResults }),
       });
 
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "Query failed");
-      }
-
-      return result.data as RAGContext;
+      if (!result.success) throw new Error(result.error || "Query failed");
+      return (result.data?.chunks ?? []) as EvidenceChunk[];
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(errorMessage);
@@ -34,9 +39,5 @@ export function useRAGQuery() {
     }
   };
 
-  return {
-    queryContext,
-    loading,
-    error,
-  };
+  return { queryEvidence, loading, error };
 }

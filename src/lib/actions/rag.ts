@@ -1,64 +1,62 @@
 "use server";
 
 import { RAGQueryEngine } from "@/lib/server/rag/query-engine";
+import type { EvidenceFilter } from "@/lib/server/rag/vector-store";
 
 let ragEngine: RAGQueryEngine | null = null;
 
-async function getRAGEngine() {
-  if (!ragEngine) {
-    ragEngine = new RAGQueryEngine();
-  }
+function getRAGEngine() {
+  if (!ragEngine) ragEngine = new RAGQueryEngine();
   return ragEngine;
 }
 
-export async function queryRAGContext(question: string, userContext?: string) {
+/**
+ * Retrieve electorate-scoped evidence chunks (with citations) relevant to the
+ * user's query. `filter` carries the Stage-1 candidate/party ids.
+ */
+export async function retrieveEvidence(
+  query: string,
+  filter?: EvidenceFilter,
+  maxResults = 8,
+) {
   try {
-    const engine = await getRAGEngine();
-    const context = await engine.queryWithContext(question, userContext);
-
-    return {
-      success: true,
-      data: context,
-    };
-  } catch (error) {
-    console.error(
-      "RAG query failed:",
-      error,
-      (await getRAGEngine()).chatModel.model,
+    const chunks = await getRAGEngine().retrieveEvidence(
+      query,
+      filter,
+      maxResults,
     );
+    return { success: true, data: { chunks } };
+  } catch (error) {
+    console.error("Evidence retrieval failed:", error);
     return {
       success: false,
-      error: "Failed to query knowledge base",
-      fallback: {
-        rankedCandidates: [],
-        relevantPolicies: [],
-        sources: [],
-      },
+      error: "Failed to retrieve evidence",
+      data: { chunks: [] },
     };
   }
 }
 
-export async function searchPolicies(topic: string) {
+/** Evidence for one candidate, split into individual track record vs party line. */
+export async function retrieveCandidateEvidence(
+  query: string,
+  candidateId: string,
+  partyId: string | undefined,
+  electionId: string,
+) {
   try {
-    const engine = await getRAGEngine();
-    const context = await engine.queryWithContext(
-      `What are the positions on ${topic}?`,
-      `Searching for policy positions related to ${topic}`,
+    const data = await getRAGEngine().retrieveForCandidate(
+      query,
+      candidateId,
+      partyId,
+      electionId,
     );
-
-    return {
-      success: true,
-      data: {
-        policies: context.relevantPolicies,
-        rankedCandidates: context.rankedCandidates,
-        sources: context.sources,
-      },
-    };
+    return { success: true, data };
   } catch (error) {
-    console.error("Policy search failed:", error);
+    console.error("Candidate evidence retrieval failed:", error);
     return {
       success: false,
-      error: "Failed to search policies",
+      error: "Failed to retrieve candidate evidence",
+      data: { individual: [], party: [] },
     };
   }
 }

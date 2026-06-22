@@ -6,21 +6,18 @@ import {
 } from "@langchain/core/messages";
 import { z } from "zod";
 import { explainCandidateMatch } from "@/lib/actions/prompts";
-import { queryRAGContext } from "@/lib/actions/rag";
 import { electionConfig } from "@/lib/config/election";
 import type { Candidate } from "@/lib/db/schema";
 import type {
   CandidateMatch,
   ComponentData,
   ConversationMessage,
-  PolicyPosition,
   UserResponse,
 } from "@/types";
 import {
   ComponentDataSchema,
   SAFE_FALLBACK_COMPONENT,
 } from "@/types/components.zod";
-import type { RAGContext } from "../rag/query-engine";
 import { ConfidenceCalculator } from "./confidence-calculator";
 import { getAIConfig } from "./config";
 import type { ChatModel } from "./model-factory";
@@ -408,137 +405,6 @@ If a candidate has little relevant information, score them lower. Return exactly
 
     const confidence = margin + coverage * 30;
     return Math.min(100, Math.max(0, Math.round(confidence)));
-  }
-
-  private async queryRAGContext(userMessage: string, userContext: string) {
-    try {
-      const result = await queryRAGContext(userMessage, userContext);
-      if (result.success && result.data) {
-        return result.data;
-      } else {
-        console.warn(
-          "RAG query failed, falling back to database-only context:",
-          result.error,
-        );
-        return {
-          rankedCandidates: [],
-          relevantPolicies: [],
-          sources: [],
-        };
-      }
-    } catch (error) {
-      console.error("Error querying RAG context:", error);
-      return {
-        rankedCandidates: [],
-        relevantPolicies: [],
-        sources: [],
-      };
-    }
-  }
-
-  private filterAndTransformCandidates(
-    ids: string[],
-    candidates: Candidate[],
-  ): CandidateMatch[] {
-    // Filter candidates based on RAG-ranked IDs
-    const filteredCandidates = candidates.filter((candidate) =>
-      ids.includes(candidate.id.toString()),
-    );
-
-    // Transform to CandidateMatch format
-    return filteredCandidates.map((candidate) => ({
-      candidate,
-      score: 75, // Default score for RAG-fetched candidates
-      reasoning: "Identified through semantic search",
-      pros: [],
-      cons: [],
-      topMatchingPolicies: this.extractTopPolicies(candidate),
-      sources: [],
-    }));
-  }
-
-  private formatRAGContext(
-    ragContext: RAGContext,
-    existingCandidates: CandidateMatch[],
-    ragCandidates: CandidateMatch[],
-  ): string {
-    if (
-      !ragContext ||
-      (!ragContext.relevantPolicies?.length &&
-        !ragContext.sources?.length &&
-        !ragContext.rankedCandidates?.length)
-    ) {
-      return "";
-    }
-
-    let ragInfo = "\n\nAdditional context from knowledge base:";
-
-    // Add semantically ranked candidates that aren't already in structured data
-    if (ragContext.rankedCandidates?.length > 0) {
-      const existingCandidateIds = new Set(
-        existingCandidates.map((c) => c.candidate.id),
-      );
-
-      const ragCandidateMap = new Map(
-        ragCandidates.map((c) => [c.candidate.id, c.candidate]),
-      );
-
-      const newRankedCandidates = ragContext.rankedCandidates.filter(
-        (rc) =>
-          !existingCandidateIds.has(parseInt(rc.candidateId)) &&
-          ragCandidateMap.has(parseInt(rc.candidateId)),
-      );
-
-      if (newRankedCandidates.length > 0) {
-        ragInfo += "\nSemantically relevant candidates:";
-        newRankedCandidates.slice(0, 3).forEach((rankedCandidate, index) => {
-          const candidate = ragCandidateMap.get(
-            parseInt(rankedCandidate.candidateId),
-          );
-          if (candidate) {
-            const relevancePercent = Math.round(
-              rankedCandidate.relevanceScore * 100,
-            );
-            ragInfo += `\n${index + 1}. ${candidate.name} (${candidate.party}) - ${relevancePercent}% relevance`;
-            if (rankedCandidate.matchedContent) {
-              const preview = rankedCandidate.matchedContent.substring(0, 80);
-              ragInfo += ` - "${preview}..."`;
-            }
-          }
-        });
-      }
-    }
-
-    // Add relevant policies that aren't already covered in structured data
-    if (ragContext.relevantPolicies?.length > 0) {
-      const existingPolicyTopics = new Set(
-        existingCandidates
-          .flatMap((c) => c.topMatchingPolicies || [])
-          .map((p: string) => p.toLowerCase()),
-      );
-
-      const newPolicies = ragContext.relevantPolicies.filter(
-        (policy: PolicyPosition) =>
-          !existingPolicyTopics.has(policy.topic?.toLowerCase()),
-      );
-
-      if (newPolicies.length > 0) {
-        ragInfo += "\nRelevant policy positions:";
-        newPolicies.slice(0, 3).forEach((policy: any) => {
-          const details = policy.details
-            ? policy.details
-            : "No details available";
-          ragInfo += `\n- ${policy.topic}: ${policy.stance} - ${details}...`;
-        });
-      }
-    }
-
-    // Add sources if available
-    if (ragContext.sources?.length > 0) {
-      ragInfo += "\nSources: " + ragContext.sources.slice(0, 3).join(", ");
-    }
-
-    return ragInfo;
   }
 
   private async generateCandidateMatches(
