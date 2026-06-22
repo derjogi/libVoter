@@ -4,6 +4,7 @@
 // extracts only that section from the sitting day's transcript, avoiding both
 // Daily/Debate duplicates and premature candidate attribution.
 
+import { createHansardCacheTransport } from "../hansard/cache";
 import { htmlToText } from "../text";
 import type {
   AdapterContext,
@@ -65,6 +66,8 @@ export interface HansardAdapterOptions {
   search?: (request: HansardSearchRequest) => Promise<HansardSearchResponse>;
   transcript?: (date: string) => Promise<string>;
   pageSize?: number;
+  cacheDir?: string;
+  allowPartialCache?: boolean;
 }
 
 type SearchHansard = NonNullable<HansardAdapterOptions["search"]>;
@@ -79,24 +82,33 @@ export class NzHansardAdapter implements SourceAdapter {
   private readonly search: SearchHansard;
   private readonly transcript: FetchTranscript;
   private readonly pageSize: number;
+  private readonly localCache: boolean;
   private readonly transcriptCache = new Map<string, Promise<string>>();
 
   constructor(options: HansardAdapterOptions = {}) {
-    this.search = options.search ?? searchHansard;
-    this.transcript = options.transcript ?? fetchTranscript;
+    const cache = options.cacheDir
+      ? createHansardCacheTransport(
+          options.cacheDir,
+          options.allowPartialCache ?? false,
+        )
+      : undefined;
+    this.search = options.search ?? cache?.search ?? searchHansard;
+    this.transcript =
+      options.transcript ?? cache?.transcript ?? fetchTranscript;
     this.pageSize = options.pageSize ?? 100;
+    this.localCache = cache !== undefined;
   }
 
   async discover(ctx: AdapterContext): Promise<SourceRef[]> {
-    if (!(await ctx.robots.allowed(SEARCH_URL))) return [];
+    if (!this.localCache && !(await ctx.robots.allowed(SEARCH_URL))) return [];
 
     const from = laterDate(ctx.since, TERM_START);
     const refs: SourceRef[] = [];
     let page = 1;
 
     while (ctx.limit === undefined || refs.length < ctx.limit) {
-      const request = searchRequest(from, page, this.pageSize);
-      await ctx.rateLimiter.wait(SEARCH_URL);
+      const request = buildHansardSearchRequest(from, page, this.pageSize);
+      if (!this.localCache) await ctx.rateLimiter.wait(SEARCH_URL);
       const response = await this.search(request);
 
       for (const item of response.value) {
@@ -121,11 +133,13 @@ export class NzHansardAdapter implements SourceAdapter {
 
     const date = item.sittingDate.slice(0, 10);
     const transcriptUrl = `${BASE_URL}/api/resources/transcript/${date}`;
-    if (!(await ctx.robots.allowed(transcriptUrl))) return null;
+    if (!this.localCache && !(await ctx.robots.allowed(transcriptUrl))) {
+      return null;
+    }
 
     let pending = this.transcriptCache.get(date);
     if (!pending) {
-      await ctx.rateLimiter.wait(transcriptUrl);
+      if (!this.localCache) await ctx.rateLimiter.wait(transcriptUrl);
       pending = this.transcript(date);
       this.transcriptCache.set(date, pending);
     }
@@ -197,7 +211,7 @@ function laterDate(requested: Date | undefined, minimum: Date): Date {
   return requested && requested > minimum ? requested : minimum;
 }
 
-function searchRequest(
+export function buildHansardSearchRequest(
   from: Date,
   page: number,
   pageSize: number,
@@ -208,7 +222,7 @@ function searchRequest(
     types: ["DebateItem"],
     subtypes: [...SUBTYPES],
     parliament: PARLIAMENT_NUMBER,
-    dateFrom: from.toISOString(),
+    dateFrom: toDateOnly(from),
     dateTo: null,
     portfolios: [],
     datePeriod: null,
@@ -220,6 +234,11 @@ function searchRequest(
     page,
     direction: 1,
   };
+}
+
+/** Format dates for the Hansard API's System.DateOnly contract. */
+export function toDateOnly(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
 function isEligible(item: HansardSearchItem, from: Date): boolean {

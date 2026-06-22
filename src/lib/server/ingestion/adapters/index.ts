@@ -9,13 +9,28 @@ import { AucklandCandidateAdapter } from "./auckland";
 import { NzHansardAdapter } from "./hansard";
 import { WikipediaPartyAdapter } from "./wikipedia-party";
 
-export const adapterRegistry: Record<string, () => SourceAdapter> = {
+export interface AdapterRegistryOptions {
+  hansardCacheDir?: string;
+  allowPartialHansardCache?: boolean;
+}
+
+export const adapterRegistry: Record<
+  string,
+  (options?: AdapterRegistryOptions) => SourceAdapter
+> = {
   auckland: () => new AucklandCandidateAdapter(),
-  "nz-hansard": () => new NzHansardAdapter(),
+  "nz-hansard": (options) =>
+    new NzHansardAdapter({
+      cacheDir: options?.hansardCacheDir,
+      allowPartialCache: options?.allowPartialHansardCache,
+    }),
   "nz-party-policy": () => new WikipediaPartyAdapter(),
 };
 
-export function getAdapters(names?: string[]): SourceAdapter[] {
+export function getAdapters(
+  names?: string[],
+  options: AdapterRegistryOptions = {},
+): SourceAdapter[] {
   const wanted =
     names && names.length > 0 ? names : Object.keys(adapterRegistry);
   return wanted.map((name) => {
@@ -25,6 +40,6 @@ export function getAdapters(names?: string[]): SourceAdapter[] {
         `Unknown source "${name}". Available: ${Object.keys(adapterRegistry).join(", ")}`,
       );
     }
-    return factory();
+    return factory(options);
   });
 }

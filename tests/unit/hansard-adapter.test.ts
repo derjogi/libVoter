@@ -58,7 +58,7 @@ describe("NzHansardAdapter", () => {
       types: ["DebateItem"],
       subtypes: ["Speech", "Question", "Vote"],
       parliament: 54,
-      dateFrom: "2024-01-01T00:00:00.000Z",
+      dateFrom: "2024-01-01",
       pageSize: 3,
       page: 1,
     });
@@ -91,7 +91,7 @@ describe("NzHansardAdapter", () => {
     await new NzHansardAdapter({ search }).discover(context());
 
     expect(search).toHaveBeenCalledWith(
-      expect.objectContaining({ dateFrom: "2023-12-05T00:00:00.000Z" }),
+      expect.objectContaining({ dateFrom: "2023-12-05" }),
     );
   });
 

@@ -15,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve", // This breaks component-renderer.test.ts for some reason
+    "jsx": "react-jsx", // "preserve" breaks component-renderer.test.ts for some reason
     "incremental": true,
     "plugins": [
       {

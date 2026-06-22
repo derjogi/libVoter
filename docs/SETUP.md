@@ -95,30 +95,47 @@ The scraper is currently mostly commented-out in `scripts/scrape-candidates.ts`
 ## Ingesting evidence sources
 
 The shared evidence ETL writes normalized source documents to
-`evidence_sources`. To preview the Parliament 54 Hansard corpus without
-writing to SQLite:
+`evidence_sources`. Parliament requires normal browser verification, so
+Hansard acquisition and database ingestion are separate, resumable steps.
+
+First acquire a bounded smoke-test cache using the globally installed
+`agent-browser` CLI:
 
 ```bash
+bun run fetch:hansard --limit-pages 1 --limit-dates 1
+
 bun run ingest:sources --source nz-hansard --election nz-2026 \
-  --since 2023-12-05 --limit 20 --dry-run
+  --hansard-cache data/hansard-cache --allow-partial-cache \
+  --limit 20 --dry-run
 ```
 
-Remove `--limit` to discover the complete term and remove `--dry-run` to
-persist it. The adapter searches the official Parliament endpoint for
-individual `Speech`, `Question`, and `Vote` sections, excluding combined
-Daily transcripts. Speeches and questions become `hansard`; votes become
-`voting_record`. Records retain Parliament's stable section ID, publication
-status (`draft`, `corrected`, or `final`), sitting date, speaker when supplied,
-and a canonical Parliament URL. They are deliberately stored without a
-candidate association; participant linking belongs to the later enrichment
-step.
+For the complete term, rerun acquisition without limits. It checkpoints every
+search page and sitting date, so an interrupted run resumes automatically:
+
+```bash
+bun run fetch:hansard
+bun run ingest:sources --source nz-hansard --election nz-2026 \
+  --hansard-cache data/hansard-cache
+```
+
+Use `--refresh` with `fetch:hansard` to reacquire cached draft/corrected
+material. Transcripts are stored once per sitting date as gzip files under the
+gitignored `data/hansard-cache/`; final disk usage should be measured before a
+full cache is distributed. Remove `--dry-run` to persist evidence.
+
+The adapter selects individual `Speech`, `Question`, and `Vote` sections,
+excluding combined Daily transcripts. Speeches and questions become
+`hansard`; votes become `voting_record`. Records retain Parliament's stable
+section ID, publication status (`draft`, `corrected`, or `final`), sitting
+date, speaker when supplied, and a canonical Parliament URL. They are stored
+without candidate association; participant linking is a later enrichment.
 
 The official client uses `POST /api/data/search` for discovery and
-`GET /api/resources/transcript/YYYY-MM-DD` for transcript HTML. Parliament's
-browser-verification service may reject direct server requests in some
-environments. In that case ingestion reports a clear non-JSON or request
-error and stops; it does not bypass the challenge. Canonical URLs and the
-`New Zealand Parliament` fallback author preserve source attribution.
+`GET /api/resources/transcript/YYYY-MM-DD` for transcript HTML. API calls stay
+inside the normally verified browser page; verification cookies are never
+exported or replayed. Offline ingestion performs no Parliament requests.
+Canonical URLs and the `New Zealand Parliament` fallback author preserve
+source attribution.
 
 ## Database
 
@@ -145,6 +162,7 @@ error and stops; it does not bypass the challenge. Canonical URLs and the
 | `bun run validate-env`               | run `setup-env validate`                            |
 | `bun run scrape:candidates`          | Playwright scraper (see above)                      |
 | `bun run ingest:sources --source nz-hansard --election nz-2026` | ingest the Parliament 54 Hansard corpus |
+| `bun run fetch:hansard`                | acquire/resume the local Parliament 54 Hansard cache |
 | `bun run test:election-config`       | sanity-check the election config                    |
 | `bunx playwright test test-chat-flow.spec.ts` | run the E2E spec (currently hits real LLMs) |
 

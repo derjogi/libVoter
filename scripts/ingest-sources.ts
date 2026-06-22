@@ -8,9 +8,11 @@
 // Usage:
 //   bun run scripts/ingest-sources.ts [flags]
 //   --source <name[,name]>  adapters to run (default: all registered)
-//   --election <id>         election id to scope to (default: auckland-2025)
+//   --election <id>         election id to scope to (default: nz-2026)
 //   --limit <n>             cap sources per adapter
 //   --since <ISO date>      only sources published on/after this date
+//   --hansard-cache <path>  offline Hansard cache from fetch:hansard
+//   --allow-partial-cache   permit a bounded Hansard smoke-test cache
 //   --dry-run               resolve + dedup but do not write to the DB
 //
 // Examples:
@@ -37,7 +39,7 @@ function hasFlag(name: string): boolean {
 }
 
 async function main() {
-  const electionId = arg("election") ?? "auckland-2025";
+  const electionId = arg("election") ?? "nz-2026";
   const sources = arg("source")
     ?.split(",")
     .map((s) => s.trim())
@@ -46,13 +48,24 @@ async function main() {
   const sinceStr = arg("since");
   const since = sinceStr ? new Date(sinceStr) : undefined;
   const dryRun = hasFlag("dry-run");
+  const hansardCacheDir = arg("hansard-cache");
+  const allowPartialHansardCache = hasFlag("allow-partial-cache");
+  const wantsHansard = !sources || sources.includes("nz-hansard");
+  if (wantsHansard && !hansardCacheDir) {
+    throw new Error(
+      "nz-hansard requires --hansard-cache <path>. Run `bun run fetch:hansard` first.",
+    );
+  }
 
   console.log(
     `Ingesting election=${electionId} sources=${sources?.join(",") ?? "all"}` +
       `${limit ? ` limit=${limit}` : ""}${dryRun ? " (dry-run)" : ""}`,
   );
 
-  const adapters = getAdapters(sources);
+  const adapters = getAdapters(sources, {
+    hansardCacheDir,
+    allowPartialHansardCache,
+  });
   const index = await buildIdentityIndex(electionId, db);
   console.log(
     `Identity index: ${index.candidates.length} candidates, ${index.parties.length} parties`,
