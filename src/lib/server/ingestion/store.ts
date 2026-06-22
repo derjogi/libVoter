@@ -12,11 +12,39 @@ import type { db as DbType } from "../db";
 export interface ExistingEvidence {
   id: string;
   contentHash: string | null;
+  sourceType: NewEvidenceSource["sourceType"];
+  title: string | null;
+  url: string | null;
+  author: string | null;
+  publishedAt: Date | null;
+  documentType: string | null;
+  sourceStatus: string | null;
+  parliamentNumber: number | null;
+}
+
+function existingEvidence(row: NewEvidenceSource): ExistingEvidence {
+  return {
+    id: row.id as string,
+    contentHash: row.contentHash ?? null,
+    sourceType: row.sourceType,
+    title: row.title ?? null,
+    url: row.url ?? null,
+    author: row.author ?? null,
+    publishedAt: row.publishedAt ?? null,
+    documentType: row.documentType ?? null,
+    sourceStatus: row.sourceStatus ?? null,
+    parliamentNumber: row.parliamentNumber ?? null,
+  };
 }
 
 export interface EvidenceStore {
   /** Existing row id whose contentHash exactly matches, else null. */
   findByHash(hash: string): Promise<string | null>;
+  /** Existing row for the same stable source-system document identity. */
+  findByExternalId(
+    sourceAdapter: string,
+    externalId: string,
+  ): Promise<ExistingEvidence | null>;
   /** Existing row for the same source URL + identity (for change detection). */
   findByUrl(
     url: string,
@@ -36,6 +64,16 @@ export class InMemoryEvidenceStore implements EvidenceStore {
     return hit ? (hit.id as string) : null;
   }
 
+  async findByExternalId(
+    sourceAdapter: string,
+    externalId: string,
+  ): Promise<ExistingEvidence | null> {
+    const hit = this.rows.find(
+      (r) => r.sourceAdapter === sourceAdapter && r.externalId === externalId,
+    );
+    return hit ? existingEvidence(hit) : null;
+  }
+
   async findByUrl(
     url: string,
     candidateId?: string,
@@ -47,9 +85,7 @@ export class InMemoryEvidenceStore implements EvidenceStore {
         (r.candidateId ?? undefined) === candidateId &&
         (r.partyId ?? undefined) === partyId,
     );
-    return hit
-      ? { id: hit.id as string, contentHash: hit.contentHash ?? null }
-      : null;
+    return hit ? existingEvidence(hit) : null;
   }
 
   async insert(row: NewEvidenceSource): Promise<void> {
@@ -76,6 +112,35 @@ export class DrizzleEvidenceStore implements EvidenceStore {
     return rows[0]?.id ?? null;
   }
 
+  async findByExternalId(
+    sourceAdapter: string,
+    externalId: string,
+  ): Promise<ExistingEvidence | null> {
+    const rows = await this.db
+      .select({
+        id: evidenceSources.id,
+        contentHash: evidenceSources.contentHash,
+        sourceType: evidenceSources.sourceType,
+        title: evidenceSources.title,
+        url: evidenceSources.url,
+        author: evidenceSources.author,
+        publishedAt: evidenceSources.publishedAt,
+        documentType: evidenceSources.documentType,
+        sourceStatus: evidenceSources.sourceStatus,
+        parliamentNumber: evidenceSources.parliamentNumber,
+      })
+      .from(evidenceSources)
+      .where(
+        and(
+          eq(evidenceSources.sourceAdapter, sourceAdapter),
+          eq(evidenceSources.externalId, externalId),
+        ),
+      )
+      .limit(1)
+      .all();
+    return rows[0] ?? null;
+  }
+
   async findByUrl(
     url: string,
     candidateId?: string,
@@ -88,6 +153,14 @@ export class DrizzleEvidenceStore implements EvidenceStore {
       .select({
         id: evidenceSources.id,
         contentHash: evidenceSources.contentHash,
+        sourceType: evidenceSources.sourceType,
+        title: evidenceSources.title,
+        url: evidenceSources.url,
+        author: evidenceSources.author,
+        publishedAt: evidenceSources.publishedAt,
+        documentType: evidenceSources.documentType,
+        sourceStatus: evidenceSources.sourceStatus,
+        parliamentNumber: evidenceSources.parliamentNumber,
       })
       .from(evidenceSources)
       .where(and(...conds))

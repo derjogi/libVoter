@@ -51,6 +51,14 @@ export interface NormalizedSource {
   url?: string;
   author?: string;
   publishedAt?: Date;
+  /** Stable source-system identifier, independent of URL and content version. */
+  externalId?: string;
+  /** Source-native document classification, e.g. speech, question, or vote. */
+  documentType?: string;
+  /** Publication lifecycle status, e.g. draft, corrected, or final. */
+  sourceStatus?: string;
+  /** Parliament or legislative term number when the source supplies one. */
+  parliamentNumber?: number;
   /** Cleaned full text — the durable record we re-chunk and embed. */
   content: string;
 }
@@ -75,6 +83,8 @@ export interface SourceAdapter {
   readonly name: string;
   /** Election ids this adapter serves (for validation / help text). */
   readonly elections?: readonly string[];
+  /** Defaults to true; corpus adapters may persist documents without owners. */
+  readonly requiresIdentity?: boolean;
   discover(ctx: AdapterContext): Promise<SourceRef[]>;
   fetch(ref: SourceRef, ctx: AdapterContext): Promise<RawSource | null>;
   normalize(

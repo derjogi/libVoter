@@ -157,9 +157,9 @@ export const candidacies = sqliteTable(
 // `candidateId` / `partyId` are intentionally SOFT references (no FK): during
 // the spec-002 migration candidate identity spans both the legacy `candidates`
 // table (integer id, stringified here) and the generic `people` / `candidacies`
-// model, and parties span `parties` / `electionParties`. At least one of the
-// two should be set. Harden into FKs once the generic model is the single
-// source of truth.
+// model, and parties span `parties` / `electionParties`. Corpus adapters may
+// leave both null and attach people/parties later. Harden into FKs once the
+// generic model is the single source of truth.
 export const SOURCE_TYPES = [
   "voting_record",
   "hansard",
@@ -178,9 +178,16 @@ export const evidenceSources = sqliteTable(
     electionId: text("election_id")
       .notNull()
       .references(() => elections.id, { onDelete: "cascade" }),
-    // Soft references (see table comment). One of these should be present.
+    // Soft references (see table comment); corpus documents may leave both null.
     candidateId: text("candidate_id"),
     partyId: text("party_id"),
+    // Stable identity within the source system. Unlike URL/content hash, this
+    // survives publication revisions and URL changes.
+    sourceAdapter: text("source_adapter"),
+    externalId: text("external_id"),
+    documentType: text("document_type"),
+    sourceStatus: text("source_status"),
+    parliamentNumber: integer("parliament_number"),
     sourceType: text("source_type").$type<SourceType>().notNull(),
     title: text("title"),
     url: text("url"),
@@ -199,6 +206,9 @@ export const evidenceSources = sqliteTable(
     byCandidate: index("evidence_sources_candidate_idx").on(t.candidateId),
     byParty: index("evidence_sources_party_idx").on(t.partyId),
     byElection: index("evidence_sources_election_idx").on(t.electionId),
+    byExternalDocument: uniqueIndex(
+      "evidence_sources_adapter_external_id_unique",
+    ).on(t.sourceAdapter, t.externalId),
   }),
 );
 

@@ -23,7 +23,7 @@ import type {
 
 // ---- A tiny in-memory adapter so runner tests need no network/files. ----
 class FakeAdapter implements SourceAdapter {
-  readonly name = "fake";
+  readonly name: string = "fake";
   constructor(private readonly items: NormalizedSource[]) {}
   async discover(): Promise<SourceRef[]> {
     return this.items.map((n, i) => ({
@@ -43,6 +43,11 @@ class FakeAdapter implements SourceAdapter {
   async normalize(raw: RawSource): Promise<NormalizedSource> {
     return raw.meta?.n as NormalizedSource;
   }
+}
+
+class FakeCorpusAdapter extends FakeAdapter {
+  readonly name = "fake-corpus";
+  readonly requiresIdentity = false;
 }
 
 const resolverFor = (
@@ -178,6 +183,39 @@ describe("runIngestion", () => {
     expect(store.rows[0].sourceType).toBe("statement");
   });
 
+  it("inserts an explicitly unowned corpus document with source metadata", async () => {
+    const store = new InMemoryEvidenceStore();
+    const adapter = new FakeCorpusAdapter([
+      {
+        sourceType: "hansard",
+        url: "https://parliament.example/document/HansS_1",
+        content: "A contribution to the debate.",
+        externalId: "HansS_1",
+        documentType: "speech",
+        sourceStatus: "draft",
+        parliamentNumber: 54,
+      } as NormalizedSource,
+    ]);
+
+    const result = await runIngestion(
+      [adapter],
+      baseRunOpts(store, resolverFor()),
+    );
+
+    expect(result.inserted).toBe(1);
+    expect(result.unmatched).toHaveLength(0);
+    expect(store.rows).toHaveLength(1);
+    expect(store.rows[0]).toMatchObject({
+      sourceAdapter: "fake-corpus",
+      externalId: "HansS_1",
+      documentType: "speech",
+      sourceStatus: "draft",
+      parliamentNumber: 54,
+      candidateId: undefined,
+      partyId: undefined,
+    });
+  });
+
   it("is idempotent: re-running unchanged sources adds no duplicates", async () => {
     const store = new InMemoryEvidenceStore();
     const resolver = resolverFor([
@@ -192,6 +230,99 @@ describe("runIngestion", () => {
     expect(second.inserted).toBe(0);
     expect(second.skipped).toBe(1);
     expect(store.rows).toHaveLength(1);
+  });
+
+  it("updates a corpus document by stable external ID across revisions", async () => {
+    const store = new InMemoryEvidenceStore();
+    const draft = {
+      sourceType: "hansard",
+      url: "https://parliament.example/draft/HansS_1",
+      content: "Draft contribution.",
+      externalId: "HansS_1",
+      documentType: "speech",
+      sourceStatus: "draft",
+      parliamentNumber: 54,
+    } as NormalizedSource;
+    const final = {
+      ...draft,
+      url: "https://parliament.example/final/HansS_1",
+      content: "Final corrected contribution.",
+      sourceStatus: "final",
+    } as NormalizedSource;
+
+    await runIngestion(
+      [new FakeCorpusAdapter([draft])],
+      baseRunOpts(store, resolverFor()),
+    );
+    const result = await runIngestion(
+      [new FakeCorpusAdapter([final])],
+      baseRunOpts(store, resolverFor()),
+    );
+
+    expect(result.updated).toBe(1);
+    expect(result.inserted).toBe(0);
+    expect(store.rows).toHaveLength(1);
+    expect(store.rows[0]).toMatchObject({
+      externalId: "HansS_1",
+      url: "https://parliament.example/final/HansS_1",
+      content: "Final corrected contribution.",
+      sourceStatus: "final",
+    });
+  });
+
+  it("updates corpus lifecycle metadata when the content is unchanged", async () => {
+    const store = new InMemoryEvidenceStore();
+    const draft = {
+      sourceType: "hansard",
+      content: "Text that required no correction.",
+      externalId: "HansS_2",
+      documentType: "speech",
+      sourceStatus: "draft",
+      parliamentNumber: 54,
+    } as NormalizedSource;
+
+    await runIngestion(
+      [new FakeCorpusAdapter([draft])],
+      baseRunOpts(store, resolverFor()),
+    );
+    const result = await runIngestion(
+      [
+        new FakeCorpusAdapter([
+          { ...draft, sourceStatus: "final" } as NormalizedSource,
+        ]),
+      ],
+      baseRunOpts(store, resolverFor()),
+    );
+
+    expect(result.updated).toBe(1);
+    expect(result.skipped).toBe(0);
+    expect(store.rows).toHaveLength(1);
+    expect(store.rows[0].sourceStatus).toBe("final");
+  });
+
+  it("keeps distinct external documents even when their content matches", async () => {
+    const store = new InMemoryEvidenceStore();
+    const shared = {
+      sourceType: "hansard",
+      content: "Motion agreed to.",
+      documentType: "vote",
+      sourceStatus: "final",
+      parliamentNumber: 54,
+    } as NormalizedSource;
+    const first = { ...shared, externalId: "HansV_1" } as NormalizedSource;
+    const second = { ...shared, externalId: "HansV_2" } as NormalizedSource;
+
+    const result = await runIngestion(
+      [new FakeCorpusAdapter([first, second])],
+      baseRunOpts(store, resolverFor()),
+    );
+
+    expect(result.inserted).toBe(2);
+    expect(result.skipped).toBe(0);
+    expect(store.rows.map((row) => row.externalId)).toEqual([
+      "HansV_1",
+      "HansV_2",
+    ]);
   });
 
   it("updates in place when the same URL's content changes", async () => {
@@ -255,7 +386,8 @@ describe("WikipediaPartyAdapter (party-policy, linked by party)", () => {
     expect(refs[0].url).toBe("https://en.wikipedia.org/wiki/ACT_New_Zealand");
 
     const raw = await adapter.fetch(refs[0], ctx);
-    const normalized = await adapter.normalize(raw!, ctx);
+    if (!raw) throw new Error("Expected Wikipedia source fixture");
+    const normalized = await adapter.normalize(raw, ctx);
     expect(normalized.partyName).toBe("ACT");
     expect(normalized.content).toBe(
       "ACT is a classical-liberal party.\nIt supports lower taxes.",
@@ -305,7 +437,8 @@ describe("AucklandCandidateAdapter (golden HTML→text)", () => {
 
     const raw = await adapter.fetch(refs[0], ctx);
     expect(raw).not.toBeNull();
-    const normalized = await adapter.normalize(raw!, ctx);
+    if (!raw) throw new Error("Expected Auckland source fixture");
+    const normalized = await adapter.normalize(raw, ctx);
 
     expect(normalized.sourceType).toBe("statement");
     expect(normalized.url).toBe("https://voteauckland.co.nz/jane");

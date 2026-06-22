@@ -11,7 +11,7 @@ import { contentHash } from "./hash";
 import type { IdentityResolver } from "./identity";
 import { RateLimiter } from "./rate-limit";
 import { RobotsGuard } from "./robots";
-import type { EvidenceStore } from "./store";
+import type { EvidenceStore, ExistingEvidence } from "./store";
 import type {
   AdapterContext,
   NormalizedSource,
@@ -108,7 +108,7 @@ export async function runIngestion(
         const out = await adapter.normalize(raw, ctx);
         const normalized = Array.isArray(out) ? out : [out];
         for (const n of normalized) {
-          await ingestOne(adapter.name, n, opts, result);
+          await ingestOne(adapter, n, opts, result);
         }
       } catch (err) {
         result.errors.push({
@@ -124,7 +124,7 @@ export async function runIngestion(
 }
 
 async function ingestOne(
-  adapterName: string,
+  adapter: SourceAdapter,
   n: NormalizedSource,
   opts: RunOptions,
   result: RunResult,
@@ -141,9 +141,9 @@ async function ingestOne(
     district: n.district,
   });
 
-  if (!matched) {
+  if (!matched && adapter.requiresIdentity !== false) {
     result.unmatched.push({
-      adapter: adapterName,
+      adapter: adapter.name,
       candidateName: n.candidateName,
       partyName: n.partyName,
       district: n.district,
@@ -154,19 +154,17 @@ async function ingestOne(
   }
 
   const hash = contentHash(content);
-
-  // Idempotent: identical content already stored → skip.
-  if (await opts.store.findByHash(hash)) {
-    result.skipped++;
-    return;
-  }
-
   const now = new Date();
   const base: NewEvidenceSource = {
     id: randomUUID(),
     electionId: n.electionId ?? opts.electionId,
     candidateId,
     partyId,
+    sourceAdapter: adapter.name,
+    externalId: n.externalId ?? null,
+    documentType: n.documentType ?? null,
+    sourceStatus: n.sourceStatus ?? null,
+    parliamentNumber: n.parliamentNumber ?? null,
     sourceType: n.sourceType,
     title: n.title ?? null,
     url: n.url ?? null,
@@ -178,20 +176,53 @@ async function ingestOne(
     createdAt: now,
   };
 
+  const updatePatch: Partial<NewEvidenceSource> = {
+    sourceType: base.sourceType,
+    title: base.title,
+    url: base.url,
+    author: base.author,
+    publishedAt: base.publishedAt,
+    documentType: base.documentType,
+    sourceStatus: base.sourceStatus,
+    parliamentNumber: base.parliamentNumber,
+    content,
+    contentHash: hash,
+    fetchedAt: now,
+  };
+
+  // Stable source identity takes precedence over URL/content. Publication
+  // revisions may change both while still representing the same document.
+  if (n.externalId) {
+    const existing = await opts.store.findByExternalId(
+      adapter.name,
+      n.externalId,
+    );
+    if (existing) {
+      if (
+        existing.contentHash === hash &&
+        hasSameDocumentMetadata(existing, base)
+      ) {
+        result.skipped++;
+        return;
+      }
+      if (!opts.dryRun) await opts.store.update(existing.id, updatePatch);
+      result.updated++;
+      return;
+    }
+  }
+
+  // Legacy sources without a known external id remain globally idempotent by
+  // content hash.
+  if (!n.externalId && (await opts.store.findByHash(hash))) {
+    result.skipped++;
+    return;
+  }
+
   // Same source URL + identity but different content → update in place.
   if (n.url) {
     const existing = await opts.store.findByUrl(n.url, candidateId, partyId);
     if (existing) {
-      if (!opts.dryRun) {
-        await opts.store.update(existing.id, {
-          title: base.title,
-          author: base.author,
-          publishedAt: base.publishedAt,
-          content,
-          contentHash: hash,
-          fetchedAt: now,
-        });
-      }
+      if (!opts.dryRun) await opts.store.update(existing.id, updatePatch);
       result.updated++;
       return;
     }
@@ -199,4 +230,22 @@ async function ingestOne(
 
   if (!opts.dryRun) await opts.store.insert(base);
   result.inserted++;
+}
+
+function hasSameDocumentMetadata(
+  existing: ExistingEvidence,
+  next: NewEvidenceSource,
+): boolean {
+  const existingPublishedAt = existing.publishedAt?.getTime() ?? null;
+  const nextPublishedAt = next.publishedAt?.getTime() ?? null;
+  return (
+    existing.sourceType === next.sourceType &&
+    existing.title === (next.title ?? null) &&
+    existing.url === (next.url ?? null) &&
+    existing.author === (next.author ?? null) &&
+    existingPublishedAt === nextPublishedAt &&
+    existing.documentType === (next.documentType ?? null) &&
+    existing.sourceStatus === (next.sourceStatus ?? null) &&
+    existing.parliamentNumber === (next.parliamentNumber ?? null)
+  );
 }
