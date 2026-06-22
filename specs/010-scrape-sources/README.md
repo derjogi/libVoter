@@ -14,7 +14,6 @@ transitions:
 - status: in-progress
   at: 2026-06-19T21:05:53.933683701Z
 ---
-
 # Scrape candidate & party evidence sources (NZ 2026)
 
 > **Status**: planned · **Priority**: medium · **Created**: 2026-06-19
@@ -154,7 +153,7 @@ where a source requires it (as the Auckland scraper does). Prefer official
         is now `NZ_2026`. CC BY-SA text keeps `url` for attribution +
         link-out. Source `nz-party-policy`.
   - [ ] Electoral Commission: candidate/party lists + donations/loans.
-  - [ ] Parliament / Hansard: speeches & debate contributions (+ votes
+  - [~] Parliament / Hansard: speeches & debate contributions (+ votes
         where available).
   - [ ] Register of MPs' interests: PDF/web → text.
   - [ ] Party & candidate websites: policy + bios (verify vs official).
@@ -210,6 +209,19 @@ interests) is built.
 - Register of MPs' interests: <https://www.beehive.govt.nz/release/register-mps-interests-be-introduced>,
   <https://publicdata.co.nz>
 - Aggregator: <https://theprogressreport.co.nz/politician-list/>
+
+
+### Hansard corpus decomposition (22 June 2026)
+
+Hansard is now tracked as a corpus-first workstream rather than a single candidate-owned adapter checkbox:
+
+- Spec 011: corpus storage and identity-free evidence.
+- Spec 012: official Parliament 54 document discovery and normalization.
+- Spec 013: typed person and party relationships.
+- Spec 014: full-term backfill, validation, and distribution decision.
+- Spec 015: deferred utterance segmentation and mention enrichment.
+
+This ordering preserves the official record before candidacies are known and keeps mentions distinct from actual participation.
 
 ## Dependencies
 

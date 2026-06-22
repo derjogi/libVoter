@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-06-15
 priority: high
 tags:
@@ -11,12 +11,14 @@ depends_on:
 - '002'
 - '003'
 created_at: 2026-06-15T10:47:57.996599283Z
-updated_at: 2026-06-15T10:49:29.286304523Z
+updated_at: 2026-06-22T05:31:31.698945729Z
 transitions:
 - status: in-progress
   at: 2026-06-15T10:49:04.324300082Z
 - status: planned
   at: 2026-06-15T10:49:12.488277554Z
+- status: in-progress
+  at: 2026-06-22T05:31:31.698945729Z
 ---
 
 # Evidence-retrieval RAG: electorate-scoped candidate + party evidence with citations
