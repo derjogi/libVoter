@@ -161,8 +161,10 @@ where a source requires it (as the Auckland scraper does). Prefer official
   - [ ] Aggregators (voted.nz, The Progress Report): discovery → verify.
 - [ ] **Refresher**: scheduled re-run, `contentHash` change detection,
       `fetchedAt` bookkeeping.
-- [ ] **Hand off to 009 Phase 4**: chunk + embed `evidenceSources` into
-      the vector store with the metadata filter.
+- [x] **Hand off to 009 Phase 4**: chunk + embed `evidenceSources` into
+      the vector store with the metadata filter. The embedding script's
+      `--repopulate` path resets only the derived `evidence` collection before
+      rebuilding, so repeated runs cannot append duplicate random-ID chunks.
 
 ## Test
 

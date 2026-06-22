@@ -48,6 +48,7 @@ export interface EvidenceVectorStore {
     maxResults?: number,
   ): Promise<EvidenceChunk[]>;
   populate(): Promise<number>;
+  repopulate(): Promise<number>;
 }
 
 /**
@@ -98,12 +99,29 @@ function str(v: unknown): string {
   return typeof v === "string" ? v : v == null ? "" : String(v);
 }
 
-class VectorStoreManager implements EvidenceVectorStore {
+type ChromaFactory = (index?: Chroma["index"]) => Chroma;
+
+export class VectorStoreManager implements EvidenceVectorStore {
   private vectorStore: Chroma | null = null;
   private embeddings: EmbeddingModel;
+  private createVectorStore: ChromaFactory;
 
-  constructor() {
-    this.embeddings = createEmbeddingModel();
+  constructor(
+    embeddings: EmbeddingModel = createEmbeddingModel(),
+    createVectorStore?: ChromaFactory,
+  ) {
+    this.embeddings = embeddings;
+    this.createVectorStore =
+      createVectorStore ??
+      ((index) =>
+        new Chroma(this.embeddings, {
+          collectionName: COLLECTION,
+          ...(index
+            ? { index }
+            : {
+                url: process.env.CHROMA_URL || "http://localhost:8000",
+              }),
+        }));
   }
 
   async initialize() {
@@ -121,20 +139,14 @@ class VectorStoreManager implements EvidenceVectorStore {
       }
     } catch {
       console.log("📝 Evidence collection not found, creating…");
-      this.vectorStore = new Chroma(this.embeddings, {
-        collectionName: COLLECTION,
-        url: process.env.CHROMA_URL || "http://localhost:8000",
-      });
+      this.vectorStore = this.createVectorStore();
       await this.populate();
     }
   }
 
   async populate(): Promise<number> {
     if (!this.vectorStore) {
-      this.vectorStore = new Chroma(this.embeddings, {
-        collectionName: COLLECTION,
-        url: process.env.CHROMA_URL || "http://localhost:8000",
-      });
+      this.vectorStore = this.createVectorStore();
     }
 
     const rows = await db.select().from(evidenceSources).all();
@@ -179,6 +191,27 @@ class VectorStoreManager implements EvidenceVectorStore {
       }
     }
     return added;
+  }
+
+  /** Replace the derived evidence index with a fresh collection. */
+  async reset(): Promise<void> {
+    if (!this.vectorStore) {
+      this.vectorStore = this.createVectorStore();
+    }
+    await this.vectorStore.ensureCollection();
+    const client = this.vectorStore.index;
+    if (!client) {
+      throw new Error("Chroma client unavailable while resetting evidence");
+    }
+
+    await client.deleteCollection({ name: COLLECTION });
+    // The old LangChain wrapper caches the deleted Collection handle.
+    this.vectorStore = this.createVectorStore(client);
+  }
+
+  async repopulate(): Promise<number> {
+    await this.reset();
+    return this.populate();
   }
 
   async query(
@@ -252,6 +285,10 @@ class MockVectorStoreManager implements EvidenceVectorStore {
 
   async populate(): Promise<number> {
     return this.fixtures.length;
+  }
+
+  async repopulate(): Promise<number> {
+    return this.populate();
   }
 
   async query(

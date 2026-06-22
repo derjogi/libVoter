@@ -56,6 +56,36 @@ describe("buildWhereFilter (electorate scoping)", () => {
   });
 });
 
+describe("VectorStoreManager collection reset", () => {
+  it("deletes only the evidence collection and discards the cached handle", async () => {
+    const { VectorStoreManager } = await import(
+      "@/lib/server/rag/vector-store"
+    );
+    const deleted: string[] = [];
+    const stores = [
+      {
+        index: {
+          deleteCollection: async ({ name }: { name: string }) => {
+            deleted.push(name);
+          },
+        },
+        ensureCollection: async () => undefined,
+      },
+      {},
+    ];
+    let created = 0;
+    const manager = new VectorStoreManager(
+      {} as never,
+      () => stores[created++] as never,
+    );
+
+    await manager.reset();
+
+    expect(deleted).toEqual(["evidence"]);
+    expect(created).toBe(2);
+  });
+});
+
 describe("evidence retrieval (mock mode)", () => {
   it("restricts results to the requested party scope and is similarity-sorted", async () => {
     const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");

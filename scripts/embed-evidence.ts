@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // Chunk + embed evidence_sources into the Chroma vector store (spec 009
-// Phase 4). Idempotent-ish: if the "evidence" collection already has chunks
-// it is loaded as-is; pass --repopulate to force a re-embed.
+// Phase 4). If the "evidence" collection already has chunks it is loaded
+// as-is; --repopulate replaces that derived collection before re-embedding.
 //
 // Usage:
 //   bun run scripts/embed-evidence.ts                 # populate if empty
@@ -20,14 +20,16 @@ async function main() {
 
   if (process.argv.includes("--repopulate")) {
     console.log("Re-embedding evidence_sources…");
-    const n = await store.populate();
+    const n = await store.repopulate();
     console.log(`Embedded ${n} chunks.`);
   }
 
   const query = arg("query") ?? "cost of living, housing and climate";
   const party = arg("party");
   const election = arg("election") ?? "nz-2026";
-  console.log(`\nQuery: "${query}"  filter: election=${election} party=${party ?? "-"}`);
+  console.log(
+    `\nQuery: "${query}"  filter: election=${election} party=${party ?? "-"}`,
+  );
 
   const chunks = await store.query(
     query,

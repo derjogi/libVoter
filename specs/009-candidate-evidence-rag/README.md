@@ -174,10 +174,16 @@ metadata above; associate each source with a `candidate_id` and/or
       inline). Extend the scraper + a background refresher to fetch voting
       records / statements / manifestos / party policy into
       `evidenceSources`, then chunk + embed (handed to Phase 4).
-- [ ] **Phase 4 — retrieval:** rewrite `vector-store.ts` to index chunks
+- [x] **Phase 4 — retrieval:** rewrite `vector-store.ts` to index chunks
       and accept a metadata filter (`candidateIds` / `partyIds`);
       rewrite `query-engine.ts` to take that filter instead of a global
-      search + LLM JSON pass. Fix the distance/similarity bug.
+      search + LLM JSON pass. Fix the distance/similarity bug. Done:
+      `scripts/embed-evidence.ts` chunks and embeds the canonical
+      `evidenceSources` rows, and filtered retrieval returns cited candidate
+      and party evidence with distance normalized to similarity.
+      `--repopulate` is collection-idempotent: it deletes only Chroma's
+      derived `evidence` collection via `deleteCollection`, discards the stale
+      LangChain collection handle, then rebuilds the index once.
 - [~] **Phase 5 — ranking + confidence:** rank the electorate pool from
       retrieved-evidence relevance; derive confidence from top-vs-second
       margin + topic/evidence coverage (carries over spec 005's formula).
