@@ -258,6 +258,71 @@ describe("runIngestion", () => {
     expect(store.rows).toHaveLength(1);
   });
 
+  it("stores Hansard person and party relationships idempotently without candidacies", async () => {
+    const store = new InMemoryEvidenceStore();
+    const source = {
+      sourceType: "voting_record",
+      url: "https://parliament.example/document/HansV_1",
+      content: "Ayes 63: Labour 34. Noes 57: ACT 11.",
+      externalId: "HansV_1",
+      documentType: "vote",
+      parliamentNumber: 54,
+      people: [
+        {
+          officialId: "mp-1",
+          name: "Hon EXAMPLE SPEAKER",
+          role: "speaker",
+          source: "official-metadata",
+        },
+      ],
+      parties: [
+        {
+          name: "Labour",
+          stance: "aye",
+          voteCount: 34,
+          source: "transcript-vote-text",
+        },
+      ],
+    } as NormalizedSource;
+
+    const first = await runIngestion(
+      [new FakeCorpusAdapter([source])],
+      baseRunOpts(store, resolverFor()),
+    );
+    const second = await runIngestion(
+      [new FakeCorpusAdapter([source])],
+      baseRunOpts(store, resolverFor()),
+    );
+
+    expect(first.inserted).toBe(1);
+    expect(second.skipped).toBe(1);
+    expect(store.rows).toHaveLength(1);
+    expect(store.people).toEqual([
+      { id: "hansard-person-mp-1", name: "Hon EXAMPLE SPEAKER" },
+    ]);
+    expect(store.candidacies).toEqual([]);
+    expect(store.documentPeople).toEqual([
+      {
+        evidenceSourceId: store.rows[0].id,
+        personId: "hansard-person-mp-1",
+        officialId: "mp-1",
+        personName: "Hon EXAMPLE SPEAKER",
+        role: "speaker",
+        source: "official-metadata",
+      },
+    ]);
+    expect(store.documentParties).toEqual([
+      {
+        evidenceSourceId: store.rows[0].id,
+        partyId: undefined,
+        partyName: "Labour",
+        stance: "aye",
+        voteCount: 34,
+        source: "transcript-vote-text",
+      },
+    ]);
+  });
+
   it("updates a corpus document by stable external ID across revisions", async () => {
     const store = new InMemoryEvidenceStore();
     const draft = {

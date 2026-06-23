@@ -11,6 +11,10 @@ import {
 import { htmlToText } from "../text";
 import type {
   AdapterContext,
+  HansardPartyStance,
+  HansardPersonRole,
+  NormalizedPartyRelationship,
+  NormalizedPersonRelationship,
   NormalizedSource,
   RawSource,
   SourceAdapter,
@@ -186,6 +190,13 @@ export class NzHansardAdapter implements SourceAdapter {
       throw new Error("Hansard source is missing its search metadata");
     }
 
+    const content = htmlToText(raw.raw);
+    const people = extractPersonRelationships(item, raw.raw);
+    const parties =
+      item.documentSubtype === "Vote"
+        ? extractPartyVoteRelationships(content)
+        : [];
+
     return {
       electionId: ctx.electionId,
       sourceType: raw.sourceType,
@@ -197,9 +208,134 @@ export class NzHansardAdapter implements SourceAdapter {
       documentType: item.documentSubtype.toLowerCase(),
       sourceStatus: item.progress?.toLowerCase(),
       parliamentNumber: item.parliamentNumber,
-      content: htmlToText(raw.raw),
+      people: people.length ? people : undefined,
+      parties: parties.length ? parties : undefined,
+      content,
     };
   }
+}
+
+function extractPersonRelationships(
+  item: HansardSearchItem,
+  rawHtml: string,
+): NormalizedPersonRelationship[] {
+  const relationships: NormalizedPersonRelationship[] = [];
+  const seen = new Set<string>();
+  const subtype = item.documentSubtype.toLowerCase();
+  const metadataRole: HansardPersonRole =
+    subtype === "question"
+      ? "questioner"
+      : subtype === "speech"
+        ? "speaker"
+        : "participant";
+
+  if (item.memberName) {
+    addPerson(relationships, seen, {
+      officialId: item.memberId ?? undefined,
+      name: item.memberName,
+      role: metadataRole,
+      source: "official-metadata",
+    });
+  }
+
+  for (const label of extractSpeakerLabels(rawHtml)) {
+    if (
+      item.memberName &&
+      normalizeParticipantName(label) ===
+        normalizeParticipantName(item.memberName)
+    ) {
+      continue;
+    }
+    addPerson(relationships, seen, {
+      name: label,
+      role: inferTranscriptLabelRole(label, subtype),
+      source: "transcript-label",
+    });
+  }
+
+  return relationships;
+}
+
+function addPerson(
+  relationships: NormalizedPersonRelationship[],
+  seen: Set<string>,
+  relationship: NormalizedPersonRelationship,
+): void {
+  const key = `${relationship.role}:${relationship.officialId ?? normalizeParticipantName(relationship.name)}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  relationships.push(relationship);
+}
+
+function extractSpeakerLabels(rawHtml: string): string[] {
+  const labels: string[] = [];
+  const seen = new Set<string>();
+  const strong = /<strong\b[^>]*>\s*([^:<]+?)\s*:\s*<\/strong>/gi;
+  for (const match of rawHtml.matchAll(strong)) {
+    const label = htmlToText(match[1]).trim();
+    if (!label) continue;
+    const key = normalizeParticipantName(label);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    labels.push(label);
+  }
+  return labels;
+}
+
+function inferTranscriptLabelRole(
+  label: string,
+  documentSubtype: string,
+): HansardPersonRole {
+  const normalized = normalizeParticipantName(label);
+  if (normalized === "SPEAKER" || normalized === "DEPUTY SPEAKER")
+    return "chair";
+  if (documentSubtype === "question") return "answerer";
+  if (documentSubtype === "speech") return "speaker";
+  return "participant";
+}
+
+function normalizeParticipantName(name: string): string {
+  return name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractPartyVoteRelationships(
+  text: string,
+): NormalizedPartyRelationship[] {
+  const relationships: NormalizedPartyRelationship[] = [];
+  for (const [heading, stance] of [
+    ["Ayes", "aye"],
+    ["Noes", "no"],
+    ["Abstentions", "abstain"],
+  ] as const satisfies ReadonlyArray<readonly [string, HansardPartyStance]>) {
+    const section = extractVoteSection(text, heading);
+    if (!section) continue;
+    for (const part of section.split(/;|,/)) {
+      const match = part.trim().match(/^(.+?)\s+(\d+)\.?$/u);
+      if (!match) continue;
+      relationships.push({
+        name: match[1].trim(),
+        stance,
+        voteCount: Number(match[2]),
+        source: "transcript-vote-text",
+      });
+    }
+  }
+  return relationships;
+}
+
+function extractVoteSection(text: string, heading: string): string | null {
+  const headings = "Ayes|Noes|Abstentions";
+  const pattern = new RegExp(
+    `${heading}\\s+\\d+\\s*:\\s*([\\s\\S]*?)(?=\\n\\s*(?:${headings})\\s+\\d+\\s*:|$)`,
+    "iu",
+  );
+  return text.match(pattern)?.[1]?.trim() ?? null;
 }
 
 /** Extract one stable section from the sitting day's transcript HTML. */

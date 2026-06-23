@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-06-22
 priority: high
 tags:
@@ -10,8 +10,12 @@ depends_on:
 - '012'
 parent: '010'
 created_at: 2026-06-22T05:43:26.785360681Z
-updated_at: 2026-06-22T05:43:26.785453054Z
+updated_at: 2026-06-23T07:39:32.548051426Z
+transitions:
+- status: in-progress
+  at: 2026-06-23T07:39:32.548051426Z
 ---
+
 # Hansard participant and party relationships
 
 ## Overview
@@ -28,20 +32,23 @@ Use official metadata and transcript speaker labels for participant extraction. 
 
 ## Plan
 
-- [ ] Add document-person and document-party relationship tables with role or stance metadata.
-- [ ] Add a Parliament-person resolver that can create or match MPs without creating candidacies.
-- [ ] Extract participant roles from official metadata and transcript labels.
-- [ ] Parse party-level and named individual vote information conservatively.
-- [ ] Report unresolved or ambiguous participant names.
+- [x] Add document-person and document-party relationship tables with role or stance metadata.
+- [x] Add a Parliament-person resolver that can create or match MPs without creating candidacies.
+- [x] Extract participant roles from official metadata and transcript labels.
+- [x] Parse party-level vote information conservatively.
+- [ ] Decide whether named individual vote stances need first-class person-vote metadata or can wait for a later vote-specific spec.
+- [ ] Report unresolved or ambiguous participant names if later source enrichment stops creating Hansard people directly.
 
 ## Test
 
-- [ ] One oral question links questioner, answerer, and chair with different roles.
-- [ ] One speech links multiple actual contributors without linking people only mentioned in prose.
-- [ ] A party vote links every recorded party to its stated side.
-- [ ] Creating Hansard people does not create NZ 2026 candidacies.
-- [ ] Reingestion is idempotent for all relationships.
+- [x] One oral question links questioner, answerer, and chair with different roles.
+- [x] One speech links actual contributors without linking people only mentioned in prose.
+- [x] A party vote links every recorded party to its stated side.
+- [x] Creating Hansard people does not create NZ 2026 candidacies.
+- [x] Reingestion is idempotent for all relationships.
 
 ## Notes
 
 Party votes express a recorded party position, not necessarily a personal vote by every member. The UI and later RAG prompts must preserve that distinction.
+
+Implemented in migration `0007_mean_cardiac`: Hansard documents now retain separate document-person and document-party relationship rows. The ingestion runner replaces relationships idempotently on insert/update/unchanged reingestion, creates Parliament people independently of candidacies, and keeps prose mentions out of participant extraction. Mention extraction remains deferred to spec 015.

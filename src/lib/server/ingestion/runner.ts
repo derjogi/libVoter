@@ -203,10 +203,14 @@ async function ingestOne(
         existing.contentHash === hash &&
         hasSameDocumentMetadata(existing, base)
       ) {
+        if (!opts.dryRun)
+          await replaceDocumentRelationships(existing.id, n, opts);
         result.skipped++;
         return;
       }
       if (!opts.dryRun) await opts.store.update(existing.id, updatePatch);
+      if (!opts.dryRun)
+        await replaceDocumentRelationships(existing.id, n, opts);
       result.updated++;
       return;
     }
@@ -224,13 +228,30 @@ async function ingestOne(
     const existing = await opts.store.findByUrl(n.url, candidateId, partyId);
     if (existing) {
       if (!opts.dryRun) await opts.store.update(existing.id, updatePatch);
+      if (!opts.dryRun)
+        await replaceDocumentRelationships(existing.id, n, opts);
       result.updated++;
       return;
     }
   }
 
   if (!opts.dryRun) await opts.store.insert(base);
+  if (!opts.dryRun) await replaceDocumentRelationships(base.id, n, opts);
   result.inserted++;
+}
+
+async function replaceDocumentRelationships(
+  evidenceSourceId: string,
+  n: NormalizedSource,
+  opts: RunOptions,
+): Promise<void> {
+  if (!opts.store.replaceDocumentRelationships) return;
+  if (!n.people?.length && !n.parties?.length) return;
+  await opts.store.replaceDocumentRelationships(evidenceSourceId, {
+    electionId: n.electionId ?? opts.electionId,
+    people: n.people,
+    parties: n.parties,
+  });
 }
 
 function hasSameDocumentMetadata(

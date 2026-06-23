@@ -6,8 +6,20 @@
 // provides the lookups it needs plus insert/update.
 
 import { and, eq } from "drizzle-orm";
-import { evidenceSources, type NewEvidenceSource } from "../../db/schema";
+import {
+  electionParties,
+  evidenceSources,
+  hansardDocumentParties,
+  hansardDocumentPeople,
+  type NewEvidenceSource,
+  people,
+} from "../../db/schema";
 import type { db as DbType } from "../db";
+import { normalizeName } from "./identity";
+import type {
+  NormalizedPartyRelationship,
+  NormalizedPersonRelationship,
+} from "./types";
 
 export interface ExistingEvidence {
   id: string;
@@ -53,11 +65,43 @@ export interface EvidenceStore {
   ): Promise<ExistingEvidence | null>;
   insert(row: NewEvidenceSource): Promise<void>;
   update(id: string, row: Partial<NewEvidenceSource>): Promise<void>;
+  replaceDocumentRelationships?(
+    evidenceSourceId: string,
+    relationships: EvidenceDocumentRelationships,
+  ): Promise<void>;
+}
+
+export interface EvidenceDocumentRelationships {
+  electionId: string;
+  people?: NormalizedPersonRelationship[];
+  parties?: NormalizedPartyRelationship[];
+}
+
+export interface StoredDocumentPersonRelationship {
+  evidenceSourceId: string;
+  personId: string;
+  officialId?: string;
+  personName: string;
+  role: string;
+  source: string;
+}
+
+export interface StoredDocumentPartyRelationship {
+  evidenceSourceId: string;
+  partyId?: string;
+  partyName: string;
+  stance: string;
+  voteCount?: number;
+  source: string;
 }
 
 /** In-memory store, used by tests and `--dry-run`. */
 export class InMemoryEvidenceStore implements EvidenceStore {
   rows: NewEvidenceSource[] = [];
+  people: Array<{ id: string; name: string }> = [];
+  candidacies: unknown[] = [];
+  documentPeople: StoredDocumentPersonRelationship[] = [];
+  documentParties: StoredDocumentPartyRelationship[] = [];
 
   async findByHash(hash: string): Promise<string | null> {
     const hit = this.rows.find((r) => r.contentHash === hash);
@@ -95,6 +139,44 @@ export class InMemoryEvidenceStore implements EvidenceStore {
   async update(id: string, patch: Partial<NewEvidenceSource>): Promise<void> {
     const row = this.rows.find((r) => r.id === id);
     if (row) Object.assign(row, patch);
+  }
+
+  async replaceDocumentRelationships(
+    evidenceSourceId: string,
+    relationships: EvidenceDocumentRelationships,
+  ): Promise<void> {
+    this.documentPeople = this.documentPeople.filter(
+      (r) => r.evidenceSourceId !== evidenceSourceId,
+    );
+    this.documentParties = this.documentParties.filter(
+      (r) => r.evidenceSourceId !== evidenceSourceId,
+    );
+
+    for (const person of relationships.people ?? []) {
+      const personId = hansardPersonId(person);
+      if (!this.people.some((p) => p.id === personId)) {
+        this.people.push({ id: personId, name: person.name });
+      }
+      this.documentPeople.push({
+        evidenceSourceId,
+        personId,
+        officialId: person.officialId,
+        personName: person.name,
+        role: person.role,
+        source: person.source,
+      });
+    }
+
+    for (const party of relationships.parties ?? []) {
+      this.documentParties.push({
+        evidenceSourceId,
+        partyId: undefined,
+        partyName: party.name,
+        stance: party.stance,
+        voteCount: party.voteCount,
+        source: party.source,
+      });
+    }
   }
 }
 
@@ -179,4 +261,87 @@ export class DrizzleEvidenceStore implements EvidenceStore {
       .set(patch)
       .where(eq(evidenceSources.id, id));
   }
+
+  async replaceDocumentRelationships(
+    evidenceSourceId: string,
+    relationships: EvidenceDocumentRelationships,
+  ): Promise<void> {
+    await this.db
+      .delete(hansardDocumentPeople)
+      .where(eq(hansardDocumentPeople.evidenceSourceId, evidenceSourceId));
+    await this.db
+      .delete(hansardDocumentParties)
+      .where(eq(hansardDocumentParties.evidenceSourceId, evidenceSourceId));
+
+    const now = new Date();
+    for (const person of relationships.people ?? []) {
+      const personId = hansardPersonId(person);
+      await this.db
+        .insert(people)
+        .values({ id: personId, name: person.name, createdAt: now })
+        .onConflictDoNothing();
+      await this.db.insert(hansardDocumentPeople).values({
+        id: relationshipId(evidenceSourceId, "person", personId, person.role),
+        evidenceSourceId,
+        personId,
+        officialId: person.officialId ?? null,
+        personName: person.name,
+        role: person.role,
+        source: person.source,
+        createdAt: now,
+      });
+    }
+
+    const partyIndex = await this.partyIndex(relationships.electionId);
+    for (const party of relationships.parties ?? []) {
+      const partyId = partyIndex.get(normalizeName(party.name));
+      await this.db.insert(hansardDocumentParties).values({
+        id: relationshipId(
+          evidenceSourceId,
+          "party",
+          partyId ?? party.name,
+          party.stance,
+        ),
+        evidenceSourceId,
+        partyId: partyId ?? null,
+        partyName: party.name,
+        stance: party.stance,
+        voteCount: party.voteCount ?? null,
+        source: party.source,
+        createdAt: now,
+      });
+    }
+  }
+
+  private async partyIndex(electionId: string): Promise<Map<string, string>> {
+    const rows = await this.db
+      .select({ id: electionParties.id, name: electionParties.name })
+      .from(electionParties)
+      .where(eq(electionParties.electionId, electionId))
+      .all();
+    return new Map(rows.map((row) => [normalizeName(row.name), row.id]));
+  }
+}
+
+function hansardPersonId(person: NormalizedPersonRelationship): string {
+  const raw = person.officialId ?? normalizeName(person.name);
+  return `hansard-person-${slugId(raw)}`;
+}
+
+function relationshipId(
+  evidenceSourceId: string,
+  kind: "person" | "party",
+  entityId: string,
+  roleOrStance: string,
+): string {
+  return `${evidenceSourceId}:${kind}:${slugId(entityId)}:${slugId(roleOrStance)}`;
+}
+
+function slugId(value: string): string {
+  return value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

@@ -40,6 +40,30 @@ export interface RawSource extends SourceRef {
  * resolution fills candidateId/partyId before upsert; unresolved rows are
  * reported, never silently dropped.
  */
+export type HansardPersonRole =
+  | "speaker"
+  | "questioner"
+  | "answerer"
+  | "chair"
+  | "participant";
+
+export type HansardPartyStance = "aye" | "no" | "abstain" | "unknown";
+
+export interface NormalizedPersonRelationship {
+  /** Parliament's stable member id when the source provides one. */
+  officialId?: string;
+  name: string;
+  role: HansardPersonRole;
+  source: "official-metadata" | "transcript-label";
+}
+
+export interface NormalizedPartyRelationship {
+  name: string;
+  stance: HansardPartyStance;
+  voteCount?: number;
+  source: "transcript-vote-text" | "official-metadata";
+}
+
 export interface NormalizedSource {
   /** Optional; the runner defaults this from --election when unset. */
   electionId?: string;
@@ -59,6 +83,10 @@ export interface NormalizedSource {
   sourceStatus?: string;
   /** Parliament or legislative term number when the source supplies one. */
   parliamentNumber?: number;
+  /** Actual Hansard participants; prose mentions are intentionally excluded. */
+  people?: NormalizedPersonRelationship[];
+  /** Party/named group vote relationships when the source records them. */
+  parties?: NormalizedPartyRelationship[];
   /** Cleaned full text — the durable record we re-chunk and embed. */
   content: string;
 }
