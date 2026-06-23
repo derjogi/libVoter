@@ -47,6 +47,30 @@ const ChatTurnSchema = z.object({
 
 type ChatTurn = z.infer<typeof ChatTurnSchema>;
 
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  if (items.length === 0) return [];
+
+  const limit = Math.max(1, Math.floor(concurrency));
+  const results = new Array<R>(items.length);
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex++;
+      results[index] = await mapper(items[index], index);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker()),
+  );
+  return results;
+}
+
 // Interim candidate ranking (spec 009 Phase 5). One structured call scores the
 // whole electorate pool at once — fine because a single ward/electorate has at
 // most a few dozen candidates. Replaced/augmented later by evidence-based
@@ -369,8 +393,10 @@ If a candidate has little relevant information, score them lower. Return exactly
     candidates: Candidate[],
   ): Promise<Map<string, CandidateEvidence>> {
     const engine = new RAGQueryEngine();
-    const entries = await Promise.all(
-      candidates.map(async (candidate) => {
+    const entries = await mapWithConcurrency(
+      candidates,
+      4,
+      async (candidate) => {
         const partyId = this.partyEvidenceId(candidate.party);
         const evidence = await engine.retrieveForCandidate(
           query,
@@ -379,7 +405,7 @@ If a candidate has little relevant information, score them lower. Return exactly
           electionConfig.id,
         );
         return [candidate.id.toString(), evidence] as const;
-      }),
+      },
     );
     return new Map(entries);
   }

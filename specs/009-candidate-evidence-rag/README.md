@@ -238,6 +238,10 @@ metadata above; associate each source with a `candidate_id` and/or
   the current local candidate data is still the legacy Auckland set, so visible
   cards can remain at 0 when no matching NZ-2026 party/candidate evidence is
   available.
+- 2026-06-24: Runtime hardening: candidate evidence retrieval now limits
+  Chroma lookups to four in-flight candidates at a time. This avoids piling
+  10+ concurrent HTTP close listeners onto the same underlying client during
+  large electorates while preserving result ordering for ranking.
 
 ## Dependencies
 

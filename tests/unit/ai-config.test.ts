@@ -15,4 +15,10 @@ describe("parseModelString", () => {
       model: "nex-agi/nex-n2-pro:free",
     });
   });
+
+  it("rejects the invalid OpenRouter shorthand that causes provider 502s", () => {
+    expect(() => parseModelString("openrouter/free")).toThrow(
+      /OpenRouter model ids must include an owner and model/,
+    );
+  });
 });

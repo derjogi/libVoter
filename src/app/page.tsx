@@ -212,7 +212,7 @@ export default function VotingAdvisor() {
           "\n",
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 
-        const componentResult = await selectNextComponent(conversationState);
+        const componentResult = await selectNextComponent(conversationState, seats);
         if (componentResult.success && componentResult.data) {
           appendActive(componentResult.data);
         } else {

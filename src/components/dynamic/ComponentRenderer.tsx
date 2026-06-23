@@ -11,7 +11,7 @@ import { YesNoQuestion } from "./YesNoQuestion";
 
 /**
  * Picks the right dynamic component for `componentData.type`. The discriminated
- * union from `components.zod.ts` means each `case` narrows `componentData.data`
+ * union from `components.zod.ts` means each branch narrows `componentData.data`
  * to the right shape automatically — no casting needed.
  *
  * `locked` renders the widget non-interactive (an already-answered transcript
@@ -26,98 +26,100 @@ export function ComponentRenderer({
   value,
   followupQuestion,
 }: ComponentRendererProps) {
-  switch (componentData.type) {
-    case "chat":
-      return (
-        <ChatInterface
-          data={componentData.data}
-          onSendMessage={onResponse}
-          isLoading={isLoading}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-          followupQuestion={followupQuestion}
-        />
-      );
-
-    case "yesno":
-      return (
-        <YesNoQuestion
-          data={componentData.data}
-          onResponse={onResponse}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-        />
-      );
-
-    case "multiselect":
-      return (
-        <MultiSelectChecklist
-          data={componentData.data}
-          onResponse={onResponse}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-        />
-      );
-
-    case "dropdown":
-      return (
-        <DropdownSelect
-          data={componentData.data}
-          onResponse={onResponse}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-        />
-      );
-
-    case "freetext":
-      return (
-        <FreeTextInput
-          data={componentData.data}
-          onResponse={onResponse}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-        />
-      );
-
-    case "slider":
-      return (
-        <QuantitativeSlider
-          data={componentData.data}
-          onResponse={onResponse}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-        />
-      );
-
-    case "priority":
-      return (
-        <PriorityRanking
-          data={componentData.data}
-          onResponse={onResponse}
-          disabled={disabled}
-          locked={locked}
-          value={value}
-        />
-      );
-
-    default: {
-      // Exhaustiveness check — if a new component type is added to the
-      // discriminated union, TypeScript will fail here until the switch is
-      // updated.
-      const _exhaustive: never = componentData;
-      return (
-        <div className="text-center p-8">
-          <p className="text-muted-foreground">
-            Unknown component type: {JSON.stringify(_exhaustive)}
-          </p>
-        </div>
-      );
-    }
+  if (componentData.type === "chat") {
+    return (
+      <ChatInterface
+        data={componentData.data}
+        onSendMessage={onResponse}
+        isLoading={isLoading}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+        followupQuestion={followupQuestion}
+      />
+    );
   }
+
+  if (componentData.type === "yesno") {
+    return (
+      <YesNoQuestion
+        data={componentData.data}
+        onResponse={onResponse}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+      />
+    );
+  }
+
+  if (componentData.type === "multiselect") {
+    return (
+      <MultiSelectChecklist
+        data={componentData.data}
+        onResponse={onResponse}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+      />
+    );
+  }
+
+  if (componentData.type === "dropdown") {
+    return (
+      <DropdownSelect
+        data={componentData.data}
+        onResponse={onResponse}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+      />
+    );
+  }
+
+  if (componentData.type === "freetext") {
+    return (
+      <FreeTextInput
+        data={componentData.data}
+        onResponse={onResponse}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+      />
+    );
+  }
+
+  if (componentData.type === "slider") {
+    return (
+      <QuantitativeSlider
+        data={componentData.data}
+        onResponse={onResponse}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+      />
+    );
+  }
+
+  if (componentData.type === "priority") {
+    return (
+      <PriorityRanking
+        data={componentData.data}
+        onResponse={onResponse}
+        disabled={disabled}
+        locked={locked}
+        value={value}
+      />
+    );
+  }
+
+  const unknownType =
+    (componentData as unknown as { type?: string }).type ?? "unknown";
+
+  return (
+    <div className="text-center p-8">
+      <p className="text-muted-foreground">
+        Unknown component type: {unknownType}
+      </p>
+    </div>
+  );
 }

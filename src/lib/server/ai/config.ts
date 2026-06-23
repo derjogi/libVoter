@@ -21,6 +21,11 @@ export function parseModelString(modelString: string): AIModelConfig {
   const prefix = modelString.slice(0, separator);
   const rest = modelString.slice(separator + 1);
   if (isSupportedProvider(prefix)) {
+    if (prefix === "openrouter" && !rest.includes("/")) {
+      throw new Error(
+        `Invalid OpenRouter model "${modelString}". OpenRouter model ids must include an owner and model, for example "openrouter/openai/gpt-oss-20b:free" or "openrouter/meta-llama/llama-3.3-70b-instruct:free".`,
+      );
+    }
     return { provider: prefix, model: rest };
   }
 

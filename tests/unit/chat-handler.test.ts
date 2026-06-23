@@ -2,6 +2,7 @@
 // processMessage no longer throws ReferenceError, returns a valid ChatResponse,
 // and follows the AI_MODE=mock fixtures.
 import { beforeAll, describe, expect, it } from "vitest";
+import { mapWithConcurrency } from "@/lib/server/ai/chat-handler";
 
 beforeAll(() => {
   // Force mock mode before importing anything that constructs a model.
@@ -104,5 +105,27 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     ]);
     expect(match.reasoning).toContain("Evidence consulted");
     expect(match.score).toBeGreaterThan(0);
+  });
+});
+
+describe("mapWithConcurrency", () => {
+  it("limits in-flight async work", async () => {
+    let active = 0;
+    let maxActive = 0;
+
+    const result = await mapWithConcurrency(
+      [1, 2, 3, 4, 5, 6],
+      2,
+      async (n) => {
+        active++;
+        maxActive = Math.max(maxActive, active);
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        active--;
+        return n * 2;
+      },
+    );
+
+    expect(result).toEqual([2, 4, 6, 8, 10, 12]);
+    expect(maxActive).toBeLessThanOrEqual(2);
   });
 });
