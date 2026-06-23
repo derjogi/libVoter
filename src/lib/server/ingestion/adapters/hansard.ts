@@ -13,9 +13,11 @@ import type {
   AdapterContext,
   HansardPartyStance,
   HansardPersonRole,
+  NormalizedMentionRelationship,
   NormalizedPartyRelationship,
   NormalizedPersonRelationship,
   NormalizedSource,
+  NormalizedUtterance,
   RawSource,
   SourceAdapter,
   SourceRef,
@@ -75,6 +77,14 @@ export interface HansardAdapterOptions {
   pageSize?: number;
   cacheDir?: string;
   allowPartialCache?: boolean;
+  knownPeople?: readonly KnownHansardPerson[];
+}
+
+type ParticipantRole = Exclude<HansardPersonRole, "mentioned">;
+
+export interface KnownHansardPerson {
+  officialId?: string;
+  name: string;
 }
 
 type SearchHansard = NonNullable<HansardAdapterOptions["search"]>;
@@ -92,6 +102,7 @@ export class NzHansardAdapter implements SourceAdapter {
   private readonly localCache: boolean;
   private readonly cache?: HansardCacheTransport;
   private readonly transcriptCache = new Map<string, Promise<string>>();
+  private readonly knownPeople: readonly KnownHansardPerson[];
 
   constructor(options: HansardAdapterOptions = {}) {
     const cache = options.cacheDir
@@ -106,6 +117,7 @@ export class NzHansardAdapter implements SourceAdapter {
       options.transcript ?? cache?.transcript ?? fetchTranscript;
     this.pageSize = options.pageSize ?? 100;
     this.localCache = cache !== undefined;
+    this.knownPeople = options.knownPeople ?? [];
   }
 
   async discover(ctx: AdapterContext): Promise<SourceRef[]> {
@@ -191,7 +203,13 @@ export class NzHansardAdapter implements SourceAdapter {
     }
 
     const content = htmlToText(raw.raw);
+    const utterances = extractUtterances(raw.raw, item.documentSubtype);
     const people = extractPersonRelationships(item, raw.raw);
+    const mentions = extractMentionRelationships(
+      utterances,
+      people,
+      this.knownPeople,
+    );
     const parties =
       item.documentSubtype === "Vote"
         ? extractPartyVoteRelationships(content)
@@ -209,6 +227,8 @@ export class NzHansardAdapter implements SourceAdapter {
       sourceStatus: item.progress?.toLowerCase(),
       parliamentNumber: item.parliamentNumber,
       people: people.length ? people : undefined,
+      utterances: utterances.length ? utterances : undefined,
+      mentions,
       parties: parties.length ? parties : undefined,
       content,
     };
@@ -222,7 +242,7 @@ function extractPersonRelationships(
   const relationships: NormalizedPersonRelationship[] = [];
   const seen = new Set<string>();
   const subtype = item.documentSubtype.toLowerCase();
-  const metadataRole: HansardPersonRole =
+  const metadataRole: ParticipantRole =
     subtype === "question"
       ? "questioner"
       : subtype === "speech"
@@ -267,6 +287,92 @@ function addPerson(
   relationships.push(relationship);
 }
 
+function extractUtterances(
+  rawHtml: string,
+  documentSubtype: string,
+): NormalizedUtterance[] {
+  const utterances: NormalizedUtterance[] = [];
+  const paragraph = /<p\b[^>]*>([\s\S]*?)<\/p>/gi;
+  let pending: NormalizedUtterance | undefined;
+
+  for (const match of rawHtml.matchAll(paragraph)) {
+    const html = match[1];
+    const label = html.match(
+      /^\s*<strong\b[^>]*>\s*([^:<]+?)\s*:\s*<\/strong>\s*([\s\S]*)$/i,
+    );
+    if (label) {
+      pending = {
+        sequence: utterances.length + 1,
+        speakerName: htmlToText(label[1]).trim(),
+        speakerRole: inferTranscriptLabelRole(label[1], documentSubtype),
+        text: htmlToText(label[2]).trim(),
+      };
+      if (pending.text) utterances.push(pending);
+      continue;
+    }
+
+    const text = htmlToText(html).trim();
+    if (!text) continue;
+    if (pending) {
+      pending.text = `${pending.text}\n${text}`;
+    } else {
+      pending = { sequence: utterances.length + 1, text };
+      utterances.push(pending);
+    }
+  }
+
+  return utterances;
+}
+
+function extractMentionRelationships(
+  utterances: NormalizedUtterance[],
+  participants: NormalizedPersonRelationship[],
+  knownPeople: readonly KnownHansardPerson[],
+): NormalizedMentionRelationship[] {
+  if (knownPeople.length === 0) return [];
+
+  const byName = new Map<string, KnownHansardPerson[]>();
+  for (const person of knownPeople) {
+    const key = normalizeParticipantName(person.name);
+    byName.set(key, [...(byName.get(key) ?? []), person]);
+  }
+
+  const participantNames = new Set(
+    participants.map((person) => normalizeParticipantName(person.name)),
+  );
+  const mentions: NormalizedMentionRelationship[] = [];
+  const seen = new Set<string>();
+
+  for (const utterance of utterances) {
+    const speaker = utterance.speakerName
+      ? normalizeParticipantName(utterance.speakerName)
+      : undefined;
+    for (const [normalizedName, matches] of byName) {
+      if (matches.length !== 1) continue;
+      if (speaker === normalizedName) continue;
+      if (!containsName(utterance.text, matches[0].name)) continue;
+      const key = `${normalizedName}:${utterance.sequence}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      mentions.push({
+        officialId: matches[0].officialId,
+        name: matches[0].name,
+        role: "mentioned",
+        source: "deterministic-mention",
+        utteranceSequence: utterance.sequence,
+        confidence: participantNames.has(normalizedName) ? 0.8 : 1,
+      });
+    }
+  }
+
+  return mentions;
+}
+
+function containsName(text: string, name: string): boolean {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^A-Za-z])${escaped}([^A-Za-z]|$)`, "iu").test(text);
+}
+
 function extractSpeakerLabels(rawHtml: string): string[] {
   const labels: string[] = [];
   const seen = new Set<string>();
@@ -285,12 +391,13 @@ function extractSpeakerLabels(rawHtml: string): string[] {
 function inferTranscriptLabelRole(
   label: string,
   documentSubtype: string,
-): HansardPersonRole {
+): ParticipantRole {
   const normalized = normalizeParticipantName(label);
+  const subtype = documentSubtype.toLowerCase();
   if (normalized === "SPEAKER" || normalized === "DEPUTY SPEAKER")
     return "chair";
-  if (documentSubtype === "question") return "answerer";
-  if (documentSubtype === "speech") return "speaker";
+  if (subtype === "question") return "answerer";
+  if (subtype === "speech") return "speaker";
   return "participant";
 }
 

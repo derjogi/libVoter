@@ -153,8 +153,10 @@ where a source requires it (as the Auckland scraper does). Prefer official
         is now `NZ_2026`. CC BY-SA text keeps `url` for attribution +
         link-out. Source `nz-party-policy`.
   - [ ] Electoral Commission: candidate/party lists + donations/loans.
-  - [~] Parliament / Hansard: speeches & debate contributions (+ votes
-        where available).
+  - [x] Parliament / Hansard: speeches & debate contributions (+ votes
+        where available). Corpus discovery/storage, participant and party
+        relationships, utterance segmentation, deterministic mention rows, and
+        utterance-aware vector metadata are complete via specs 011-015.
   - [ ] Register of MPs' interests: PDF/web → text.
   - [ ] Party & candidate websites: policy + bios (verify vs official).
   - [ ] Aggregators (voted.nz, The Progress Report): discovery → verify.

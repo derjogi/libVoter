@@ -10,7 +10,7 @@
 import { Chroma } from "@langchain/community/vectorstores/chroma";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { evidenceSources } from "../../db/schema";
+import { evidenceSources, hansardUtterances } from "../../db/schema";
 import type { EmbeddingModel } from "../ai/model-factory";
 import { createEmbeddingModel, isMockMode } from "../ai/model-factory";
 import { db } from "../db";
@@ -39,6 +39,11 @@ export interface EvidenceChunk {
   sourceTitle?: string;
   date?: string;
   electionId?: string;
+  evidenceId?: string;
+  documentType?: string;
+  speaker?: string;
+  role?: string;
+  utteranceSequence?: number;
 }
 
 export interface EvidenceVectorStore {
@@ -150,26 +155,71 @@ export class VectorStoreManager implements EvidenceVectorStore {
     }
 
     const rows = await db.select().from(evidenceSources).all();
+    const utteranceRows = await db.select().from(hansardUtterances).all();
+    const utterancesByEvidence = new Map<string, typeof utteranceRows>();
+    for (const utterance of utteranceRows) {
+      const list = utterancesByEvidence.get(utterance.evidenceSourceId) ?? [];
+      list.push(utterance);
+      utterancesByEvidence.set(utterance.evidenceSourceId, list);
+    }
+    for (const list of utterancesByEvidence.values()) {
+      list.sort((a, b) => a.sequence - b.sequence);
+    }
     console.log(`📊 ${rows.length} evidence sources from DB`);
 
     const docs = rows
       .filter((r) => r.content?.trim())
-      .map(
-        (r) =>
+      .flatMap((r) => {
+        const baseMetadata = {
+          evidence_id: r.id,
+          election_id: str(r.electionId),
+          candidate_id: str(r.candidateId),
+          party_id: str(r.partyId),
+          source_type: str(r.sourceType),
+          source_url: str(r.url),
+          source_title: str(r.title),
+          date: r.publishedAt ? new Date(r.publishedAt).toISOString() : "",
+          document_type: str(r.documentType),
+        };
+        const utterances = utterancesByEvidence.get(r.id) ?? [];
+        if (utterances.length > 0) {
+          return utterances.map((utterance, index) => {
+            const previous = utterances[index - 1];
+            const next = utterances[index + 1];
+            const pageContent = [
+              previous
+                ? `[previous: ${previous.speakerName ?? "unknown"}] ${previous.text}`
+                : undefined,
+              `[current: ${utterance.speakerName ?? "unknown"}] ${utterance.text}`,
+              next
+                ? `[next: ${next.speakerName ?? "unknown"}] ${next.text}`
+                : undefined,
+            ]
+              .filter(Boolean)
+              .join("\n\n");
+            return new Document({
+              pageContent,
+              metadata: {
+                ...baseMetadata,
+                speaker: str(utterance.speakerName),
+                role: str(utterance.speakerRole),
+                utterance_sequence: utterance.sequence,
+              },
+            });
+          });
+        }
+        return [
           new Document({
             pageContent: r.content,
             metadata: {
-              evidence_id: r.id,
-              election_id: str(r.electionId),
-              candidate_id: str(r.candidateId),
-              party_id: str(r.partyId),
-              source_type: str(r.sourceType),
-              source_url: str(r.url),
-              source_title: str(r.title),
-              date: r.publishedAt ? new Date(r.publishedAt).toISOString() : "",
+              ...baseMetadata,
+              speaker: str(r.author),
+              role: str(r.documentType),
+              utterance_sequence: 0,
             },
           }),
-      );
+        ];
+      });
 
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1000,
@@ -239,6 +289,15 @@ export class VectorStoreManager implements EvidenceVectorStore {
         sourceTitle: doc.metadata.source_title || undefined,
         date: doc.metadata.date || undefined,
         electionId: doc.metadata.election_id || undefined,
+        evidenceId: doc.metadata.evidence_id || undefined,
+        documentType: doc.metadata.document_type || undefined,
+        speaker: doc.metadata.speaker || undefined,
+        role: doc.metadata.role || undefined,
+        utteranceSequence:
+          typeof doc.metadata.utterance_sequence === "number" &&
+          doc.metadata.utterance_sequence > 0
+            ? doc.metadata.utterance_sequence
+            : undefined,
       }))
       .sort((a, b) => b.score - a.score);
   }

@@ -189,14 +189,13 @@ metadata above; associate each source with a `candidate_id` and/or
 - [~] **Phase 5 — ranking + confidence:** rank the electorate pool from
       retrieved-evidence relevance; derive confidence from top-vs-second
       margin + topic/evidence coverage (carries over spec 005's formula).
-      **Interim done (no evidence retrieval yet):** `rankCandidates()` +
-      `generateRanking()` in
-      [`chat-handler.ts`](../../src/lib/server/ai/chat-handler.ts) score the
-      whole ward pool in one structured LLM call per turn (fine for ≤~40
-      candidates) using existing DB fields; `deriveConfidence()` implements
-      the margin + topic-coverage formula. Mock fixture
-      `MOCK_CANDIDATE_RANKING` added. **Still pending:** rank from retrieved
-      evidence (needs Phases 2–4) instead of raw DB fields.
+      `rankCandidates()` now calls `RAGQueryEngine.retrieveForCandidate()`
+      for each available candidate, includes the retrieved individual/party
+      chunks in the ranking prompt, surfaces source citations on
+      `CandidateMatch.sources`, and uses evidence similarity as a fallback
+      score when the model returns no ranking in mock mode. The LLM ranking
+      call is still retained for holistic scoring; full evidence-only scoring
+      and UI summaries remain Phase 6/follow-up work.
 - [ ] **Phase 6 — gated summaries + UI:** for shortlisted candidates,
       generate individual + party summaries with citations; render
       expandable, source-linked cards (individual track record vs party
@@ -215,8 +214,9 @@ metadata above; associate each source with a `candidate_id` and/or
       test for the inversion bug).
 - [ ] Summaries are only generated for candidates past the match
       threshold; below-threshold candidates show no LLM-generated text.
-- [ ] Mock mode (spec 006) drives retrieval + summaries deterministically
-      end-to-end.
+- [x] Mock mode (spec 006) drives retrieval into the chat/ranking seam
+      deterministically (`chat-handler.test.ts` asserts a Green-party
+      candidate gets cited party-policy evidence). Summaries remain Phase 6.
 
 ## Notes
 
@@ -231,6 +231,13 @@ metadata above; associate each source with a `candidate_id` and/or
   user_profile_hash)` so candidates sharing a party reuse it.
 - Resist over-building ingestion before the retrieval + UI shape is
   proven on a small, hand-seeded evidence set.
+- 2026-06-23: website runtime path is now partially evidence-backed:
+  `page.tsx` → `useChat` → `processChatMessage` →
+  `AIChatHandler.rankCandidates()` → `RAGQueryEngine.retrieveForCandidate()`.
+  Browser smoke on port 3001 confirmed the app runs and reaches the chat flow;
+  the current local candidate data is still the legacy Auckland set, so visible
+  cards can remain at 0 when no matching NZ-2026 party/candidate evidence is
+  available.
 
 ## Dependencies
 

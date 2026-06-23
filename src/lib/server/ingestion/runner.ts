@@ -246,11 +246,20 @@ async function replaceDocumentRelationships(
   opts: RunOptions,
 ): Promise<void> {
   if (!opts.store.replaceDocumentRelationships) return;
-  if (!n.people?.length && !n.parties?.length) return;
+  if (
+    !n.people?.length &&
+    !n.parties?.length &&
+    !n.utterances?.length &&
+    !n.mentions?.length
+  ) {
+    return;
+  }
   await opts.store.replaceDocumentRelationships(evidenceSourceId, {
     electionId: n.electionId ?? opts.electionId,
     people: n.people,
     parties: n.parties,
+    utterances: n.utterances,
+    mentions: n.mentions,
   });
 }
 

@@ -45,7 +45,8 @@ export type HansardPersonRole =
   | "questioner"
   | "answerer"
   | "chair"
-  | "participant";
+  | "participant"
+  | "mentioned";
 
 export type HansardPartyStance = "aye" | "no" | "abstain" | "unknown";
 
@@ -53,8 +54,25 @@ export interface NormalizedPersonRelationship {
   /** Parliament's stable member id when the source provides one. */
   officialId?: string;
   name: string;
-  role: HansardPersonRole;
+  role: Exclude<HansardPersonRole, "mentioned">;
   source: "official-metadata" | "transcript-label";
+}
+
+export interface NormalizedUtterance {
+  sequence: number;
+  speakerName?: string;
+  speakerRole?: Exclude<HansardPersonRole, "mentioned">;
+  text: string;
+}
+
+export interface NormalizedMentionRelationship {
+  /** Parliament's stable member id when known. */
+  officialId?: string;
+  name: string;
+  role: "mentioned";
+  source: "deterministic-mention";
+  utteranceSequence?: number;
+  confidence: number;
 }
 
 export interface NormalizedPartyRelationship {
@@ -85,6 +103,10 @@ export interface NormalizedSource {
   parliamentNumber?: number;
   /** Actual Hansard participants; prose mentions are intentionally excluded. */
   people?: NormalizedPersonRelationship[];
+  /** Ordered speaker turns extracted from the document body. */
+  utterances?: NormalizedUtterance[];
+  /** People discussed in prose; distinct from participant relationships. */
+  mentions?: NormalizedMentionRelationship[];
   /** Party/named group vote relationships when the source records them. */
   parties?: NormalizedPartyRelationship[];
   /** Cleaned full text — the durable record we re-chunk and embed. */

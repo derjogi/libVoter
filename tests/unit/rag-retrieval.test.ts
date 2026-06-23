@@ -86,6 +86,53 @@ describe("VectorStoreManager collection reset", () => {
   });
 });
 
+describe("VectorStoreManager query metadata", () => {
+  it("exposes Hansard document, speaker, role, date, and canonical URL metadata", async () => {
+    const { VectorStoreManager } = await import(
+      "@/lib/server/rag/vector-store"
+    );
+    const manager = new VectorStoreManager({} as never, () => ({}) as never);
+    (manager as unknown as { vectorStore: unknown }).vectorStore = {
+      similaritySearchWithScore: async () => [
+        [
+          {
+            pageContent: "[current: Hon A] Housing answer.",
+            metadata: {
+              evidence_id: "e1",
+              election_id: "nz-2026",
+              candidate_id: "c1",
+              source_type: "hansard",
+              source_url:
+                "https://www.parliament.nz/en/pb/hansard-debates/rhr/document/HansS_1",
+              source_title: "Oral Questions",
+              date: "2026-01-01T00:00:00.000Z",
+              document_type: "question",
+              speaker: "Hon A",
+              role: "answerer",
+              utterance_sequence: 2,
+            },
+          },
+          0.25,
+        ],
+      ],
+    };
+
+    const [chunk] = await manager.query("housing");
+
+    expect(chunk).toMatchObject({
+      evidenceId: "e1",
+      sourceType: "hansard",
+      sourceUrl:
+        "https://www.parliament.nz/en/pb/hansard-debates/rhr/document/HansS_1",
+      documentType: "question",
+      speaker: "Hon A",
+      role: "answerer",
+      utteranceSequence: 2,
+      date: "2026-01-01T00:00:00.000Z",
+    });
+  });
+});
+
 describe("evidence retrieval (mock mode)", () => {
   it("restricts results to the requested party scope and is similarity-sorted", async () => {
     const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");

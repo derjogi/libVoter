@@ -5,13 +5,17 @@ import {
   SystemMessage,
 } from "@langchain/core/messages";
 import { z } from "zod";
-import { explainCandidateMatch } from "@/lib/actions/prompts";
 import { electionConfig } from "@/lib/config/election";
 import type { Candidate } from "@/lib/db/schema";
+import {
+  type CandidateEvidence,
+  RAGQueryEngine,
+} from "@/lib/server/rag/query-engine";
 import type {
   CandidateMatch,
   ComponentData,
   ConversationMessage,
+  Source,
   UserResponse,
 } from "@/types";
 import {
@@ -178,7 +182,7 @@ export class AIChatHandler {
    * Static instructions shared by every turn. Stable within a session so the
    * model provider can cache it as a prompt prefix.
    */
-  private buildSystemPreamble(availableSeats: string[]): string {
+  private buildSystemPreamble(_availableSeats: string[]): string {
     return `You are an AI voting advisor for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
 
 Each turn you produce two distinct things:
@@ -292,13 +296,11 @@ Output fields:
   }
 
   /**
-   * Interim ranking (spec 009 Phase 5): score every candidate in the user's
-   * electorate pool against their stated preferences with a single structured
-   * LLM call, then sort. Returns [] when there's nothing to rank yet (no
-   * answers, or no candidates) so the client keeps its unranked list.
-   *
-   * Uses only the structured candidate data already in the DB — no vector
-   * retrieval. The evidence-based version arrives with spec 009 Phases 2–4.
+   * Evidence-backed ranking (spec 009 Phase 5): retrieve per-candidate / party
+   * evidence for the user's stated preferences, feed those chunks into a single
+   * structured LLM ranking call, then attach cited sources to each match.
+   * Returns [] when there's nothing to rank yet (no answers, or no candidates)
+   * so the client keeps its unranked list.
    */
   private async rankCandidates(
     userResponses: UserResponse[],
@@ -310,20 +312,24 @@ Output fields:
 
     try {
       const userProfile = this.createUserProfileSummary(userResponses);
+      const evidenceByCandidate = await this.retrieveCandidateEvidence(
+        userProfile,
+        availableCandidates,
+      );
       const candidateBlock = availableCandidates
-        .map(
-          (c) =>
-            `id=${c.id} | ${c.name} (${c.party || "Independent"})\n${this.createCandidateInfoSummary(c)}`,
-        )
+        .map((c) => {
+          const evidence = evidenceByCandidate.get(c.id.toString());
+          return `id=${c.id} | ${c.name} (${c.party || "Independent"})\n${this.createCandidateInfoSummary(c)}\n${this.createEvidenceSummary(evidence)}`;
+        })
         .join("\n\n");
 
       const system = `You rank ${electionConfig.type} candidates by how well they match a voter's stated preferences.
 Score EVERY candidate from 0-100 (100 = excellent match, 0 = poor or irrelevant match).
 Be discriminating — spread the scores out; do NOT give everyone a similar number.
-Base scores ONLY on the candidate information and the voter's preferences provided here.
+Base scores ONLY on the candidate information, retrieved evidence, and the voter's preferences provided here.
 If a candidate has little relevant information, score them lower. Return exactly one entry per candidate id, using the ids exactly as given.`;
 
-      const human = `Voter preferences:\n${userProfile}\n\nCandidates:\n${candidateBlock}`;
+      const human = `Voter preferences:\n${userProfile}\n\nCandidates and retrieved evidence:\n${candidateBlock}`;
 
       const ranking = await this.generateRanking([
         new SystemMessage({ content: system }),
@@ -334,15 +340,20 @@ If a candidate has little relevant information, score them lower. Return exactly
 
       return availableCandidates
         .map((candidate) => {
-          const r = byId.get(candidate.id.toString());
+          const id = candidate.id.toString();
+          const r = byId.get(id);
+          const evidence = evidenceByCandidate.get(id);
+          const sources = this.sourcesFromEvidence(evidence);
+          const evidenceScore = this.scoreFromEvidence(evidence);
+          const reasoning = this.reasoningWithEvidence(r?.reasoning, evidence);
           return {
             candidate,
-            score: r ? Math.round(r.score) : 0,
-            reasoning: r?.reasoning ?? "",
+            score: r ? Math.round(r.score) : evidenceScore,
+            reasoning,
             pros: [],
             cons: [],
             topMatchingPolicies: this.extractTopPolicies(candidate),
-            sources: [],
+            sources,
           } satisfies CandidateMatch;
         })
         .sort((a, b) => b.score - a.score);
@@ -351,6 +362,88 @@ If a candidate has little relevant information, score them lower. Return exactly
       // Empty → client keeps the unranked list rather than blanking the panel.
       return [];
     }
+  }
+
+  private async retrieveCandidateEvidence(
+    query: string,
+    candidates: Candidate[],
+  ): Promise<Map<string, CandidateEvidence>> {
+    const engine = new RAGQueryEngine();
+    const entries = await Promise.all(
+      candidates.map(async (candidate) => {
+        const partyId = this.partyEvidenceId(candidate.party);
+        const evidence = await engine.retrieveForCandidate(
+          query,
+          candidate.id.toString(),
+          partyId,
+          electionConfig.id,
+        );
+        return [candidate.id.toString(), evidence] as const;
+      }),
+    );
+    return new Map(entries);
+  }
+
+  private partyEvidenceId(partyName: string | null): string | undefined {
+    if (!partyName?.trim()) return undefined;
+    const slug = partyName
+      .toLowerCase()
+      .replace(/^the\s+/, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    return slug ? `${electionConfig.id}-party-${slug}` : undefined;
+  }
+
+  private createEvidenceSummary(evidence?: CandidateEvidence): string {
+    const chunks = this.evidenceChunks(evidence).slice(0, 4);
+    if (chunks.length === 0) return "Retrieved evidence: none found.";
+    return `Retrieved evidence:\n${chunks
+      .map(
+        (chunk, index) =>
+          `${index + 1}. [${chunk.sourceType}; score ${chunk.score.toFixed(2)}] ${chunk.content}`,
+      )
+      .join("\n")}`;
+  }
+
+  private sourcesFromEvidence(evidence?: CandidateEvidence): Source[] {
+    const seen = new Set<string>();
+    return this.evidenceChunks(evidence)
+      .filter((chunk) => chunk.sourceUrl)
+      .flatMap((chunk) => {
+        const url = chunk.sourceUrl ?? "";
+        if (seen.has(url)) return [];
+        seen.add(url);
+        return [
+          {
+            title: chunk.sourceTitle || chunk.sourceType,
+            url,
+            reliability: Math.min(1, Math.max(0, chunk.score)),
+            date: chunk.date ? new Date(chunk.date) : undefined,
+          },
+        ];
+      });
+  }
+
+  private scoreFromEvidence(evidence?: CandidateEvidence): number {
+    const best = this.evidenceChunks(evidence)[0]?.score ?? 0;
+    return best > 0 ? Math.round(best * 100) : 0;
+  }
+
+  private reasoningWithEvidence(
+    modelReasoning: string | undefined,
+    evidence?: CandidateEvidence,
+  ): string {
+    const chunks = this.evidenceChunks(evidence);
+    const base = modelReasoning?.trim() || "No model ranking was returned.";
+    if (chunks.length === 0) return base;
+    const top = chunks[0];
+    return `${base} Evidence consulted: ${top.sourceTitle || top.sourceType}.`;
+  }
+
+  private evidenceChunks(evidence?: CandidateEvidence) {
+    return [...(evidence?.individual ?? []), ...(evidence?.party ?? [])].sort(
+      (a, b) => b.score - a.score,
+    );
   }
 
   /** Single structured ranking call with one retry. Throws on repeated failure. */
@@ -407,66 +500,6 @@ If a candidate has little relevant information, score them lower. Return exactly
     return Math.min(100, Math.max(0, Math.round(confidence)));
   }
 
-  private async generateCandidateMatches(
-    userResponses: UserResponse[],
-    availableCandidates: Candidate[],
-  ): Promise<CandidateMatch[]> {
-    // Create user profile summary from responses
-    const userProfile = this.createUserProfileSummary(userResponses);
-
-    try {
-      const candidates: Candidate[] = availableCandidates;
-      if (candidates.length === 0) {
-        console.warn("No candidates found for matching");
-        return [];
-      }
-
-      // Transform database records to match format and generate explanations
-      const matchesWithExplanations = await Promise.all(
-        candidates.map(async (candidate) => {
-          // Create info summary from candidate data
-          const info = this.createCandidateInfoSummary(candidate);
-
-          // Generate a simple score (in production, use more sophisticated matching)
-          const score = this.calculateCandidateScore(candidate, userResponses);
-
-          let explanationResult = {
-            success: true,
-            data: "Too many candidates to fetch detailed explanation. Please narrow down candidate selection more to generate match explanations.",
-          };
-          if (candidates.length <= 3) {
-            // Generate explanation
-            explanationResult = await explainCandidateMatch(
-              userProfile,
-              info,
-              score,
-            );
-          }
-
-          // Extract top policies from candidate data
-          const topPolicies = this.extractTopPolicies(candidate);
-
-          return {
-            candidate,
-            score,
-            reasoning: explanationResult.success
-              ? explanationResult.data
-              : "Unable to generate explanation",
-            pros: [],
-            cons: [],
-            topMatchingPolicies: topPolicies,
-            sources: [],
-          };
-        }),
-      );
-
-      return matchesWithExplanations;
-    } catch (error) {
-      console.error("Error generating candidate matches:", error);
-      return [];
-    }
-  }
-
   private createUserProfileSummary(userResponses: UserResponse[]): string {
     // Create a simple summary of user preferences from responses
     const responsesText = userResponses
@@ -484,7 +517,7 @@ If a candidate has little relevant information, score them lower. Return exactly
     return String(response.value || "");
   }
 
-  private createCandidateInfoSummary(candidate: any): string {
+  private createCandidateInfoSummary(candidate: Candidate): string {
     const parts = [];
 
     if (candidate.candidate_statement) {
@@ -516,29 +549,7 @@ If a candidate has little relevant information, score them lower. Return exactly
     return parts.join(". ") || "No detailed information available.";
   }
 
-  private calculateCandidateScore(
-    candidate: any,
-    userResponses: UserResponse[],
-  ): number {
-    // Simple scoring mechanism - in production, use more sophisticated matching
-    // For now, return a score between 60-90 based on some basic heuristics
-
-    let baseScore = 75; // Default score
-
-    // Boost score if candidate has detailed information
-    if (candidate.candidate_statement) baseScore += 5;
-    if (candidate.key_positions) baseScore += 5;
-    if (candidate.top_issues) baseScore += 5;
-
-    // Add some randomness to simulate different matches
-    const randomVariation = Math.floor(Math.random() * 20) - 10; // -10 to +10
-    baseScore += randomVariation;
-
-    // Ensure score is within reasonable bounds
-    return Math.max(50, Math.min(95, baseScore));
-  }
-
-  private extractTopPolicies(candidate: any): string[] {
+  private extractTopPolicies(candidate: Candidate): string[] {
     const policies: string[] = [];
 
     // Extract from key_positions if available

@@ -59,4 +59,50 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     expect(turn2.message).toBeDefined();
     expect(turn2.confidence).toBeGreaterThanOrEqual(0);
   });
+
+  it("uses evidence retrieval when ranking available candidates", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler();
+
+    const result = await handler.processMessage(
+      "I care about climate action and affordable housing.",
+      [],
+      [
+        {
+          id: "r1",
+          questionId: "priorities",
+          componentType: "chat",
+          value: "Climate action and affordable housing",
+          timestamp: new Date(),
+        },
+      ],
+      [
+        {
+          id: 1,
+          name: "Greta Green",
+          party: "Green",
+          ward: "Wellington Central",
+          candidate_statement: null,
+          key_positions: null,
+          why: null,
+          key_skills: null,
+          top_issues: null,
+          supporting_links: null,
+          photo_url: null,
+          created_at: new Date(),
+        },
+      ],
+    );
+
+    expect(result.candidateMatches).toHaveLength(1);
+    const [match] = result.candidateMatches ?? [];
+    expect(match.sources).toEqual([
+      expect.objectContaining({
+        title: "Green — party platform (Wikipedia)",
+        url: expect.stringContaining("wikipedia.org"),
+      }),
+    ]);
+    expect(match.reasoning).toContain("Evidence consulted");
+    expect(match.score).toBeGreaterThan(0);
+  });
 });

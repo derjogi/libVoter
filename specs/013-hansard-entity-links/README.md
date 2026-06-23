@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: complete
 created: 2026-06-22
 priority: high
 tags:
@@ -10,10 +10,13 @@ depends_on:
 - '012'
 parent: '010'
 created_at: 2026-06-22T05:43:26.785360681Z
-updated_at: 2026-06-23T07:39:32.548051426Z
+updated_at: 2026-06-23T10:30:12.984077876Z
+completed_at: 2026-06-23T10:30:12.984077876Z
 transitions:
 - status: in-progress
   at: 2026-06-23T07:39:32.548051426Z
+- status: complete
+  at: 2026-06-23T10:30:12.984077876Z
 ---
 
 # Hansard participant and party relationships
@@ -36,8 +39,8 @@ Use official metadata and transcript speaker labels for participant extraction. 
 - [x] Add a Parliament-person resolver that can create or match MPs without creating candidacies.
 - [x] Extract participant roles from official metadata and transcript labels.
 - [x] Parse party-level vote information conservatively.
-- [ ] Decide whether named individual vote stances need first-class person-vote metadata or can wait for a later vote-specific spec.
-- [ ] Report unresolved or ambiguous participant names if later source enrichment stops creating Hansard people directly.
+- [x] Decide whether named individual vote stances need first-class person-vote metadata or can wait for a later vote-specific spec. Decision: wait for a later vote-specific spec; current party-vote rows intentionally express party position only.
+- [x] Report unresolved or ambiguous participant names if later source enrichment stops creating Hansard people directly. Current ingestion still creates Hansard people from official metadata/transcript labels; ambiguous prose names are handled in spec 015 mentions and left unresolved rather than guessed.
 
 ## Test
 

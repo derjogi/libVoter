@@ -1,6 +1,7 @@
 import {
   index,
   integer,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -260,6 +261,51 @@ export const hansardDocumentParties = sqliteTable(
   }),
 );
 
+export const hansardUtterances = sqliteTable(
+  "hansard_utterances",
+  {
+    id: text("id").primaryKey(),
+    evidenceSourceId: text("evidence_source_id")
+      .notNull()
+      .references(() => evidenceSources.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    speakerName: text("speaker_name"),
+    speakerRole: text("speaker_role"),
+    text: text("text").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (t) => ({
+    byEvidence: index("hansard_utterances_evidence_idx").on(t.evidenceSourceId),
+    uniqueSequence: uniqueIndex(
+      "hansard_utterances_evidence_sequence_unique",
+    ).on(t.evidenceSourceId, t.sequence),
+  }),
+);
+
+export const hansardMentions = sqliteTable(
+  "hansard_mentions",
+  {
+    id: text("id").primaryKey(),
+    evidenceSourceId: text("evidence_source_id")
+      .notNull()
+      .references(() => evidenceSources.id, { onDelete: "cascade" }),
+    personId: text("person_id")
+      .notNull()
+      .references(() => people.id, { onDelete: "cascade" }),
+    officialId: text("official_id"),
+    personName: text("person_name").notNull(),
+    role: text("role").notNull(),
+    source: text("source").notNull(),
+    utteranceSequence: integer("utterance_sequence"),
+    confidence: real("confidence").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (t) => ({
+    byEvidence: index("hansard_mentions_evidence_idx").on(t.evidenceSourceId),
+    byPerson: index("hansard_mentions_person_idx").on(t.personId),
+  }),
+);
+
 // === Legacy parties table (kept for backward compat) ===
 export const parties = sqliteTable("parties", {
   id: text("id").primaryKey(),
@@ -308,6 +354,12 @@ export const insertHansardDocumentPartySchema = createInsertSchema(
 export const selectHansardDocumentPartySchema = createSelectSchema(
   hansardDocumentParties,
 );
+export const insertHansardUtteranceSchema =
+  createInsertSchema(hansardUtterances);
+export const selectHansardUtteranceSchema =
+  createSelectSchema(hansardUtterances);
+export const insertHansardMentionSchema = createInsertSchema(hansardMentions);
+export const selectHansardMentionSchema = createSelectSchema(hansardMentions);
 
 // Types are automatically inferred from the schema
 export type Candidate = typeof candidates.$inferSelect;
@@ -335,3 +387,7 @@ export type NewHansardDocumentPerson =
 export type HansardDocumentParty = typeof hansardDocumentParties.$inferSelect;
 export type NewHansardDocumentParty =
   typeof hansardDocumentParties.$inferInsert;
+export type HansardUtterance = typeof hansardUtterances.$inferSelect;
+export type NewHansardUtterance = typeof hansardUtterances.$inferInsert;
+export type HansardMention = typeof hansardMentions.$inferSelect;
+export type NewHansardMention = typeof hansardMentions.$inferInsert;

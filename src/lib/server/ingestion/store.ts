@@ -11,14 +11,18 @@ import {
   evidenceSources,
   hansardDocumentParties,
   hansardDocumentPeople,
+  hansardMentions,
+  hansardUtterances,
   type NewEvidenceSource,
   people,
 } from "../../db/schema";
 import type { db as DbType } from "../db";
 import { normalizeName } from "./identity";
 import type {
+  NormalizedMentionRelationship,
   NormalizedPartyRelationship,
   NormalizedPersonRelationship,
+  NormalizedUtterance,
 } from "./types";
 
 export interface ExistingEvidence {
@@ -75,6 +79,8 @@ export interface EvidenceDocumentRelationships {
   electionId: string;
   people?: NormalizedPersonRelationship[];
   parties?: NormalizedPartyRelationship[];
+  utterances?: NormalizedUtterance[];
+  mentions?: NormalizedMentionRelationship[];
 }
 
 export interface StoredDocumentPersonRelationship {
@@ -95,6 +101,25 @@ export interface StoredDocumentPartyRelationship {
   source: string;
 }
 
+export interface StoredHansardUtterance {
+  evidenceSourceId: string;
+  sequence: number;
+  speakerName?: string;
+  speakerRole?: string;
+  text: string;
+}
+
+export interface StoredHansardMention {
+  evidenceSourceId: string;
+  personId: string;
+  officialId?: string;
+  personName: string;
+  role: "mentioned";
+  source: string;
+  utteranceSequence?: number;
+  confidence: number;
+}
+
 /** In-memory store, used by tests and `--dry-run`. */
 export class InMemoryEvidenceStore implements EvidenceStore {
   rows: NewEvidenceSource[] = [];
@@ -102,6 +127,8 @@ export class InMemoryEvidenceStore implements EvidenceStore {
   candidacies: unknown[] = [];
   documentPeople: StoredDocumentPersonRelationship[] = [];
   documentParties: StoredDocumentPartyRelationship[] = [];
+  utterances: StoredHansardUtterance[] = [];
+  mentions: StoredHansardMention[] = [];
 
   async findByHash(hash: string): Promise<string | null> {
     const hit = this.rows.find((r) => r.contentHash === hash);
@@ -151,6 +178,39 @@ export class InMemoryEvidenceStore implements EvidenceStore {
     this.documentParties = this.documentParties.filter(
       (r) => r.evidenceSourceId !== evidenceSourceId,
     );
+    this.utterances = this.utterances.filter(
+      (r) => r.evidenceSourceId !== evidenceSourceId,
+    );
+    this.mentions = this.mentions.filter(
+      (r) => r.evidenceSourceId !== evidenceSourceId,
+    );
+
+    for (const utterance of relationships.utterances ?? []) {
+      this.utterances.push({
+        evidenceSourceId,
+        sequence: utterance.sequence,
+        speakerName: utterance.speakerName,
+        speakerRole: utterance.speakerRole,
+        text: utterance.text,
+      });
+    }
+
+    for (const mention of relationships.mentions ?? []) {
+      const personId = hansardMentionPersonId(mention);
+      if (!this.people.some((p) => p.id === personId)) {
+        this.people.push({ id: personId, name: mention.name });
+      }
+      this.mentions.push({
+        evidenceSourceId,
+        personId,
+        officialId: mention.officialId,
+        personName: mention.name,
+        role: mention.role,
+        source: mention.source,
+        utteranceSequence: mention.utteranceSequence,
+        confidence: mention.confidence,
+      });
+    }
 
     for (const person of relationships.people ?? []) {
       const personId = hansardPersonId(person);
@@ -272,8 +332,56 @@ export class DrizzleEvidenceStore implements EvidenceStore {
     await this.db
       .delete(hansardDocumentParties)
       .where(eq(hansardDocumentParties.evidenceSourceId, evidenceSourceId));
+    await this.db
+      .delete(hansardMentions)
+      .where(eq(hansardMentions.evidenceSourceId, evidenceSourceId));
+    await this.db
+      .delete(hansardUtterances)
+      .where(eq(hansardUtterances.evidenceSourceId, evidenceSourceId));
 
     const now = new Date();
+    for (const utterance of relationships.utterances ?? []) {
+      await this.db.insert(hansardUtterances).values({
+        id: relationshipId(
+          evidenceSourceId,
+          "utterance",
+          String(utterance.sequence),
+          utterance.speakerName ?? "unknown",
+        ),
+        evidenceSourceId,
+        sequence: utterance.sequence,
+        speakerName: utterance.speakerName ?? null,
+        speakerRole: utterance.speakerRole ?? null,
+        text: utterance.text,
+        createdAt: now,
+      });
+    }
+
+    for (const mention of relationships.mentions ?? []) {
+      const personId = hansardMentionPersonId(mention);
+      await this.db
+        .insert(people)
+        .values({ id: personId, name: mention.name, createdAt: now })
+        .onConflictDoNothing();
+      await this.db.insert(hansardMentions).values({
+        id: relationshipId(
+          evidenceSourceId,
+          "mention",
+          personId,
+          String(mention.utteranceSequence ?? 0),
+        ),
+        evidenceSourceId,
+        personId,
+        officialId: mention.officialId ?? null,
+        personName: mention.name,
+        role: mention.role,
+        source: mention.source,
+        utteranceSequence: mention.utteranceSequence ?? null,
+        confidence: mention.confidence,
+        createdAt: now,
+      });
+    }
+
     for (const person of relationships.people ?? []) {
       const personId = hansardPersonId(person);
       await this.db
@@ -328,9 +436,14 @@ function hansardPersonId(person: NormalizedPersonRelationship): string {
   return `hansard-person-${slugId(raw)}`;
 }
 
+function hansardMentionPersonId(person: NormalizedMentionRelationship): string {
+  const raw = person.officialId ?? normalizeName(person.name);
+  return `hansard-person-${slugId(raw)}`;
+}
+
 function relationshipId(
   evidenceSourceId: string,
-  kind: "person" | "party",
+  kind: "person" | "party" | "utterance" | "mention",
   entityId: string,
   roleOrStance: string,
 ): string {

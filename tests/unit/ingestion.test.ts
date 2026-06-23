@@ -323,6 +323,75 @@ describe("runIngestion", () => {
     ]);
   });
 
+  it("stores Hansard utterances and mentions separately from participants", async () => {
+    const store = new InMemoryEvidenceStore();
+    const source = {
+      sourceType: "hansard",
+      url: "https://parliament.example/document/HansS_mention",
+      content: "Hon Speaker\nJane Candidate was discussed.",
+      externalId: "HansS_mention",
+      documentType: "speech",
+      parliamentNumber: 54,
+      people: [
+        {
+          officialId: "speaker-1",
+          name: "Hon SPEAKER",
+          role: "speaker",
+          source: "official-metadata",
+        },
+      ],
+      utterances: [
+        {
+          sequence: 1,
+          speakerName: "Hon SPEAKER",
+          speakerRole: "speaker",
+          text: "Jane Candidate was discussed.",
+        },
+      ],
+      mentions: [
+        {
+          officialId: "jane-1",
+          name: "Jane Candidate",
+          role: "mentioned",
+          source: "deterministic-mention",
+          utteranceSequence: 1,
+          confidence: 1,
+        },
+      ],
+    } as NormalizedSource;
+
+    const result = await runIngestion(
+      [new FakeCorpusAdapter([source])],
+      baseRunOpts(store, resolverFor()),
+    );
+
+    expect(result.inserted).toBe(1);
+    expect(store.documentPeople.map((person) => person.role)).toEqual([
+      "speaker",
+    ]);
+    expect(store.utterances).toEqual([
+      {
+        evidenceSourceId: store.rows[0].id,
+        sequence: 1,
+        speakerName: "Hon SPEAKER",
+        speakerRole: "speaker",
+        text: "Jane Candidate was discussed.",
+      },
+    ]);
+    expect(store.mentions).toEqual([
+      {
+        evidenceSourceId: store.rows[0].id,
+        personId: "hansard-person-jane-1",
+        officialId: "jane-1",
+        personName: "Jane Candidate",
+        role: "mentioned",
+        source: "deterministic-mention",
+        utteranceSequence: 1,
+        confidence: 1,
+      },
+    ]);
+  });
+
   it("updates a corpus document by stable external ID across revisions", async () => {
     const store = new InMemoryEvidenceStore();
     const draft = {

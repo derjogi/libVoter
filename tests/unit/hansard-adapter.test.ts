@@ -239,15 +239,23 @@ describe("NzHansardAdapter", () => {
     },
   );
 
-  it("extracts actual Hansard participants without treating prose mentions as participants", async () => {
-    const adapter = new NzHansardAdapter();
+  it("segments speaker-labelled turns in source order and keeps prose mentions separate from participants", async () => {
+    const adapter = new NzHansardAdapter({
+      knownPeople: [
+        { officialId: "person-jane", name: "Jane Candidate" },
+        { officialId: "person-john", name: "John Candidate" },
+      ],
+    });
     const item = searchSample.pages[0].value[1];
     const raw: RawSource = {
       id: item.id,
       url: `https://hansard.parliament.nz/hansard-transcript/${item.sittingDate.slice(0, 10)}?sId=${item.id}&lang=en`,
       sourceType: "hansard",
       title: "Housing Infrastructure Bill — First Reading",
-      raw: `<p><strong>Hon EXAMPLE SPEAKER:</strong> The bill mentions Jane Candidate but Jane is not speaking.</p>`,
+      raw: `
+        <p><strong>Hon EXAMPLE SPEAKER:</strong> The bill mentions Jane Candidate but Jane is not speaking.</p>
+        <p><strong>Hon JOHN CANDIDATE:</strong> I reply on housing infrastructure.</p>
+      `,
       meta: { hansard: item },
     };
 
@@ -260,7 +268,58 @@ describe("NzHansardAdapter", () => {
         role: "speaker",
         source: "official-metadata",
       },
+      {
+        name: "Hon JOHN CANDIDATE",
+        role: "speaker",
+        source: "transcript-label",
+      },
     ]);
+    expect(normalized.utterances).toEqual([
+      {
+        sequence: 1,
+        speakerName: "Hon EXAMPLE SPEAKER",
+        speakerRole: "speaker",
+        text: "The bill mentions Jane Candidate but Jane is not speaking.",
+      },
+      {
+        sequence: 2,
+        speakerName: "Hon JOHN CANDIDATE",
+        speakerRole: "speaker",
+        text: "I reply on housing infrastructure.",
+      },
+    ]);
+    expect(normalized.mentions).toEqual([
+      {
+        officialId: "person-jane",
+        name: "Jane Candidate",
+        role: "mentioned",
+        source: "deterministic-mention",
+        utteranceSequence: 1,
+        confidence: 1,
+      },
+    ]);
+  });
+
+  it("leaves ambiguous prose names unresolved rather than guessed", async () => {
+    const adapter = new NzHansardAdapter({
+      knownPeople: [
+        { officialId: "person-alex-1", name: "Alex Smith" },
+        { officialId: "person-alex-2", name: "Alex Smith" },
+      ],
+    });
+    const item = searchSample.pages[0].value[1];
+    const raw: RawSource = {
+      id: item.id,
+      url: `https://hansard.parliament.nz/hansard-transcript/${item.sittingDate.slice(0, 10)}?sId=${item.id}&lang=en`,
+      sourceType: "hansard",
+      title: "Housing Infrastructure Bill — First Reading",
+      raw: `<p><strong>Hon EXAMPLE SPEAKER:</strong> Alex Smith was discussed.</p>`,
+      meta: { hansard: item },
+    };
+
+    const normalized = await adapter.normalize(raw, context());
+
+    expect(normalized.mentions).toEqual([]);
   });
 
   it("extracts distinct oral-question roles from speaker labels", async () => {
