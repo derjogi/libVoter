@@ -10,20 +10,17 @@ const nextConfig: NextConfig = {
 
   // Image optimization settings
   images: {
-    domains: ["localhost"],
     remotePatterns: [
-      // Add any remote patterns needed for your deployment
+      {
+        protocol: "http",
+        hostname: "localhost",
+      },
     ],
   },
 
   // TypeScript strict mode
   typescript: {
     tsconfigPath: "./tsconfig.json",
-  },
-
-  // ESLint configuration
-  eslint: {
-    ignoreDuringBuilds: false,
   },
 
   turbopack: {
