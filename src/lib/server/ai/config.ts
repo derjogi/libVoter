@@ -21,10 +21,13 @@ export function parseModelString(modelString: string): AIModelConfig {
   const prefix = modelString.slice(0, separator);
   const rest = modelString.slice(separator + 1);
   if (isSupportedProvider(prefix)) {
+    // `openrouter/<provider>/<model>` is our config shorthand for routing a
+    // provider/model id through OpenRouter, so strip only that leading routing
+    // prefix when the remainder is itself a namespaced model id. OpenRouter also
+    // publishes models in its own namespace (for example `openrouter/free` and
+    // `openrouter/owl-alpha`); those must be sent to OpenRouter unchanged.
     if (prefix === "openrouter" && !rest.includes("/")) {
-      throw new Error(
-        `Invalid OpenRouter model "${modelString}". OpenRouter model ids must include an owner and model, for example "openrouter/openai/gpt-oss-20b:free" or "openrouter/meta-llama/llama-3.3-70b-instruct:free".`,
-      );
+      return { provider: prefix, model: modelString };
     }
     return { provider: prefix, model: rest };
   }

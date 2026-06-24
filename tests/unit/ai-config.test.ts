@@ -16,9 +16,10 @@ describe("parseModelString", () => {
     });
   });
 
-  it("rejects the invalid OpenRouter shorthand that causes provider 502s", () => {
-    expect(() => parseModelString("openrouter/free")).toThrow(
-      /OpenRouter model ids must include an owner and model/,
-    );
+  it("preserves OpenRouter's own model namespace such as openrouter/free", () => {
+    expect(parseModelString("openrouter/free")).toEqual({
+      provider: "openrouter",
+      model: "openrouter/free",
+    });
   });
 });
