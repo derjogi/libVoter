@@ -18,6 +18,7 @@ import { useChat } from "@/lib/client/hooks/useChat";
 import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
 import { electionConfig } from "@/lib/config/election";
 import type { Candidate } from "@/lib/db/schema";
+import { newTraceId, serializeError } from "@/lib/debug/logging";
 import type {
   CandidateMatch,
   ComponentData,
@@ -127,6 +128,17 @@ export default function VotingAdvisor() {
     response: unknown,
     raw?: RawAnswer,
   ) => {
+    const traceId = newTraceId("ui:componentResponse");
+    const start = Date.now();
+    let phase = "start";
+    console.log(`[${traceId}] component response start`, {
+      responsePreview:
+        typeof response === "string" ? response.slice(0, 200) : response,
+      raw,
+      steps: steps.length,
+      availableCandidates: availableCandidates.length,
+    });
+
     try {
       const active = steps[steps.length - 1];
       if (!active || active.locked) return;
@@ -192,11 +204,26 @@ export default function VotingAdvisor() {
         const wardName =
           raw?.kind === "dropdown" ? raw.label : String(response);
 
+        phase = "load-mayor-candidates";
+        console.log(`[${traceId}] ${phase}`, { wardName });
         const mayorResult = await getMayorCandidates();
+        console.log(`[${traceId}] ${phase}:done`, {
+          success: mayorResult.success,
+          count: mayorResult.data?.length ?? 0,
+          error: mayorResult.error,
+        });
         const mayorCandidates = mayorResult.success
           ? mayorResult.data || []
           : [];
+
+        phase = "load-ward-candidates";
+        console.log(`[${traceId}] ${phase}`, { wardName });
         const wardResult = await getCandidatesByWard(wardName);
+        console.log(`[${traceId}] ${phase}:done`, {
+          success: wardResult.success,
+          count: wardResult.data?.length ?? 0,
+          error: wardResult.error,
+        });
         const wardCandidates = wardResult.success ? wardResult.data || [] : [];
 
         const allCandidates = [...mayorCandidates, ...wardCandidates];
@@ -212,7 +239,21 @@ export default function VotingAdvisor() {
           "\n",
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 
-        const componentResult = await selectNextComponent(conversationState, seats);
+        phase = "select-next-component";
+        console.log(`[${traceId}] ${phase}`, {
+          allCandidates: allCandidates.length,
+          seats: seats.length,
+        });
+        const componentResult = await selectNextComponent(
+          conversationState,
+          seats,
+        );
+        console.log(`[${traceId}] ${phase}:done`, {
+          success: componentResult.success,
+          validationFailed: componentResult.validationFailed,
+          componentType: componentResult.data?.type,
+          error: componentResult.error,
+        });
         if (componentResult.success && componentResult.data) {
           appendActive(componentResult.data);
         } else {
@@ -223,11 +264,22 @@ export default function VotingAdvisor() {
           appendActive(fallbackChat);
         }
       } else {
+        phase = "send-chat-message";
+        console.log(`[${traceId}] ${phase}`, {
+          history: history.length,
+          availableCandidates: availableCandidates.length,
+        });
         const aiResponse = await sendMessage(
           typeof formatted === "string" ? formatted : JSON.stringify(formatted),
           history,
           availableCandidates,
         );
+        console.log(`[${traceId}] ${phase}:done`, {
+          hasResponse: !!aiResponse,
+          confidence: aiResponse?.confidence,
+          shouldShowCandidates: aiResponse?.shouldShowCandidates,
+          candidateMatches: aiResponse?.candidateMatches?.length ?? 0,
+        });
 
         if (aiResponse) {
           setConfidence(aiResponse.confidence);
@@ -248,8 +300,16 @@ export default function VotingAdvisor() {
         }
       }
     } catch (error) {
-      console.error("Error processing response:", error);
+      console.error(`[${traceId}] component response failed`, {
+        phase,
+        elapsedMs: Date.now() - start,
+        error: serializeError(error),
+      });
     } finally {
+      console.log(`[${traceId}] component response finished`, {
+        phase,
+        elapsedMs: Date.now() - start,
+      });
       setIsCompiling(false);
     }
   };

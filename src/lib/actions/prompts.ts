@@ -1,5 +1,6 @@
 "use server";
 
+import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { getPromptManager } from "@/lib/server/prompts/prompt-manager";
 import type { ConversationMessage, UserResponse } from "@/types";
 import {
@@ -131,6 +132,13 @@ export async function selectNextComponent(
   conversationState: string,
   availableSeats?: string[],
 ) {
+  const traceId = newTraceId("action:selectNextComponent");
+  const start = Date.now();
+  console.log(`[${traceId}] start`, {
+    conversationStateChars: conversationState.length,
+    availableSeatsCount: availableSeats?.length ?? 0,
+  });
+
   try {
     const manager = getPromptManager();
     const result = await manager.selectComponent(
@@ -139,6 +147,10 @@ export async function selectNextComponent(
     );
 
     if (!result.success) {
+      console.warn(`[${traceId}] prompt failed; returning fallback`, {
+        elapsedMs: Date.now() - start,
+        error: result.error,
+      });
       return {
         success: true,
         data: SAFE_FALLBACK_COMPONENT,
@@ -148,6 +160,12 @@ export async function selectNextComponent(
     }
 
     const { spec, ok, error } = parseComponentSpec(result.response);
+    console.log(`[${traceId}] done`, {
+      elapsedMs: Date.now() - start,
+      componentType: spec.type,
+      validationFailed: !ok,
+      error,
+    });
     return {
       success: true,
       data: spec,
@@ -156,7 +174,10 @@ export async function selectNextComponent(
       metadata: result.metadata,
     };
   } catch (error) {
-    console.error("Component selection failed:", error);
+    console.error(`[${traceId}] action crashed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
     return {
       success: true,
       data: SAFE_FALLBACK_COMPONENT,

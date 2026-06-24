@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { processChatMessage } from "@/lib/actions/chat";
 import type { Candidate } from "@/lib/db/schema";
+import { newTraceId, serializeError } from "@/lib/debug/logging";
 import type { ChatResponse } from "@/lib/server/ai/chat-handler";
 import type { ConversationMessage, UserResponse } from "@/types";
 import { usePersistedState } from "./usePersistedState";
@@ -33,6 +34,13 @@ export function useChat() {
       userResponseHistory: UserResponse[],
       availableCandidates: Candidate[],
     ) => {
+      const traceId = newTraceId("ui:sendMessage");
+      const start = Date.now();
+      console.log(`[${traceId}] start`, {
+        messagePreview: message.slice(0, 200),
+        userResponses: userResponseHistory.length,
+        availableCandidates: availableCandidates.length,
+      });
       setIsLoading(true);
       setError(null);
 
@@ -80,12 +88,21 @@ export function useChat() {
         setShouldShowCandidates(result.shouldShowCandidates);
         setFollowupQuestion(result.followupQuestion);
 
+        console.log(`[${traceId}] done`, {
+          elapsedMs: Date.now() - start,
+          confidence: result.confidence,
+          shouldShowCandidates: result.shouldShowCandidates,
+          candidateMatches: result.candidateMatches?.length ?? 0,
+        });
         return result;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
         setError(errorMessage);
-        console.error("Chat error:", err);
+        console.error(`[${traceId}] failed`, {
+          elapsedMs: Date.now() - start,
+          error: serializeError(err),
+        });
         throw err;
       } finally {
         setIsLoading(false);

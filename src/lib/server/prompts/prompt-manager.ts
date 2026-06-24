@@ -1,12 +1,18 @@
 // Server-only prompt manager
 
-import { SystemMessage, HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getSeatsForCurrentElection } from "@/lib/actions/database";
 import { type ElectionConfig, electionConfig } from "@/lib/config/election";
+import {
+  newTraceId,
+  serializeError,
+  summarizeForLog,
+  withTimeout,
+} from "@/lib/debug/logging";
 import type { ChatModel } from "@/lib/server/ai/model-factory";
 import { createChatModel } from "@/lib/server/ai/model-factory";
 import type { ConversationMessage, UserResponse } from "@/types";
-import { formatPrompt, getPrompt, type PromptTemplate } from "./index";
+import { formatPrompt, getPrompt } from "./index";
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -33,7 +39,12 @@ export class PromptManager {
     promptId: keyof typeof import("./index").PROMPTS,
     variables: Record<string, any>,
   ): Promise<PromptExecutionResult> {
+    const traceId = newTraceId(`prompt:${promptId}`);
     const startTime = Date.now();
+    const timeoutMs = Number.parseInt(
+      process.env.AI_PROMPT_TIMEOUT_MS || "25000",
+      10,
+    );
 
     try {
       const template = getPrompt(promptId);
@@ -61,21 +72,29 @@ export class PromptManager {
 
       const allVariables = { ...variables, ...electionVariables };
       const formatted = formatPrompt(template, allVariables);
-      console.log("Calling prompt ", promptId);
-      console.debug("full prompt: ", formatted.content);
-      console.time(`Time for: Prompt Execution: ${promptId}`);
+      console.log(`[${traceId}] Calling prompt`, {
+        promptId,
+        model: this.chatModel.model,
+        promptChars: formatted.content.length,
+        variables: summarizeForLog(allVariables),
+        timeoutMs,
+      });
+      console.time(`[${traceId}] Prompt Execution: ${promptId}`);
       const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(", ")}.`;
-      const response = await this.chatModel.invoke([
-        new SystemMessage({ content: systemMessage }),
-        new HumanMessage({ content: formatted.content }),
-      ]);
-      // const response = {content: "This is a not so very helpful message"}
-      console.timeEnd(`Time for: Prompt Execution: ${promptId}`);
-
-      console.log(
-        `Got response from PromptManager with prompt ${promptId}: \n`,
-        response,
+      const response = await withTimeout(
+        this.chatModel.invoke([
+          new SystemMessage({ content: systemMessage }),
+          new HumanMessage({ content: formatted.content }),
+        ]),
+        timeoutMs,
+        `Prompt ${promptId}`,
       );
+      console.timeEnd(`[${traceId}] Prompt Execution: ${promptId}`);
+
+      console.log(`[${traceId}] Prompt succeeded`, {
+        promptId,
+        responsePreview: summarizeForLog(response.content),
+      });
 
       const executionTime = Date.now() - startTime;
 
@@ -91,8 +110,14 @@ export class PromptManager {
       };
     } catch (error) {
       const executionTime = Date.now() - startTime;
+      console.timeEnd(`[${traceId}] Prompt Execution: ${promptId}`);
 
-      console.error(`Prompt execution failed for ${promptId}:`, error);
+      console.error(`[${traceId}] Prompt execution failed`, {
+        promptId,
+        executionTime,
+        model: this.chatModel.model,
+        error: serializeError(error),
+      });
 
       return {
         success: false,

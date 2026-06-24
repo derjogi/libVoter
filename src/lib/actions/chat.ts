@@ -1,8 +1,9 @@
 "use server";
 
+import type { Candidate } from "@/lib/db/schema";
+import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { AIChatHandler, type ChatResponse } from "@/lib/server/ai/chat-handler";
 import type { ConversationMessage, UserResponse } from "@/types";
-import type { Candidate } from "@/lib/db/schema";
 
 let chatHandler: AIChatHandler | null = null;
 
@@ -19,9 +20,17 @@ export async function processChatMessage(
   userResponseHistory: UserResponse[],
   availableCandidates: Candidate[],
 ): Promise<ChatResponse> {
+  const traceId = newTraceId("action:processChatMessage");
+  const start = Date.now();
+  console.log(`[${traceId}] start`, {
+    messageChars: message.length,
+    conversationHistory: conversationHistory.length,
+    userResponses: userResponseHistory.length,
+    availableCandidates: availableCandidates.length,
+  });
+
   try {
     const handler = getChatHandler();
-    console.log("processChatMessage: \n", message);
     const response = await handler.processMessage(
       message,
       conversationHistory,
@@ -29,9 +38,18 @@ export async function processChatMessage(
       availableCandidates,
     );
 
+    console.log(`[${traceId}] done`, {
+      elapsedMs: Date.now() - start,
+      confidence: response.confidence,
+      shouldShowCandidates: response.shouldShowCandidates,
+      candidateMatches: response.candidateMatches?.length ?? 0,
+    });
     return response;
   } catch (error) {
-    console.error("Chat processing failed:", error);
+    console.error(`[${traceId}] failed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
     return {
       message:
         "I apologize, but I encountered an error processing your message. Please try again.",

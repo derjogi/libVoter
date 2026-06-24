@@ -3,13 +3,8 @@
 import { and, eq, inArray, like, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { electionConfig } from "@/lib/config/election";
-import {
-  appSettings,
-  candidacies,
-  candidates,
-  parties,
-  races,
-} from "@/lib/db/schema";
+import { appSettings, candidates, parties, races } from "@/lib/db/schema";
+import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { db } from "@/lib/server/db";
 
 // Load all candidates
@@ -173,6 +168,9 @@ export async function searchCandidates(query: string) {
 
 // Get candidates by ward
 export async function getCandidatesByWard(ward: string) {
+  const traceId = newTraceId("action:getCandidatesByWard");
+  const start = Date.now();
+  console.log(`[${traceId}] start`, { ward });
   try {
     const data = await db
       .select()
@@ -180,15 +178,25 @@ export async function getCandidatesByWard(ward: string) {
       .where(eq(candidates.ward, ward))
       .orderBy(candidates.name);
 
+    console.log(`[${traceId}] done`, {
+      elapsedMs: Date.now() - start,
+      count: data.length,
+    });
     return { success: true, data };
   } catch (error) {
-    console.error("Error loading candidates by ward:", error);
+    console.error(`[${traceId}] failed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
     return { success: false, error: "Failed to load candidates by ward" };
   }
 }
 
 // Get mayor candidates
 export async function getMayorCandidates() {
+  const traceId = newTraceId("action:getMayorCandidates");
+  const start = Date.now();
+  console.log(`[${traceId}] start`);
   try {
     const data = await db
       .select()
@@ -196,9 +204,16 @@ export async function getMayorCandidates() {
       .where(eq(candidates.ward, "Mayor"))
       .orderBy(candidates.name);
 
+    console.log(`[${traceId}] done`, {
+      elapsedMs: Date.now() - start,
+      count: data.length,
+    });
     return { success: true, data };
   } catch (error) {
-    console.error("Error loading mayor candidates:", error);
+    console.error(`[${traceId}] failed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
     return { success: false, error: "Failed to load mayor candidates" };
   }
 }
@@ -216,7 +231,7 @@ export async function getCandidatesByIds(ids: string[]) {
       .where(
         inArray(
           candidates.id,
-          ids.map((id) => parseInt(id)),
+          ids.map((id) => parseInt(id, 10)),
         ),
       )
       .orderBy(candidates.name);
