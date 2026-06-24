@@ -8,6 +8,8 @@ import { describe, expect, it } from "vitest";
 import {
   candidacies,
   elections,
+  hansardMentions,
+  hansardUtterances,
   candidates as legacyCandidates,
   people,
   races,
@@ -96,6 +98,17 @@ describe("Spec 002 schema & backfill", () => {
       .sort();
 
     expect(newNames).toEqual(legacyNames);
+  });
+});
+
+describe("Spec 015 Hansard segmentation schema", () => {
+  it("committed SQLite database has the utterance and mention tables", async () => {
+    await expect(
+      db.select().from(hansardUtterances).limit(1).all(),
+    ).resolves.toEqual(expect.any(Array));
+    await expect(
+      db.select().from(hansardMentions).limit(1).all(),
+    ).resolves.toEqual(expect.any(Array));
   });
 });
 
