@@ -7,6 +7,7 @@ import {
 import { z } from "zod";
 import { electionConfig } from "@/lib/config/election";
 import type { Candidate } from "@/lib/db/schema";
+import { withTimeout } from "@/lib/debug/logging";
 import {
   type CandidateEvidence,
   RAGQueryEngine,
@@ -112,6 +113,18 @@ export class AIChatHandler {
     const modelConfig = config.models.small;
 
     this.chatModel = createChatModel(modelConfig);
+  }
+
+  /**
+   * Per-call timeout (ms) for every model/RAG invocation in this handler.
+   * Without this a slow/hung first request (e.g. cold-start embeddings load)
+   * keeps `processMessage` pending forever, so the Server Action never returns
+   * and the client only sees an opaque transport error. Bounding each call lets
+   * the retry/fallback paths below run instead. Shares AI_PROMPT_TIMEOUT_MS with
+   * PromptManager.
+   */
+  private get timeoutMs(): number {
+    return Number.parseInt(process.env.AI_PROMPT_TIMEOUT_MS || "25000", 10);
   }
 
   async processMessage(
@@ -284,7 +297,11 @@ Output fields:
       const timerLabel = `Time for: AI Chat Turn Attempt ${attempt}`;
       console.time(timerLabel);
       try {
-        const result = await structured.invoke(messages);
+        const result = await withTimeout(
+          structured.invoke(messages),
+          this.timeoutMs,
+          `Chat turn attempt ${attempt}`,
+        );
         return result;
       } catch (error) {
         console.error(`AI chat turn attempt ${attempt} failed:`, error);
@@ -303,7 +320,11 @@ Output fields:
       lastError,
     );
     try {
-      const plain = await this.chatModel.invoke(messages);
+      const plain = await withTimeout(
+        this.chatModel.invoke(messages),
+        this.timeoutMs,
+        "Chat turn plain fallback",
+      );
       return {
         message:
           typeof plain.content === "string"
@@ -336,9 +357,13 @@ Output fields:
 
     try {
       const userProfile = this.createUserProfileSummary(userResponses);
-      const evidenceByCandidate = await this.retrieveCandidateEvidence(
-        userProfile,
-        availableCandidates,
+      // Bounded: the first call cold-starts the local embeddings model, which
+      // can be very slow. On timeout we fall through to the catch and return []
+      // so the client keeps its unranked list rather than the request hanging.
+      const evidenceByCandidate = await withTimeout(
+        this.retrieveCandidateEvidence(userProfile, availableCandidates),
+        this.timeoutMs,
+        "Candidate evidence retrieval",
       );
       const candidateBlock = availableCandidates
         .map((c) => {
@@ -489,10 +514,18 @@ If a candidate has little relevant information, score them lower. Return exactly
     });
 
     try {
-      return await structured.invoke(messages);
+      return await withTimeout(
+        structured.invoke(messages),
+        this.timeoutMs,
+        "Candidate ranking attempt 1",
+      );
     } catch (error) {
       console.error("Candidate ranking attempt 1 failed, retrying:", error);
-      return await structured.invoke(messages);
+      return await withTimeout(
+        structured.invoke(messages),
+        this.timeoutMs,
+        "Candidate ranking attempt 2",
+      );
     }
   }
 

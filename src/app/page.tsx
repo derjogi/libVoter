@@ -139,6 +139,20 @@ export default function VotingAdvisor() {
       availableCandidates: availableCandidates.length,
     });
 
+    const fallbackChat: ComponentData = {
+      type: "chat",
+      data: {
+        prompt: "Please tell me what is important to you.",
+        placeholder: "Share some of your views…",
+      },
+    };
+
+    const appendActive = (component: ComponentData) =>
+      setSteps((prev) => [
+        ...prev,
+        { id: `step_${Date.now()}`, component, locked: false },
+      ]);
+
     try {
       const active = steps[steps.length - 1];
       if (!active || active.locked) return;
@@ -182,20 +196,6 @@ export default function VotingAdvisor() {
       const history = lockedSteps
         .filter((s) => s.response)
         .map((s) => s.response as UserResponse);
-
-      const fallbackChat: ComponentData = {
-        type: "chat",
-        data: {
-          prompt: "Please tell me what is important to you.",
-          placeholder: "Share some of your views…",
-        },
-      };
-
-      const appendActive = (component: ComponentData) =>
-        setSteps((prev) => [
-          ...prev,
-          { id: `step_${Date.now()}`, component, locked: false },
-        ]);
 
       if (
         comp.type === "dropdown" &&
@@ -305,6 +305,7 @@ export default function VotingAdvisor() {
         elapsedMs: Date.now() - start,
         error: serializeError(error),
       });
+      appendActive(fallbackChat);
     } finally {
       console.log(`[${traceId}] component response finished`, {
         phase,
