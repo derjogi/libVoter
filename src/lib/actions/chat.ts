@@ -2,7 +2,11 @@
 
 import type { Candidate } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
-import { AIChatHandler, type ChatResponse } from "@/lib/server/ai/chat-handler";
+import {
+  AIChatHandler,
+  type ChatResponse,
+  type RankingResponse,
+} from "@/lib/server/ai/chat-handler";
 import type { ConversationMessage, UserResponse } from "@/types";
 
 let chatHandler: AIChatHandler | null = null;
@@ -53,6 +57,50 @@ export async function processChatMessage(
     return {
       message:
         "I apologize, but I encountered an error processing your message. Please try again.",
+      confidence: 0,
+      shouldShowCandidates: false,
+    };
+  }
+}
+
+/**
+ * RAG-backed candidate ranking, split out of {@link processChatMessage} so the
+ * client can render the next question immediately and fill in the candidate
+ * panel when this resolves. Never throws — returns an empty, non-gating result
+ * on failure so the client keeps its current (unranked) list.
+ */
+export async function rankCandidatesForSession(
+  userResponseHistory: UserResponse[],
+  availableCandidates: Candidate[],
+): Promise<RankingResponse> {
+  const traceId = newTraceId("action:rankCandidates");
+  const start = Date.now();
+  console.log(`[${traceId}] start`, {
+    userResponses: userResponseHistory.length,
+    availableCandidates: availableCandidates.length,
+  });
+
+  try {
+    const handler = getChatHandler();
+    const response = await handler.rankResponses(
+      userResponseHistory,
+      availableCandidates,
+    );
+
+    console.log(`[${traceId}] done`, {
+      elapsedMs: Date.now() - start,
+      confidence: response.confidence,
+      shouldShowCandidates: response.shouldShowCandidates,
+      candidateMatches: response.candidateMatches.length,
+    });
+    return response;
+  } catch (error) {
+    console.error(`[${traceId}] failed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
+    return {
+      candidateMatches: [],
       confidence: 0,
       shouldShowCandidates: false,
     };

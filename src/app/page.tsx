@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Transcript } from "@/components/dynamic/Transcript";
 import { RightPanel } from "@/components/layout/RightPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { rankCandidatesForSession } from "@/lib/actions/chat";
 import {
   getCandidatesByWard,
   getMayorCandidates,
@@ -40,6 +41,9 @@ export default function VotingAdvisor() {
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
   const [isCompiling, setIsCompiling] = useState(false);
+  // Monotonic id so a slow ranking call that resolves after a newer one can't
+  // clobber the panel with stale results.
+  const rankSeqRef = useRef(0);
   const [
     availableCandidates,
     setAvailableCandidates,
@@ -123,6 +127,29 @@ export default function VotingAdvisor() {
     buildWardStep,
     setSteps,
   ]);
+
+  // Fire the (slow, RAG-backed) candidate ranking without blocking the chat
+  // turn. The next question is already on screen; the panel + confidence update
+  // when this resolves. Stale results are dropped via rankSeqRef.
+  const runRanking = useCallback(
+    (history: UserResponse[], candidates: Candidate[]) => {
+      if (candidates.length === 0 || history.length === 0) return;
+      const seq = ++rankSeqRef.current;
+      rankCandidatesForSession(history, candidates)
+        .then((ranking) => {
+          if (seq !== rankSeqRef.current) return; // a newer ranking superseded us
+          setConfidence(ranking.confidence);
+          setShowCandidates(ranking.shouldShowCandidates);
+          if (ranking.candidateMatches.length > 0) {
+            setCandidates(ranking.candidateMatches);
+          }
+        })
+        .catch((error) => {
+          console.error("[ui:ranking] failed", serializeError(error));
+        });
+    },
+    [setConfidence, setShowCandidates, setCandidates],
+  );
 
   const handleComponentResponse = async (
     response: unknown,
@@ -276,28 +303,15 @@ export default function VotingAdvisor() {
         );
         console.log(`[${traceId}] ${phase}:done`, {
           hasResponse: !!aiResponse,
-          confidence: aiResponse?.confidence,
-          shouldShowCandidates: aiResponse?.shouldShowCandidates,
-          candidateMatches: aiResponse?.candidateMatches?.length ?? 0,
         });
 
-        if (aiResponse) {
-          setConfidence(aiResponse.confidence);
-          setShowCandidates(aiResponse.shouldShowCandidates);
-          // Only overwrite the sidebar when the handler actually produced
-          // ranked matches. An empty array (the current Phase-1 default from
-          // chat-handler) must NOT clobber the unranked list we seeded on
-          // seat selection.
-          if (
-            aiResponse.candidateMatches &&
-            aiResponse.candidateMatches.length > 0
-          ) {
-            setCandidates(aiResponse.candidateMatches);
-          }
-          appendActive(aiResponse.nextComponent ?? fallbackChat);
-        } else {
-          appendActive(fallbackChat);
-        }
+        // Render the next question immediately — do NOT wait for ranking.
+        appendActive(aiResponse?.nextComponent ?? fallbackChat);
+
+        // Kick off candidate ranking in the background; the panel + confidence
+        // update when it resolves (see runRanking). This keeps the per-turn
+        // request short instead of blocking on the slow RAG ranking.
+        runRanking(history, availableCandidates);
       }
     } catch (error) {
       console.error(`[${traceId}] component response failed`, {

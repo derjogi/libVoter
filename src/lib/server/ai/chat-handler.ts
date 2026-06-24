@@ -105,6 +105,15 @@ export interface ChatResponse {
   };
 }
 
+// Ranking is computed separately from the chat turn (see rankResponses) so the
+// next question can be returned to the user without waiting for the slower
+// RAG-backed candidate ranking.
+export interface RankingResponse {
+  candidateMatches: CandidateMatch[];
+  confidence: number;
+  shouldShowCandidates: boolean;
+}
+
 export class AIChatHandler {
   private chatModel: ChatModel;
 
@@ -127,6 +136,14 @@ export class AIChatHandler {
     return Number.parseInt(process.env.AI_PROMPT_TIMEOUT_MS || "25000", 10);
   }
 
+  /**
+   * Fast path: produce the conversational reply + next UI component for a turn.
+   * Deliberately does NOT rank candidates — that is the slow, RAG-backed work,
+   * now run separately via {@link rankResponses} so the next question can be
+   * returned to the user without waiting on it. Keeping the two decoupled also
+   * shortens each request, which makes it far less likely a dev Fast Refresh /
+   * recompile lands mid-request and aborts the in-flight Server Action fetch.
+   */
   async processMessage(
     userMessage: string,
     conversationHistory: ConversationMessage[],
@@ -134,7 +151,9 @@ export class AIChatHandler {
     availableCandidates: Candidate[],
   ): Promise<ChatResponse> {
     try {
-      // Confidence is computed deterministically — no LLM call needed.
+      // Confidence is computed deterministically — no LLM call needed. Used for
+      // the in-prompt advisor note and to gate the follow-up chip (the
+      // ranking-derived confidence now arrives separately via rankResponses).
       const confidenceResult = ConfidenceCalculator.calculate(
         userResponseHistory,
         conversationHistory,
@@ -164,20 +183,55 @@ export class AIChatHandler {
         }),
       ];
 
-      // The chat turn (reply + next component) and the candidate ranking are
-      // independent, so run them concurrently to avoid doubling per-turn
-      // latency.
-      console.log("Processing message: chat turn + candidate ranking");
-      const [turn, candidateMatches] = await Promise.all([
-        this.generateChatTurn(messages),
-        this.rankCandidates(userResponseHistory, availableCandidates),
-      ]);
+      console.log("Processing message: chat turn");
+      const turn = await this.generateChatTurn(messages);
       console.log("Chat turn:", JSON.stringify(turn));
 
-      // UI confidence now reflects how confident we are in the *ranking*
-      // (margin between the top candidates + topic coverage) rather than the
-      // older response-quality heuristic — see deriveConfidence. The heuristic
-      // calculator is still used above only for the in-prompt advisor note.
+      // Surface the follow-up chip only while the heuristic confidence is still
+      // low (preserves the previous "nudge while uncertain" UX).
+      const followupQuestion =
+        confidenceResult.score < 70 && turn.followupQuestion
+          ? {
+              question: turn.followupQuestion.question,
+              type: turn.followupQuestion.type ?? "chat",
+              reasoning: turn.followupQuestion.reasoning,
+            }
+          : undefined;
+
+      return {
+        message: turn.message,
+        // Ranking-derived confidence / candidate gating now come from
+        // rankResponses; the chat turn itself doesn't block on ranking.
+        confidence: confidenceResult.score,
+        shouldShowCandidates: false,
+        nextComponent: turn.nextComponent,
+        followupQuestion,
+      };
+    } catch (error) {
+      console.error("AI chat processing error:", error);
+      throw new Error("Failed to process chat message");
+    }
+  }
+
+  /**
+   * Slow path: RAG-backed candidate ranking + the ranking-derived UI confidence
+   * and the show-candidates gate. Called separately from {@link processMessage}
+   * so the next question renders immediately and the candidate panel fills in
+   * when this resolves. Returns an empty, non-gating result when there is
+   * nothing to rank yet (no answers or no candidates).
+   */
+  async rankResponses(
+    userResponseHistory: UserResponse[],
+    availableCandidates: Candidate[],
+  ): Promise<RankingResponse> {
+    try {
+      const candidateMatches = await this.rankCandidates(
+        userResponseHistory,
+        availableCandidates,
+      );
+
+      // UI confidence reflects how confident we are in the *ranking* (margin
+      // between the top candidates + topic coverage) — see deriveConfidence.
       const confidence = this.deriveConfidence(
         candidateMatches,
         userResponseHistory,
@@ -188,30 +242,15 @@ export class AIChatHandler {
         confidence >= config.thresholds.confidence &&
         userResponseHistory.length >= config.thresholds.minInteractions;
 
-      // Preserve previous UX: only surface a follow-up chip while confidence is
-      // still low.
-      const followupQuestion =
-        confidence < 70 && turn.followupQuestion
-          ? {
-              question: turn.followupQuestion.question,
-              type: turn.followupQuestion.type ?? "chat",
-              reasoning: turn.followupQuestion.reasoning,
-            }
-          : undefined;
-
-      return {
-        message: turn.message,
-        confidence,
-        shouldShowCandidates,
-        nextComponent: turn.nextComponent,
-        // Empty when there is nothing to rank yet (e.g. right after seat
-        // selection); the client keeps its unranked list in that case.
-        candidateMatches,
-        followupQuestion,
-      };
+      return { candidateMatches, confidence, shouldShowCandidates };
     } catch (error) {
-      console.error("AI chat processing error:", error);
-      throw new Error("Failed to process chat message");
+      console.error("Candidate ranking failed:", error);
+      // Non-gating empty result → client keeps its current (unranked) list.
+      return {
+        candidateMatches: [],
+        confidence: 0,
+        shouldShowCandidates: false,
+      };
     }
   }
 
