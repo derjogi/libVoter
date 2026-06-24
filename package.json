@@ -16,6 +16,8 @@
     "scrape:nz-2026": "bun scripts/scrape-nz-2026.ts",
     "migrate:to-races": "bun scripts/migrate-to-races.ts",
     "test:election-config": "bun run scripts/test-election-config.ts",
+    "bench:models": "bun run scripts/bench-models.ts",
+    "test:latency": "LIVE_LLM=1 bun run test tests/unit/live-chat-latency.test.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "AI_MODE=mock playwright test",
