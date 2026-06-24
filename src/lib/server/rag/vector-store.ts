@@ -106,6 +106,25 @@ function str(v: unknown): string {
 
 type ChromaFactory = (index?: Chroma["index"]) => Chroma;
 
+interface VectorStoreInitOptions {
+  /**
+   * When true, seed the collection from libSQL if it exists but is empty.
+   * App runtime should leave this off; offline embedding scripts can opt in.
+   */
+  seedIfEmpty?: boolean;
+}
+
+function chromaDbConfig(index?: Chroma["index"]) {
+  if (index) return { index };
+
+  const url = new URL(process.env.CHROMA_URL || "http://localhost:8000");
+  return {
+    host: url.hostname,
+    port: Number(url.port || (url.protocol === "https:" ? 443 : 80)),
+    ssl: url.protocol === "https:",
+  };
+}
+
 export class VectorStoreManager implements EvidenceVectorStore {
   private vectorStore: Chroma | null = null;
   private embeddings: EmbeddingModel;
@@ -121,31 +140,36 @@ export class VectorStoreManager implements EvidenceVectorStore {
       ((index) =>
         new Chroma(this.embeddings, {
           collectionName: COLLECTION,
-          ...(index
-            ? { index }
-            : {
-                url: process.env.CHROMA_URL || "http://localhost:8000",
-              }),
+          ...chromaDbConfig(index),
         }));
   }
 
-  async initialize() {
+  async initialize({ seedIfEmpty = false }: VectorStoreInitOptions = {}) {
     try {
       this.vectorStore = await Chroma.fromExistingCollection(this.embeddings, {
         collectionName: COLLECTION,
-        url: process.env.CHROMA_URL || "http://localhost:8000",
+        ...chromaDbConfig(),
       });
       const count = await this.vectorStore.collection?.count();
-      if (!count) {
-        console.log("📝 Evidence vector store empty, populating…");
-        await this.populate();
-      } else {
+      if (count) {
         console.log(`✅ Loaded evidence vector store (${count} chunks)`);
+        return;
+      }
+      console.log("📝 Evidence vector store is empty.");
+      if (seedIfEmpty) {
+        console.log("📝 Seeding evidence vector store from libSQL…");
+        await this.populate();
       }
     } catch {
-      console.log("📝 Evidence collection not found, creating…");
+      console.log(
+        "📝 Evidence collection not found, creating empty collection…",
+      );
       this.vectorStore = this.createVectorStore();
-      await this.populate();
+      await this.vectorStore.ensureCollection();
+      if (seedIfEmpty) {
+        console.log("📝 Seeding evidence vector store from libSQL…");
+        await this.populate();
+      }
     }
   }
 
@@ -377,18 +401,30 @@ class MockVectorStoreManager implements EvidenceVectorStore {
 }
 
 let vectorStoreManager: EvidenceVectorStore | null = null;
+let vectorStoreManagerPromise: Promise<EvidenceVectorStore> | null = null;
 
 export async function getVectorStoreManager(): Promise<EvidenceVectorStore> {
-  if (!vectorStoreManager) {
+  if (vectorStoreManager) return vectorStoreManager;
+  if (vectorStoreManagerPromise) return vectorStoreManagerPromise;
+
+  vectorStoreManagerPromise = (async () => {
     if (isMockMode()) {
       console.log("AI_MODE=mock — using MockVectorStoreManager");
-      vectorStoreManager = new MockVectorStoreManager();
-    } else {
-      console.log("Creating VectorStoreManager (evidence)");
-      const real = new VectorStoreManager();
-      await real.initialize();
-      vectorStoreManager = real;
+      return new MockVectorStoreManager();
     }
-  }
-  return vectorStoreManager;
+
+    console.log("Creating VectorStoreManager (evidence)");
+    const real = new VectorStoreManager();
+    await real.initialize();
+    return real;
+  })()
+    .then((manager) => {
+      vectorStoreManager = manager;
+      return manager;
+    })
+    .finally(() => {
+      vectorStoreManagerPromise = null;
+    });
+
+  return vectorStoreManagerPromise;
 }

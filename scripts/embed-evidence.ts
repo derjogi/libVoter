@@ -8,7 +8,7 @@
 //   bun run scripts/embed-evidence.ts --repopulate    # force re-embed
 //   bun run scripts/embed-evidence.ts --query "climate" --party nz-2026-party-green
 
-import { getVectorStoreManager } from "../src/lib/server/rag/vector-store";
+import { VectorStoreManager } from "../src/lib/server/rag/vector-store";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -16,9 +16,11 @@ function arg(name: string): string | undefined {
 }
 
 async function main() {
-  const store = await getVectorStoreManager();
+  const repopulate = process.argv.includes("--repopulate");
+  const store = new VectorStoreManager();
+  await store.initialize({ seedIfEmpty: !repopulate });
 
-  if (process.argv.includes("--repopulate")) {
+  if (repopulate) {
     console.log("Re-embedding evidence_sources…");
     const n = await store.repopulate();
     console.log(`Embedded ${n} chunks.`);

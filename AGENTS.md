@@ -155,8 +155,8 @@ When the docs disagree with the code, **the code wins**. Update the doc.
 2. `.env.local` with at least `OPENROUTER_API_KEY` (or `OPENAI_API_KEY` /
    `ANTHROPIC_API_KEY`) and the model strings from `docs/SETUP.md`.
 3. Chroma running: `docker compose up -d chroma`
-4. `bun run dev` — first request takes minutes (downloads HF model, populates
-   Chroma).
+4. `bun run dev` — first request downloads the HF model; evidence embedding
+   is built offline with `bun run scripts/embed-evidence.ts`.
 
 Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
 `HuggingFaceTransformersEmbeddings` in
@@ -177,8 +177,9 @@ Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
   every `actions/prompts.ts` entry point. Malformed responses fall back to
   a safe chat component instead of breaking the UI.
 - **`scripts/scrape-candidates.ts` `main()` is mostly commented out** — it
-  currently only re-populates the vector store. Re-enable the body to
-  actually re-scrape, and note it uses **headed** Chromium.
+  currently only warms Chroma. Re-enable the body to actually re-scrape, and
+  run `scripts/embed-evidence.ts` separately if the evidence corpus changed.
+  Note it uses **headed** Chromium.
 - **Prompt model is hard-coded to `small`** in `PromptManager` and
   `RAGQueryEngine`; `large`/`reasoning` are unused.
 - **`README.md` is the default Next.js template.** Don't trust it; this file

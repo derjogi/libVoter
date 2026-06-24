@@ -66,12 +66,12 @@ prefix isn't recognised the whole string is treated as an OpenRouter model id.
 
 1. `getUniqueWards()` reads from libSQL → populates the ward dropdown.
 2. The first chat-or-component request constructs `VectorStoreManager`,
-   which:
-   - Downloads the HuggingFace embedding model (one-time, large).
-   - Connects to Chroma. If the `candidates` collection is empty, it loads
-     every row from libSQL, splits into chunks, embeds them, and inserts in
-     batches of 50. Expect this first request to take **minutes**.
-3. Subsequent requests reuse the Chroma collection (persisted under
+   which downloads the HuggingFace embedding model (one-time, large) and then
+   queries Chroma.
+3. The evidence collection is built offline with
+   `bun run scripts/embed-evidence.ts` (or `--repopulate`), not as part of the
+   chat request path.
+4. Subsequent requests reuse the Chroma collection (persisted under
    `./data/chroma/` because of the docker-compose volume mount).
 
 ## Re-scraping candidates (only when election data changes)
@@ -87,7 +87,8 @@ The scraper is currently mostly commented-out in `scripts/scrape-candidates.ts`
    # optional flags from inside main():  --start=<n> --limit=<m>
    ```
 4. The scraper writes both into `data/all-candidates.json` and upserts into
-   `voting-advisor.db`, then re-populates the vector store.
+   `voting-advisor.db`. If the evidence corpus changed, rebuild Chroma
+   separately with `bun run scripts/embed-evidence.ts --repopulate`.
 
 > ⚠️ Scraping uses **headed** Chromium (`headless: false`). On a headless CI
 > machine you'll need to flip that or run under Xvfb.

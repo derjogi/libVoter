@@ -110,8 +110,9 @@ specs on the fly.
   - `yesno` data with empty `statements`, `multiselect` with zero `options`
     — components don't currently validate input.
 - "It hangs." Two main causes:
-  1. Cold-start of HuggingFace embeddings + Chroma population on first request
-     (minutes).
+  1. Cold-start of HuggingFace embeddings (one-time) plus a missing or empty
+     Chroma evidence collection that needs offline embedding via
+     `scripts/embed-evidence.ts`.
   2. Slow OpenRouter completions (20–90 s observed in `run.log`).
 - The full chat path (post ward selection) crashes due to the
   `messages`/`candidates` issue in `chat-handler.ts` — see `SETUP.md`.

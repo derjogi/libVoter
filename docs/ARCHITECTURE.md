@@ -179,8 +179,12 @@ lib-voter/
 - **`scripts/scrape-candidates.ts`** — Playwright (headed Chromium) scraper
   that walks `voteauckland.co.nz` candidate pages, persists rows into the
   SQLite DB with upsert, writes JSON to `data/`, and finally calls
-  `getVectorStoreManager()` to populate Chroma. The scraping body of `main()`
-  is currently commented out — only the vector-store population step runs.
+  `getVectorStoreManager()` to warm Chroma. The scraping body of `main()` is
+  currently commented out — only the vector-store initialization step runs.
+
+- **`scripts/embed-evidence.ts`** — offline evidence-embedding job that chunks
+  and embeds the canonical `evidence_sources` rows into the derived Chroma
+  collection. Use `--repopulate` to rebuild the collection from scratch.
 
 ## Data flow for a single user turn
 
@@ -207,8 +211,9 @@ lib-voter/
 - **`README.md` is the default Next.js template** — no project-specific
   setup notes.
 - **`voting-advisor.db` is committed**, so the candidate data ships with the
-  repo, but `data/chroma/` content is not — Chroma will repopulate on first
-  request.
+  repo, but `data/chroma/` content is not — the evidence collection is built
+  offline via `scripts/embed-evidence.ts` and stored under Chroma's volume.
+  The app only loads it.
 - **`.env*` is gitignored** (per `.gitignore` line 36) so secrets stay local.
 - **No mock layer for AI**: every Server Action goes straight to the
   configured LLM. Tests therefore consume real API quota — see `TESTING.md`.

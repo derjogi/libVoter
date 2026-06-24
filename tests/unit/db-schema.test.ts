@@ -67,7 +67,10 @@ describe("Spec 002 schema & backfill", () => {
       .limit(1)
       .all();
     expect(firstRace.length).toBe(1);
-    const ward = firstRace[0].district!;
+    const ward = firstRace[0].district ?? "";
+    if (!ward) {
+      throw new Error("Expected race district to be defined");
+    }
 
     // Names via the legacy table.
     const legacyNames = (
