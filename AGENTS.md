@@ -222,7 +222,8 @@ Embeddings are **never** OpenAI — `createEmbeddingModel()` is hard-coded to
 - **Subagents**: Agents may delegate suitable independent tasks to subagents
   and run them in parallel.
 - **Version control**: Jujutsu (`.jj/`) on top of git (`.git/`). The original
-  spec asks for `jj describe` after each step.
+  spec asks for `jj describe` after each step. After each coherent unit of
+  work, commit the completed changes with `jj` before starting the next unit.
 - **Lint/format**: Biome (`biome.json`). Run `bun run lint` before
   committing.
 - **Tests**: Playwright spec at the repo root for now; new tests should land
