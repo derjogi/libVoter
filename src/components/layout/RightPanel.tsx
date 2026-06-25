@@ -1,17 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { error } from "console";
+import { TrendingUp, User, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { success } from "zod";
 import { CandidateList } from "@/components/candidates/CandidateList";
 import { CandidateModal } from "@/components/candidates/CandidateModal";
 import { ComparisonView } from "@/components/candidates/ComparisonView";
-import { TrendingUp, Users, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { summarizeUserPreferences } from "@/lib/actions/prompts";
 import type { CandidateMatch, UserResponse } from "@/types";
-import { success } from "zod";
-import { error } from "console";
 
 interface RightPanelProps {
   candidates: CandidateMatch[];

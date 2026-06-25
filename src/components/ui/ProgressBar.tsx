@@ -1,8 +1,8 @@
 "use client";
 
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
 import { RotateCcw, Undo2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface ProgressBarProps {
   progress: number; // 0-100

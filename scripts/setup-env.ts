@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 
 // Environment setup script
-import { writeFileSync, existsSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 import { join } from "path";
 import {
-  validateEnvironment,
   logEnvironmentStatus,
+  validateEnvironment,
 } from "../src/lib/config/validation";
 
 async function setupEnvironment() {

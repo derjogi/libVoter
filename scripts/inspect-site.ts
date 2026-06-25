@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
-import { chromium } from "playwright-core";
 import { writeFile } from "fs/promises";
+import { chromium } from "playwright-core";
 
 const URL =
   process.argv[2] ||

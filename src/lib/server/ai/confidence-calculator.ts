@@ -1,5 +1,5 @@
 // Server-only confidence calculation
-import type { UserResponse, ConversationMessage } from "@/types";
+import type { ConversationMessage, UserResponse } from "@/types";
 
 export interface ConfidenceResult {
   score: number; // 0-100
@@ -29,10 +29,11 @@ export class ConfidenceCalculator {
     conversationHistory: ConversationMessage[],
   ): ConfidenceResult {
     const factors = {
-      responseQuality: this.calculateResponseQuality(responses),
-      topicCoverage: this.calculateTopicCoverage(responses),
-      consistency: this.calculateConsistency(responses),
-      interactionCount: this.calculateInteractionCount(responses),
+      responseQuality: ConfidenceCalculator.calculateResponseQuality(responses),
+      topicCoverage: ConfidenceCalculator.calculateTopicCoverage(responses),
+      consistency: ConfidenceCalculator.calculateConsistency(responses),
+      interactionCount:
+        ConfidenceCalculator.calculateInteractionCount(responses),
     };
 
     // Weighted average calculation
@@ -43,7 +44,7 @@ export class ConfidenceCalculator {
         factors.interactionCount * 0.2,
     );
 
-    const reasoning = this.generateReasoning(factors, score);
+    const reasoning = ConfidenceCalculator.generateReasoning(factors, score);
 
     return {
       score: Math.min(100, Math.max(0, score)),
@@ -85,16 +86,18 @@ export class ConfidenceCalculator {
     const coveredTopics = new Set<string>();
 
     for (const response of responses) {
-      const responseText = this.extractTextFromResponse(response);
+      const responseText =
+        ConfidenceCalculator.extractTextFromResponse(response);
 
-      for (const topic of this.TOPICS) {
+      for (const topic of ConfidenceCalculator.TOPICS) {
         if (responseText.toLowerCase().includes(topic)) {
           coveredTopics.add(topic);
         }
       }
     }
 
-    const coverageRatio = coveredTopics.size / this.TOPICS.length;
+    const coverageRatio =
+      coveredTopics.size / ConfidenceCalculator.TOPICS.length;
     return Math.round(coverageRatio * 100);
   }
 
@@ -110,11 +113,11 @@ export class ConfidenceCalculator {
       const next = responses[i + 1];
 
       // Check if responses are on related topics
-      const currentText = this.extractTextFromResponse(current);
-      const nextText = this.extractTextFromResponse(next);
+      const currentText = ConfidenceCalculator.extractTextFromResponse(current);
+      const nextText = ConfidenceCalculator.extractTextFromResponse(next);
 
-      const currentTopics = this.extractTopics(currentText);
-      const nextTopics = this.extractTopics(nextText);
+      const currentTopics = ConfidenceCalculator.extractTopics(currentText);
+      const nextTopics = ConfidenceCalculator.extractTopics(nextText);
 
       const hasOverlap = currentTopics.some((topic) =>
         nextTopics.includes(topic),
@@ -146,7 +149,7 @@ export class ConfidenceCalculator {
     const topics: string[] = [];
     const lowerText = text.toLowerCase();
 
-    for (const topic of this.TOPICS) {
+    for (const topic of ConfidenceCalculator.TOPICS) {
       if (lowerText.includes(topic)) {
         topics.push(topic);
       }

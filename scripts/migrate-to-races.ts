@@ -6,17 +6,18 @@
 // on natural-key unique indexes.
 //
 // Usage: `bun run scripts/migrate-to-races.ts`
-import { db } from "../src/lib/server/db";
+
+import { and, eq } from "drizzle-orm";
+import { AUCKLAND_2025, electionConfig } from "../src/lib/config/election";
 import {
-  candidates,
-  elections,
-  races,
-  people,
   candidacies,
+  candidates,
   electionParties,
+  elections,
+  people,
+  races,
 } from "../src/lib/db/schema";
-import { electionConfig, AUCKLAND_2025 } from "../src/lib/config/election";
-import { eq, and } from "drizzle-orm";
+import { db } from "../src/lib/server/db";
 
 function slug(s: string): string {
   return s

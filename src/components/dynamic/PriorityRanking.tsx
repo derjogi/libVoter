@@ -77,7 +77,8 @@ export function PriorityRanking({
   const getOptionById = (id: string) =>
     data.options.find((opt) => opt.id === id);
 
-  const canSubmit = rankedIds.length > 0 || supplementalContext.trim().length > 0;
+  const canSubmit =
+    rankedIds.length > 0 || supplementalContext.trim().length > 0;
 
   return (
     <div className="flex flex-col gap-3">

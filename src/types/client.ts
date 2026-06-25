@@ -1,7 +1,5 @@
 // Client-safe types (can be imported anywhere)
-export interface ClientConfig {
-  // No database config needed for client - all DB operations are server-side
-}
+export type ClientConfig = {};
 
 export interface LocalStorageData {
   sessionId: string;

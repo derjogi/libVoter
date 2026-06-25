@@ -1,12 +1,12 @@
 // Server-only AI model factory for centralized model instantiation
-import { ChatOpenAI } from "@langchain/openai";
+
 import { ChatAnthropic } from "@langchain/anthropic";
-import { OpenAIEmbeddings } from "@langchain/openai";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
-import { MockChatModel, MockEmbeddings } from "./mock-models";
 import type { Embeddings } from "@langchain/core/embeddings";
-import { getAIConfig } from "./config";
+import { ChatOpenAI, type OpenAIEmbeddings } from "@langchain/openai";
 import type { AIModelConfig } from "./config";
+import { getAIConfig } from "./config";
+import { MockChatModel, MockEmbeddings } from "./mock-models";
 
 export type ChatModel = ChatOpenAI | ChatAnthropic | MockChatModel;
 export type EmbeddingModel =
@@ -59,7 +59,7 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
       }
 
     case "openrouter":
-    default: 
+    default:
       if (process.env.OPENROUTER_API_KEY) {
         console.log(
           "Using OpenRouter chat model:",

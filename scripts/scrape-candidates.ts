@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 
 import { createClient } from "@libsql/client";
+import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
+import { access, readFile, writeFile } from "fs/promises";
+import { chromium, type Page } from "playwright-core";
 import * as schema from "../src/lib/db/schema";
-import { eq, and, sql } from "drizzle-orm";
-import { chromium, Page } from "playwright-core";
-import { writeFile, readFile, access } from "fs/promises";
 import { getVectorStoreManager } from "../src/lib/server/rag/vector-store";
 
 const MAIN_URL =

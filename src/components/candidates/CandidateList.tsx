@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Filter, Search, SortAsc, SortDesc } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -11,9 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, SortAsc, SortDesc } from "lucide-react";
-import { CandidateCard } from "./CandidateCard";
 import type { CandidateMatch } from "@/types";
+import { CandidateCard } from "./CandidateCard";
 
 interface CandidateListProps {
   candidates: CandidateMatch[];
@@ -39,7 +39,7 @@ export function CandidateList({
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
 
   const filteredAndSortedCandidates = useMemo(() => {
-    let filtered = candidates.filter((candidate) => {
+    const filtered = candidates.filter((candidate) => {
       // Search filter
       const matchesSearch =
         !searchQuery ||

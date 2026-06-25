@@ -121,10 +121,7 @@ export function MultiSelectChecklist({
       />
 
       {!locked && (
-        <Button
-          onClick={handleSubmit}
-          disabled={disabled || !canSubmit}
-        >
+        <Button onClick={handleSubmit} disabled={disabled || !canSubmit}>
           Continue ({selectedCount} selected)
         </Button>
       )}

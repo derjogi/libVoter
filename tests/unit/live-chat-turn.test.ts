@@ -24,7 +24,10 @@ const PER_RUN_TIMEOUT_MS = 180_000;
 // Load .env.local into process.env (only fills in keys that aren't already set).
 function loadDotEnvLocal() {
   try {
-    const file = readFileSync(path.resolve(process.cwd(), ".env.local"), "utf8");
+    const file = readFileSync(
+      path.resolve(process.cwd(), ".env.local"),
+      "utf8",
+    );
     for (const line of file.split("\n")) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("#")) continue;
@@ -58,8 +61,18 @@ const HAS_KEY = Boolean(
 
 // A minimal candidate so processMessage can derive the available seat (ward).
 const fakeCandidates = [
-  { id: 1, name: "Alex Example", party: "Independent", ward: "Howick Flat Bush Subdivision" },
-  { id: 2, name: "Sam Sample", party: "Independent", ward: "Howick Flat Bush Subdivision" },
+  {
+    id: 1,
+    name: "Alex Example",
+    party: "Independent",
+    ward: "Howick Flat Bush Subdivision",
+  },
+  {
+    id: 2,
+    name: "Sam Sample",
+    party: "Independent",
+    ward: "Howick Flat Bush Subdivision",
+  },
 ] as unknown as Candidate[];
 
 describe.skipIf(!LIVE)("AIChatHandler.processMessage (LIVE LLM)", () => {

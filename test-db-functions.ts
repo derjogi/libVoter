@@ -1,7 +1,7 @@
 import {
-  getUniqueWards,
   getCandidatesByWard,
   getMayorCandidates,
+  getUniqueWards,
 } from "./src/lib/actions/database";
 
 async function testDatabaseFunctions() {

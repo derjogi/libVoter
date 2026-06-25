@@ -1,15 +1,15 @@
 "use client";
 
+import { CheckCircle, ExternalLink, Star, XCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, CheckCircle, XCircle, Star } from "lucide-react";
 import type { CandidateMatch } from "@/types";
 
 interface CandidateModalProps {

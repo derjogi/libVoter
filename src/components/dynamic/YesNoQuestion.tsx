@@ -68,7 +68,8 @@ export function YesNoQuestion({
     );
   };
 
-  const hasChanges = responses.some((r) => r !== undefined) || supplementalContext.trim();
+  const hasChanges =
+    responses.some((r) => r !== undefined) || supplementalContext.trim();
 
   return (
     <div className="flex flex-col gap-4">
@@ -132,7 +133,11 @@ export function YesNoQuestion({
       />
 
       {!locked && (
-        <Button onClick={handleSubmit} disabled={disabled || !hasChanges} variant="default">
+        <Button
+          onClick={handleSubmit}
+          disabled={disabled || !hasChanges}
+          variant="default"
+        >
           Submit
         </Button>
       )}

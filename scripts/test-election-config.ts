@@ -4,11 +4,11 @@
 // Run with: bun run test:election-config
 
 import {
-  electionConfig,
   type ElectionConfig,
+  electionConfig,
 } from "../src/lib/config/election";
+import { formatPrompt, getPrompt } from "../src/lib/server/prompts/index";
 import { getPromptManager } from "../src/lib/server/prompts/prompt-manager";
-import { getPrompt, formatPrompt } from "../src/lib/server/prompts/index";
 
 async function testElectionConfig() {
   console.log("🧪 Testing Election Configuration...\n");
