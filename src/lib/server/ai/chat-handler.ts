@@ -419,10 +419,14 @@ If a candidate has little relevant information, score them lower. Return exactly
 
       const human = `Voter preferences:\n${userProfile}\n\nCandidates and retrieved evidence:\n${candidateBlock}`;
 
-      const ranking = await this.generateRanking([
-        new SystemMessage({ content: system }),
-        new HumanMessage({ content: human }),
-      ]);
+      const expectedIds = availableCandidates.map((c) => c.id.toString());
+      const ranking = await this.generateRanking(
+        [
+          new SystemMessage({ content: system }),
+          new HumanMessage({ content: human }),
+        ],
+        expectedIds,
+      );
 
       const byId = new Map(ranking.rankings.map((r) => [r.id, r]));
 
@@ -536,9 +540,16 @@ If a candidate has little relevant information, score them lower. Return exactly
     );
   }
 
-  /** Single structured ranking call with one retry. Throws on repeated failure. */
+  /**
+   * Single structured ranking call with one retry. A schema-valid response can
+   * still be semantically unusable (for example a model may return only its top
+   * five candidates, or ordinal ranks 1..5, despite the prompt asking for every
+   * candidate scored 0..100). Treat missing / duplicate ids as a parse failure
+   * and retry with an explicit repair instruction before falling back.
+   */
   private async generateRanking(
     messages: (HumanMessage | AIMessage | SystemMessage)[],
+    expectedIds: string[] = [],
   ): Promise<CandidateRanking> {
     const structured = (
       this.chatModel as unknown as {
@@ -553,19 +564,61 @@ If a candidate has little relevant information, score them lower. Return exactly
     });
 
     try {
-      return await withTimeout(
+      const first = await withTimeout(
         structured.invoke(messages),
         this.timeoutMs,
         "Candidate ranking attempt 1",
       );
+      this.assertCompleteRanking(first, expectedIds);
+      return first;
     } catch (error) {
       console.error("Candidate ranking attempt 1 failed, retrying:", error);
-      return await withTimeout(
-        structured.invoke(messages),
+      const repairedMessages =
+        expectedIds.length > 0
+          ? [
+              ...messages,
+              new HumanMessage({
+                content: `The previous candidate ranking output was invalid: ${this.describeRankingError(error)}\nReturn a JSON object with a rankings array containing exactly these candidate ids, each exactly once: ${expectedIds.join(", ")}. Use score values on the 0-100 compatibility scale, not ordinal ranks. Do not omit low-scoring candidates.`,
+              }),
+            ]
+          : messages;
+      const second = await withTimeout(
+        structured.invoke(repairedMessages),
         this.timeoutMs,
         "Candidate ranking attempt 2",
       );
+      this.assertCompleteRanking(second, expectedIds);
+      return second;
     }
+  }
+
+  private assertCompleteRanking(
+    ranking: CandidateRanking,
+    expectedIds: string[],
+  ): void {
+    if (expectedIds.length === 0) return;
+
+    const expected = new Set(expectedIds);
+    const seen = new Set<string>();
+    const unexpected: string[] = [];
+    const duplicates: string[] = [];
+
+    for (const item of ranking.rankings) {
+      if (!expected.has(item.id)) unexpected.push(item.id);
+      if (seen.has(item.id)) duplicates.push(item.id);
+      seen.add(item.id);
+    }
+
+    const missing = expectedIds.filter((id) => !seen.has(id));
+    if (missing.length > 0 || unexpected.length > 0 || duplicates.length > 0) {
+      throw new Error(
+        `Candidate ranking malformed: missing=[${missing.join(", ")}] unexpected=[${unexpected.join(", ")}] duplicates=[${duplicates.join(", ")}] returned=${ranking.rankings.length} expected=${expectedIds.length}`,
+      );
+    }
+  }
+
+  private describeRankingError(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
   }
 
   /**

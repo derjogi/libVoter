@@ -9,6 +9,27 @@ beforeAll(() => {
   process.env.AI_MODE = "mock";
 });
 
+function candidate(overrides: {
+  id: number;
+  name: string;
+  party: string | null;
+}) {
+  return {
+    id: overrides.id,
+    name: overrides.name,
+    party: overrides.party,
+    ward: "Wellington Central",
+    candidate_statement: null,
+    key_positions: null,
+    why: null,
+    key_skills: null,
+    top_issues: null,
+    supporting_links: null,
+    photo_url: null,
+    created_at: new Date(),
+  };
+}
+
 describe("AIChatHandler.processMessage (mock mode)", () => {
   it("returns a valid ChatResponse without throwing", async () => {
     const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
@@ -75,22 +96,7 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
           timestamp: new Date(),
         },
       ],
-      [
-        {
-          id: 1,
-          name: "Greta Green",
-          party: "Green",
-          ward: "Wellington Central",
-          candidate_statement: null,
-          key_positions: null,
-          why: null,
-          key_skills: null,
-          top_issues: null,
-          supporting_links: null,
-          photo_url: null,
-          created_at: new Date(),
-        },
-      ],
+      [candidate({ id: 1, name: "Greta Green", party: "Green" })],
     );
 
     expect(result.candidateMatches).toHaveLength(1);
@@ -103,6 +109,58 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     ]);
     expect(match.reasoning).toContain("Evidence consulted");
     expect(match.score).toBeGreaterThan(0);
+  });
+
+  it("retries schema-valid but incomplete candidate rankings", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler();
+    let calls = 0;
+
+    (handler as unknown as { chatModel: unknown }).chatModel = {
+      withStructuredOutput: () => ({
+        invoke: async () => {
+          calls++;
+          if (calls === 1) {
+            return {
+              rankings: [
+                { id: "1", score: 82, reasoning: "Only returned the winner" },
+              ],
+            };
+          }
+          return {
+            rankings: [
+              { id: "1", score: 82, reasoning: "Strong climate match" },
+              { id: "2", score: 43, reasoning: "Some housing overlap" },
+            ],
+          };
+        },
+      }),
+    };
+
+    const result = await handler.rankResponses(
+      [
+        {
+          id: "r1",
+          questionId: "priorities",
+          componentType: "chat",
+          value: "Climate action and affordable housing",
+          timestamp: new Date(),
+        },
+      ],
+      [
+        candidate({ id: 1, name: "Greta Green", party: "Green" }),
+        candidate({ id: 2, name: "Laura Labour", party: "Labour" }),
+      ],
+    );
+
+    expect(calls).toBe(2);
+    expect(result.candidateMatches).toHaveLength(2);
+    expect(
+      result.candidateMatches.map((m) => [m.candidate.id, m.score]),
+    ).toEqual([
+      [1, 82],
+      [2, 43],
+    ]);
   });
 });
 

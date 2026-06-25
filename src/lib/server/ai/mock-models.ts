@@ -13,7 +13,7 @@ export class MockChatModel {
   // Keep the public model property so callers that read it still work.
   readonly model = "mock";
 
-  async invoke(messages: any[]): Promise<AIMessage> {
+  async invoke(messages: unknown[]): Promise<AIMessage> {
     const text = extractPromptText(messages);
     const content = pickMockResponse(text);
     return new AIMessage({ content });
@@ -33,7 +33,7 @@ export class MockChatModel {
         // Branch on the caller's schema name so each structured call gets a
         // fixture of the right shape.
         if (name === "candidate_ranking") {
-          return MOCK_CANDIDATE_RANKING as unknown as T;
+          return mockCandidateRanking(_messages) as unknown as T;
         }
         return MOCK_CHAT_TURN as unknown as T;
       },
@@ -41,18 +41,34 @@ export class MockChatModel {
   }
 }
 
-function extractPromptText(messages: any[]): string {
+function extractPromptText(messages: unknown): string {
   // Concatenate all user/system message contents for sniffing.
-  return messages
+  const list = Array.isArray(messages) ? messages : [messages];
+  return list
     .map((m) => {
       if (typeof m === "string") return m;
-      if (m?.content)
-        return typeof m.content === "string"
-          ? m.content
-          : JSON.stringify(m.content);
+      if (typeof m === "object" && m !== null && "content" in m) {
+        const content = (m as { content?: unknown }).content;
+        return typeof content === "string" ? content : JSON.stringify(content);
+      }
       return "";
     })
     .join("\n");
+}
+
+function mockCandidateRanking(messages: unknown) {
+  const text = extractPromptText(messages);
+  const ids = [...text.matchAll(/\bid=(\d+)\b/g)].map((m) => m[1]);
+  if (ids.length === 0) return MOCK_CANDIDATE_RANKING;
+
+  const uniqueIds = [...new Set(ids)];
+  return {
+    rankings: uniqueIds.map((id, index) => ({
+      id,
+      score: Math.max(10, 80 - index * 10),
+      reasoning: `mock ranking for candidate ${id}`,
+    })),
+  };
 }
 
 /**
