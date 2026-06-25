@@ -101,9 +101,9 @@ export function ComparisonView({
                       </div>
 
                       <div className="space-y-2">
-                        {candidate.topMatchingPolicies.map((policy, index) => (
+                        {candidate.topMatchingPolicies.map((policy) => (
                           <div
-                            key={index}
+                            key={policy}
                             className="flex items-center p-2 bg-muted rounded"
                           >
                             <Star className="mr-2 h-4 w-4 text-yellow-500 flex-shrink-0" />
@@ -136,8 +136,8 @@ export function ComparisonView({
                             Pros
                           </h4>
                           <ul className="text-sm space-y-1">
-                            {candidate.pros.slice(0, 3).map((pro, index) => (
-                              <li key={index} className="flex items-start">
+                            {candidate.pros.slice(0, 3).map((pro) => (
+                              <li key={pro} className="flex items-start">
                                 <CheckCircle className="mr-2 h-3 w-3 text-green-500 mt-0.5 flex-shrink-0" />
                                 {pro}
                               </li>
@@ -151,8 +151,8 @@ export function ComparisonView({
                             Considerations
                           </h4>
                           <ul className="text-sm space-y-1">
-                            {candidate.cons.slice(0, 3).map((con, index) => (
-                              <li key={index} className="flex items-start">
+                            {candidate.cons.slice(0, 3).map((con) => (
+                              <li key={con} className="flex items-start">
                                 <XCircle className="mr-2 h-3 w-3 text-red-500 mt-0.5 flex-shrink-0" />
                                 {con}
                               </li>

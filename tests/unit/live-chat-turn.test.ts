@@ -92,7 +92,6 @@ describe.skipIf(!LIVE)("AIChatHandler.processMessage (LIVE LLM)", () => {
         );
 
         const comp = result.nextComponent;
-        // biome-ignore lint/suspicious/noConsole: manual test output
         console.log(
           `\n[run ${i + 1}] type=${comp?.type}\n`,
           JSON.stringify(result, null, 2),

@@ -26,7 +26,7 @@ export class ConfidenceCalculator {
 
   static calculate(
     responses: UserResponse[],
-    conversationHistory: ConversationMessage[],
+    _conversationHistory: ConversationMessage[],
   ): ConfidenceResult {
     const factors = {
       responseQuality: ConfidenceCalculator.calculateResponseQuality(responses),
@@ -160,7 +160,7 @@ export class ConfidenceCalculator {
 
   private static generateReasoning(
     factors: ConfidenceResult["factors"],
-    score: number,
+    _score: number,
   ): string {
     const reasons: string[] = [];
 
@@ -188,6 +188,6 @@ export class ConfidenceCalculator {
       reasons.push("Need more responses for accurate assessment");
     }
 
-    return reasons.join(". ") + ".";
+    return `${reasons.join(". ")}.`;
   }
 }

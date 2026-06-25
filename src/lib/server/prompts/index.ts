@@ -428,7 +428,7 @@ export function validatePromptVariables(
       // Objects should be serializable
       try {
         JSON.stringify(value);
-      } catch (e) {
+      } catch (_e) {
         errors.push(`Variable '${variable}' contains non-serializable data`);
       }
     }

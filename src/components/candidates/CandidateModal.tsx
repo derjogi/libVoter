@@ -68,8 +68,8 @@ export function CandidateModal({
                 Pros
               </h3>
               <ul className="space-y-2">
-                {candidate.pros.map((pro, index) => (
-                  <li key={index} className="flex items-start">
+                {candidate.pros.map((pro) => (
+                  <li key={pro} className="flex items-start">
                     <CheckCircle className="mr-2 h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">{pro}</span>
                   </li>
@@ -83,8 +83,8 @@ export function CandidateModal({
                 Considerations
               </h3>
               <ul className="space-y-2">
-                {candidate.cons.map((con, index) => (
-                  <li key={index} className="flex items-start">
+                {candidate.cons.map((con) => (
+                  <li key={con} className="flex items-start">
                     <XCircle className="mr-2 h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">{con}</span>
                   </li>
@@ -101,9 +101,9 @@ export function CandidateModal({
               Top Matching Policies
             </h3>
             <div className="grid gap-3">
-              {candidate.topMatchingPolicies.map((policy, index) => (
+              {candidate.topMatchingPolicies.map((policy) => (
                 <div
-                  key={index}
+                  key={policy}
                   className="flex items-center p-3 bg-muted rounded-lg"
                 >
                   <Star className="mr-3 h-4 w-4 text-yellow-500 flex-shrink-0" />
@@ -120,9 +120,9 @@ export function CandidateModal({
               <div>
                 <h3 className="text-lg font-semibold mb-3">Sources</h3>
                 <div className="space-y-2">
-                  {candidate.sources.map((source, index) => (
+                  {candidate.sources.map((source) => (
                     <a
-                      key={index}
+                      key={source.url}
                       href={source.url}
                       target="_blank"
                       rel="noopener noreferrer"

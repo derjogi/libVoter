@@ -1,7 +1,7 @@
 // Server-only migration utilities
-import { execSync } from "child_process";
-import { mkdirSync, writeFileSync } from "fs";
-import path from "path";
+import { execSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
 export function runMigrations() {
   try {

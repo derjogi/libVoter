@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { writeFile } from "fs/promises";
+import { writeFile } from "node:fs/promises";
 import { chromium } from "playwright-core";
 
 const URL =
@@ -47,7 +47,9 @@ async function inspectSite() {
     const classAttr = await el.getAttribute("class");
     if (classAttr) {
       const classes = classAttr.split(" ").filter((c) => c);
-      classes.forEach((c) => (classCounts[c] = (classCounts[c] || 0) + 1));
+      for (const c of classes) {
+        classCounts[c] = (classCounts[c] || 0) + 1;
+      }
     }
     const idAttr = await el.getAttribute("id");
     if (idAttr) {

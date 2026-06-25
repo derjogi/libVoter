@@ -1,16 +1,13 @@
 "use client";
 
-import { error } from "console";
 import { TrendingUp, User, Users } from "lucide-react";
-import { useEffect, useState } from "react";
-import { success } from "zod";
+import { useCallback, useEffect, useState } from "react";
 import { CandidateList } from "@/components/candidates/CandidateList";
 import { CandidateModal } from "@/components/candidates/CandidateModal";
 import { ComparisonView } from "@/components/candidates/ComparisonView";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { summarizeUserPreferences } from "@/lib/actions/prompts";
 import type { CandidateMatch, UserResponse } from "@/types";
 
 interface RightPanelProps {
@@ -71,34 +68,37 @@ export function RightPanel({
     }
   };
 
-  const fetchPreferenceSummary = async (responses: UserResponse[]) => {
-    if (responses.length === 0) {
-      setPreferenceSummary("");
-      return;
-    }
-
-    setIsLoadingSummary(true);
-    try {
-      // const result = await summarizeUserPreferences(responses);
-      const result = { success: true, data: "Fake Summary", error: "" };
-      if (result.success) {
-        setPreferenceSummary(result.data || "");
-      } else {
-        console.error("Failed to fetch preference summary:", result.error);
+  const fetchPreferenceSummary = useCallback(
+    async (responses: UserResponse[]) => {
+      if (responses.length === 0) {
         setPreferenceSummary("");
+        return;
       }
-    } catch (error) {
-      console.error("Error fetching preference summary:", error);
-      setPreferenceSummary("");
-    } finally {
-      setIsLoadingSummary(false);
-    }
-  };
+
+      setIsLoadingSummary(true);
+      try {
+        // const result = await summarizeUserPreferences(responses);
+        const result = { success: true, data: "Fake Summary", error: "" };
+        if (result.success) {
+          setPreferenceSummary(result.data || "");
+        } else {
+          console.error("Failed to fetch preference summary:", result.error);
+          setPreferenceSummary("");
+        }
+      } catch (error) {
+        console.error("Error fetching preference summary:", error);
+        setPreferenceSummary("");
+      } finally {
+        setIsLoadingSummary(false);
+      }
+    },
+    [],
+  );
 
   // Update preference summary when user responses change
   useEffect(() => {
     fetchPreferenceSummary(userResponses);
-  }, [userResponses]);
+  }, [userResponses, fetchPreferenceSummary]);
 
   return (
     <>

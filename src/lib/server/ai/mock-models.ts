@@ -2,7 +2,6 @@
 // Mirrors enough of the LangChain ChatModel surface that the rest of the
 // codebase can use it without changes.
 
-import type { BaseMessage } from "@langchain/core/messages";
 import { AIMessage } from "@langchain/core/messages";
 import {
   MOCK_CANDIDATE_RANKING,

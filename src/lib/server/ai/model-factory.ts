@@ -2,7 +2,6 @@
 
 import { ChatAnthropic } from "@langchain/anthropic";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/huggingface_transformers";
-import type { Embeddings } from "@langchain/core/embeddings";
 import { ChatOpenAI, type OpenAIEmbeddings } from "@langchain/openai";
 import type { AIModelConfig } from "./config";
 import { getAIConfig } from "./config";
@@ -41,10 +40,11 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          apiKey: process.env.OPENAI_API_KEY!,
+          apiKey: openAiKey,
           streaming: false,
         });
       }
+      break;
 
     case "anthropic":
       if (process.env.ANTHROPIC_API_KEY) {
@@ -53,12 +53,12 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          apiKey: process.env.ANTHROPIC_API_KEY!,
+          apiKey: anthropicKey,
           streaming: false,
         });
       }
+      break;
 
-    case "openrouter":
     default:
       if (process.env.OPENROUTER_API_KEY) {
         console.log(
@@ -72,7 +72,7 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          apiKey: process.env.OPENROUTER_API_KEY!,
+          apiKey: openRouterKey,
           configuration: {
             baseURL: "https://openrouter.ai/api/v1",
           },

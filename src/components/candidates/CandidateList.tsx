@@ -112,8 +112,8 @@ export function CandidateList({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="animate-pulse">
+        {["first", "second", "third"].map((slot) => (
+          <div key={slot} className="animate-pulse">
             <div className="h-32 bg-muted rounded-lg"></div>
           </div>
         ))}

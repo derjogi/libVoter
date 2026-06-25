@@ -7,8 +7,8 @@
 //
 // Usage: `bun run scripts/migrate-to-races.ts`
 
-import { and, eq } from "drizzle-orm";
-import { AUCKLAND_2025, electionConfig } from "../src/lib/config/election";
+import { eq } from "drizzle-orm";
+import { AUCKLAND_2025 } from "../src/lib/config/election";
 import {
   candidacies,
   candidates,

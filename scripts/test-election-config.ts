@@ -3,11 +3,8 @@
 // Test script to verify election configuration is working correctly
 // Run with: bun run test:election-config
 
-import {
-  type ElectionConfig,
-  electionConfig,
-} from "../src/lib/config/election";
-import { formatPrompt, getPrompt } from "../src/lib/server/prompts/index";
+import { electionConfig } from "../src/lib/config/election";
+import { getPrompt } from "../src/lib/server/prompts/index";
 import { getPromptManager } from "../src/lib/server/prompts/prompt-manager";
 
 async function testElectionConfig() {
@@ -89,9 +86,9 @@ async function testElectionConfig() {
         JSON.parse(response); // Should be valid JSON for CANDIDATE_MATCHING
         console.log("✅ Prompt execution successful with election variables");
         testsPassed++;
-      } catch (e) {
+      } catch (_e) {
         console.log("❌ Prompt execution failed - invalid JSON response");
-        console.log("Response preview:", response.substring(0, 200) + "...");
+        console.log("Response preview:", `${response.substring(0, 200)}...`);
       }
     } else {
       console.log("❌ Failed to execute prompt with election variables");
@@ -104,7 +101,7 @@ async function testElectionConfig() {
   totalTests++;
   try {
     console.log("\n4. Testing system message election context...");
-    const promptManager = getPromptManager();
+    const _promptManager = getPromptManager();
 
     // Create a mock system message like the one in PromptManager
     const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}. Provide accurate, neutral responses focused on ${electionConfig.keyTopics.join(", ")}.`;
@@ -155,7 +152,7 @@ async function testElectionConfig() {
       console.log("❌ Prompt templates missing election variable placeholders");
       console.log(
         "Template preview:",
-        candidateMatchingPrompt.template.substring(0, 300) + "...",
+        `${candidateMatchingPrompt.template.substring(0, 300)}...`,
       );
     }
   } catch (error) {
@@ -163,7 +160,7 @@ async function testElectionConfig() {
   }
 
   // Summary
-  console.log("\n" + "=".repeat(50));
+  console.log(`\n${"=".repeat(50)}`);
   console.log(`📊 Test Results: ${testsPassed}/${totalTests} tests passed`);
 
   if (testsPassed === totalTests) {

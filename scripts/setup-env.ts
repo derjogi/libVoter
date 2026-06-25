@@ -1,12 +1,9 @@
 #!/usr/bin/env bun
 
 // Environment setup script
-import { existsSync, writeFileSync } from "fs";
-import { join } from "path";
-import {
-  logEnvironmentStatus,
-  validateEnvironment,
-} from "../src/lib/config/validation";
+import { existsSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { logEnvironmentStatus } from "../src/lib/config/validation";
 
 async function setupEnvironment() {
   console.log("🚀 Setting up environment for AI Voting Advisor...\n");

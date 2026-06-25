@@ -60,17 +60,15 @@ export function CandidateCard({
           <div>
             <h4 className="text-sm font-medium mb-2">Top Matching Policies</h4>
             <ul className="space-y-1">
-              {candidate.topMatchingPolicies
-                .slice(0, 3)
-                .map((policy, index) => (
-                  <li
-                    key={index}
-                    className="text-sm text-muted-foreground flex items-center"
-                  >
-                    <Star className="h-3 w-3 mr-2 text-yellow-500 flex-shrink-0" />
-                    {policy}
-                  </li>
-                ))}
+              {candidate.topMatchingPolicies.slice(0, 3).map((policy) => (
+                <li
+                  key={policy}
+                  className="text-sm text-muted-foreground flex items-center"
+                >
+                  <Star className="h-3 w-3 mr-2 text-yellow-500 flex-shrink-0" />
+                  {policy}
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -84,8 +82,8 @@ export function CandidateCard({
 
           {isLowConfidence && (
             <div className="text-xs text-muted-foreground bg-muted p-2 rounded">
-              Match confidence is building... More responses needed for accurate
-              results.
+              Match confidence is {confidence}%. More responses needed for
+              accurate results.
             </div>
           )}
         </div>

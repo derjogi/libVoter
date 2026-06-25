@@ -68,8 +68,8 @@ export const config = {
     modelSmall: parsedEnv.data.AI_MODEL_SMALL,
     modelLarge: parsedEnv.data.AI_MODEL_LARGE,
     modelReasoning: parsedEnv.data.AI_MODEL_REASONING,
-    confidenceThreshold: parseInt(parsedEnv.data.AI_CONFIDENCE_THRESHOLD),
-    maxTokens: parseInt(parsedEnv.data.AI_MAX_TOKENS),
+    confidenceThreshold: parseInt(parsedEnv.data.AI_CONFIDENCE_THRESHOLD, 10),
+    maxTokens: parseInt(parsedEnv.data.AI_MAX_TOKENS, 10),
     temperature: parseFloat(parsedEnv.data.AI_TEMPERATURE),
   },
 
@@ -94,10 +94,11 @@ export const config = {
   },
 
   ui: {
-    mobileBreakpoint: parseInt(parsedEnv.data.MOBILE_BREAKPOINT),
-    maxCandidatesDisplay: parseInt(parsedEnv.data.MAX_CANDIDATES_DISPLAY),
+    mobileBreakpoint: parseInt(parsedEnv.data.MOBILE_BREAKPOINT, 10),
+    maxCandidatesDisplay: parseInt(parsedEnv.data.MAX_CANDIDATES_DISPLAY, 10),
     minInteractionsBeforeResults: parseInt(
       parsedEnv.data.MIN_INTERACTIONS_BEFORE_RESULTS,
+      10,
     ),
   },
 

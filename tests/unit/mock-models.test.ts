@@ -1,8 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  MOCK_RESPONSES,
-  pickMockResponse,
-} from "@/lib/server/ai/__mocks__/responses";
+import { describe, expect, it } from "vitest";
+import { MOCK_RESPONSES } from "@/lib/server/ai/__mocks__/responses";
 import { MockChatModel, MockEmbeddings } from "@/lib/server/ai/mock-models";
 import {
   parseComponentSpec,

@@ -31,7 +31,7 @@ export function QuantitativeSlider({
   const [supplementalContext, setSupplementalContext] = useState(
     getInitialSupplementalContext(value),
   );
-  const canSubmit = true; // Slider always has a value
+  const _canSubmit = true; // Slider always has a value
 
   const handleSubmit = () => {
     const descriptiveString = `Question: ${data.label}\nAnswer: ${sliderValue}${data.unit ? ` ${data.unit}` : ""}${data.description ? ` (${data.description})` : ""}${formatSupplementalContext(

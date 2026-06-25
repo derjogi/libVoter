@@ -105,7 +105,6 @@ describe.skipIf(!LIVE)("chat model latency (LIVE LLM)", () => {
         expect(result.nextComponent?.type).toBeDefined();
 
         const ok = elapsed <= BUDGET_MS;
-        // biome-ignore lint/suspicious/noConsole: manual test output
         console.log(
           `[run ${i + 1}/${RUNS}] ${(elapsed / 1000).toFixed(1)}s ${
             ok ? "✓ under" : "✗ over"
@@ -116,11 +115,10 @@ describe.skipIf(!LIVE)("chat model latency (LIVE LLM)", () => {
       const passes = durations.filter((d) => d <= BUDGET_MS).length;
       const sorted = [...durations].sort((a, b) => a - b);
       const median = sorted[Math.floor(sorted.length / 2)];
-      // biome-ignore lint/suspicious/noConsole: manual test output
       console.log(
         `\nlatency summary: ${passes}/${RUNS} under ${(BUDGET_MS / 1000).toFixed(0)}s, ` +
           `median ${(median / 1000).toFixed(1)}s, ` +
-          `min ${(sorted[0] / 1000).toFixed(1)}s, max ${(sorted.at(-1)! / 1000).toFixed(1)}s`,
+          `min ${(sorted[0] / 1000).toFixed(1)}s, max ${((sorted.at(-1) ?? 0) / 1000).toFixed(1)}s`,
       );
 
       expect(

@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 
+import { access, readFile, writeFile } from "node:fs/promises";
 import { createClient } from "@libsql/client";
-import { and, eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/libsql";
-import { access, readFile, writeFile } from "fs/promises";
-import { chromium, type Page } from "playwright-core";
+import { type Browser, chromium, type Page } from "playwright-core";
 import * as schema from "../src/lib/db/schema";
 import { getVectorStoreManager } from "../src/lib/server/rag/vector-store";
 
@@ -59,7 +59,7 @@ async function checkRobotsTxt(url: string): Promise<boolean> {
       );
     }
     return true;
-  } catch (error) {
+  } catch (_error) {
     console.log("Could not check robots.txt, proceeding anyway.");
     return true;
   }
@@ -232,11 +232,11 @@ async function scrapeCandidateDetails(
   }
 }
 
-async function scrapeCandidates(
+async function _scrapeCandidates(
   startIndex: number = 0,
   limit?: number,
 ): Promise<Candidate[]> {
-  let browser;
+  let browser: Browser | undefined;
   try {
     console.log("Launching browser...");
     browser = await chromium.launch({ headless: false });
