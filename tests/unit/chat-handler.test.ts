@@ -65,9 +65,7 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
     const handler = new AIChatHandler();
 
-    const result = await handler.processMessage(
-      "I care about climate action and affordable housing.",
-      [],
+    const result = await handler.rankResponses(
       [
         {
           id: "r1",

@@ -41,9 +41,11 @@ export default function VotingAdvisor() {
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
   const [isCompiling, setIsCompiling] = useState(false);
-  // Monotonic id so a slow ranking call that resolves after a newer one can't
-  // clobber the panel with stale results.
+  // Monotonic ids for background ranking. Older results may update the UI while
+  // a newer ranking is still pending, but once a newer result (or reset) has
+  // applied, older in-flight results are ignored.
   const rankSeqRef = useRef(0);
+  const appliedRankSeqRef = useRef(0);
   const [
     availableCandidates,
     setAvailableCandidates,
@@ -137,7 +139,8 @@ export default function VotingAdvisor() {
       const seq = ++rankSeqRef.current;
       rankCandidatesForSession(history, candidates)
         .then((ranking) => {
-          if (seq !== rankSeqRef.current) return; // a newer ranking superseded us
+          if (seq < appliedRankSeqRef.current) return;
+          appliedRankSeqRef.current = seq;
           setConfidence(ranking.confidence);
           setShowCandidates(ranking.shouldShowCandidates);
           if (ranking.candidateMatches.length > 0) {
@@ -334,6 +337,8 @@ export default function VotingAdvisor() {
   };
 
   const handleReset = () => {
+    rankSeqRef.current += 1;
+    appliedRankSeqRef.current = rankSeqRef.current;
     clearChat();
     clearStoredSteps();
     clearStoredCandidates();
