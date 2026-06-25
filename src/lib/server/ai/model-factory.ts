@@ -33,6 +33,8 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
   const { provider, model } = finalConfig;
 
   switch (provider) {
+    // Note: the 'breaks' after each case are intentionally omitted to allow for fall-through to the default case,
+    // which handles OpenRouter and unknown providers in case API keys aren't available.
     case "openai":
       if (process.env.OPENAI_API_KEY) {
         console.log("Using OpenAI chat model:", model);
@@ -40,11 +42,10 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          apiKey: openAiKey,
+          apiKey: process.env.OPENAI_API_KEY,
           streaming: false,
         });
       }
-      break;
 
     case "anthropic":
       if (process.env.ANTHROPIC_API_KEY) {
@@ -53,12 +54,14 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          apiKey: anthropicKey,
+          apiKey: process.env.ANTHROPIC_API_KEY,
           streaming: false,
         });
       }
-      break;
 
+    // case "openrouter": // Just having this here to make it more clear
+    // that this is the desired route for both, if the provider is specifically called 'openrouter',
+    // as well as for all unknown models (because openrouter handles those)
     default:
       if (process.env.OPENROUTER_API_KEY) {
         console.log(
@@ -72,7 +75,7 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
           model,
           temperature: config.limits.temperature,
           maxTokens: config.limits.maxTokens,
-          apiKey: openRouterKey,
+          apiKey: process.env.OPENROUTER_API_KEY,
           configuration: {
             baseURL: "https://openrouter.ai/api/v1",
           },
