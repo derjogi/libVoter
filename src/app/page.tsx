@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { rankCandidatesForSession } from "@/lib/actions/chat";
 import {
-  getCandidatesByWard,
-  getMayorCandidates,
+  getCandidatesForSeat,
   getSeatsForCurrentElection,
 } from "@/lib/actions/database";
 import { selectNextComponent } from "@/lib/actions/prompts";
@@ -234,29 +233,17 @@ export default function VotingAdvisor() {
         const wardName =
           raw?.kind === "dropdown" ? raw.label : String(response);
 
-        phase = "load-mayor-candidates";
+        phase = "load-seat-candidates";
         console.log(`[${traceId}] ${phase}`, { wardName });
-        const mayorResult = await getMayorCandidates();
+        const candidatesResult = await getCandidatesForSeat(wardName);
         console.log(`[${traceId}] ${phase}:done`, {
-          success: mayorResult.success,
-          count: mayorResult.data?.length ?? 0,
-          error: mayorResult.error,
+          success: candidatesResult.success,
+          count: candidatesResult.data?.length ?? 0,
+          error: candidatesResult.error,
         });
-        const mayorCandidates = mayorResult.success
-          ? mayorResult.data || []
+        const allCandidates = candidatesResult.success
+          ? candidatesResult.data || []
           : [];
-
-        phase = "load-ward-candidates";
-        console.log(`[${traceId}] ${phase}`, { wardName });
-        const wardResult = await getCandidatesByWard(wardName);
-        console.log(`[${traceId}] ${phase}:done`, {
-          success: wardResult.success,
-          count: wardResult.data?.length ?? 0,
-          error: wardResult.error,
-        });
-        const wardCandidates = wardResult.success ? wardResult.data || [] : [];
-
-        const allCandidates = [...mayorCandidates, ...wardCandidates];
         setAvailableCandidates(allCandidates);
 
         // Phase 1 (spec 009): surface the electorate's candidates in the

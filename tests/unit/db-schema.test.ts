@@ -126,6 +126,45 @@ describe("database actions", () => {
     expect((result.data as string[]).length).toBeGreaterThan(0);
   });
 
+  it("getCandidatesForSeat returns active-election candidacies and not Auckland mayors", async () => {
+    const { getCandidatesForSeat } = await import("@/lib/actions/database");
+
+    const seatRows = await db
+      .select({ name: races.name, district: races.district })
+      .from(races)
+      .where(and(eq(races.electionId, "nz-2026"), eq(races.kind, "electorate")))
+      .limit(1)
+      .all();
+    expect(seatRows).toHaveLength(1);
+
+    const seat = seatRows[0].district ?? seatRows[0].name;
+    const expectedNames = (
+      await db
+        .select({ name: people.name })
+        .from(candidacies)
+        .innerJoin(people, eq(people.id, candidacies.personId))
+        .innerJoin(races, eq(races.id, candidacies.raceId))
+        .where(
+          and(
+            eq(candidacies.electionId, "nz-2026"),
+            eq(races.kind, "electorate"),
+            eq(races.district, seat),
+          ),
+        )
+        .all()
+    )
+      .map((row) => row.name)
+      .sort();
+    expect(expectedNames.length).toBeGreaterThan(0);
+
+    const result = await getCandidatesForSeat(seat);
+
+    expect(result.success).toBe(true);
+    const names = (result.data ?? []).map((candidate) => candidate.name).sort();
+    expect(names).toEqual(expectedNames);
+    expect(names).not.toContain("Wayne Brown");
+  });
+
   it('getUniqueWards excludes "Mayor"', async () => {
     const { getUniqueWards } = await import("@/lib/actions/database");
     const result = await getUniqueWards();

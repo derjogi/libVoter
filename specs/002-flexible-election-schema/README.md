@@ -8,7 +8,7 @@ tags:
 depends_on:
 - '001'
 created_at: 2026-05-03T01:39:17.240936252Z
-updated_at: 2026-05-03T01:39:17.240936252Z
+updated_at: 2026-06-26T10:03:35Z
 ---
 
 # Flexible election schema (elections, races, parties, candidacies)
@@ -95,9 +95,10 @@ Notes:
         - one `candidates` row per distinct `name`,
         - one `candidacies` row joining them,
       then verifies counts.
-- [ ] Update [`actions/database.ts`](../../src/lib/actions/database.ts) so
-      ward / mayor queries use `races.kind` and `races.district` instead
-      of `candidates.ward`.
+- [x] Update [`actions/database.ts`](../../src/lib/actions/database.ts) so
+      active candidate loading uses `races.kind` and `races.district` instead
+      of `candidates.ward` (`getCandidatesForSeat`). Legacy ward / mayor
+      helpers remain for compatibility during the additive migration.
 - [ ] Update [`vector-store.ts`](../../src/lib/server/rag/vector-store.ts)
       so each Document carries `{ election_id, race_id, party_id }` in
       metadata, so retrievals can be filtered.
@@ -114,8 +115,10 @@ Notes:
           `select count(*) from races where election_id = 'auckland-2025'`
         - `select count(*) from candidates_old` =
           `select count(*) from candidacies where election_id = 'auckland-2025'`
-- [ ] The existing UI (ward dropdown → candidate list) still works
-      end-to-end against the new schema.
+- [x] The existing UI (ward/electorate dropdown → candidate list) loads
+      candidates through the new schema. Covered by
+      `tests/unit/db-schema.test.ts` regression for NZ 2026 electorate
+      candidacies excluding Auckland mayors.
 - [ ] `getCandidatesByWard()` and `getMayorCandidates()` return the same
       set of names as before the migration (snapshot test).
 

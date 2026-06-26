@@ -3,7 +3,16 @@
 import { and, eq, inArray, like, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { electionConfig } from "@/lib/config/election";
-import { appSettings, candidates, parties, races } from "@/lib/db/schema";
+import {
+  appSettings,
+  type Candidate,
+  candidacies,
+  candidates,
+  electionParties,
+  parties,
+  people,
+  races,
+} from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { db } from "@/lib/server/db";
 
@@ -189,6 +198,98 @@ export async function getCandidatesByWard(ward: string) {
       error: serializeError(error),
     });
     return { success: false, error: "Failed to load candidates by ward" };
+  }
+}
+
+function stableNumericId(value: string): number {
+  let hash = 0;
+  for (let i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return hash || 1;
+}
+
+/**
+ * Generic active-election candidate lookup for a user-facing seat.
+ *
+ * Reads `races -> candidacies -> people/election_parties` instead of the
+ * legacy Auckland-only `candidates.ward` table, so NZ electorates cannot leak
+ * Auckland mayoral candidates into the selected race.
+ */
+export async function getCandidatesForSeat(seat: string) {
+  const traceId = newTraceId("action:getCandidatesForSeat");
+  const start = Date.now();
+  console.log(`[${traceId}] start`, { seat, electionId: electionConfig.id });
+
+  try {
+    const userFacingKinds = electionConfig.seatTypes.filter(
+      (k) => k !== "mayor" && k !== "list",
+    );
+
+    if (userFacingKinds.length > 0) {
+      const rows = await db
+        .select({
+          candidacyId: candidacies.id,
+          legacyCandidateId: candidacies.legacyCandidateId,
+          name: people.name,
+          party: electionParties.name,
+          seatName: races.name,
+          district: races.district,
+          candidateStatement: candidacies.candidateStatement,
+          keyPositions: candidacies.keyPositions,
+          why: candidacies.why,
+          keySkills: candidacies.keySkills,
+          topIssues: candidacies.topIssues,
+          supportingLinks: candidacies.supportingLinks,
+          photoUrl: people.photoUrl,
+          createdAt: candidacies.createdAt,
+        })
+        .from(candidacies)
+        .innerJoin(races, eq(races.id, candidacies.raceId))
+        .innerJoin(people, eq(people.id, candidacies.personId))
+        .leftJoin(electionParties, eq(electionParties.id, candidacies.partyId))
+        .where(
+          and(
+            eq(candidacies.electionId, electionConfig.id),
+            inArray(races.kind, userFacingKinds),
+            or(eq(races.district, seat), eq(races.name, seat)),
+          ),
+        )
+        .orderBy(people.name);
+
+      if (rows.length > 0) {
+        const data: Candidate[] = rows.map((row) => ({
+          id: row.legacyCandidateId ?? stableNumericId(row.candidacyId),
+          name: row.name,
+          party: row.party,
+          ward: row.district ?? row.seatName,
+          candidate_statement: row.candidateStatement,
+          key_positions: row.keyPositions,
+          why: row.why,
+          key_skills: row.keySkills,
+          top_issues: row.topIssues,
+          supporting_links: row.supportingLinks,
+          photo_url: row.photoUrl,
+          created_at: row.createdAt,
+        }));
+
+        console.log(`[${traceId}] done`, {
+          elapsedMs: Date.now() - start,
+          count: data.length,
+        });
+        return { success: true, data };
+      }
+    }
+
+    // Fallback for a DB that has not been backfilled yet. Still intentionally
+    // excludes the old Auckland mayor path.
+    return getCandidatesByWard(seat);
+  } catch (error) {
+    console.error(`[${traceId}] failed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
+    return { success: false, error: "Failed to load candidates for seat" };
   }
 }
 
