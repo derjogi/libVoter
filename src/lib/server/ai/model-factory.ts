@@ -32,61 +32,57 @@ export function createChatModel(modelConfig?: AIModelConfig): ChatModel {
 
   const { provider, model } = finalConfig;
 
-  switch (provider) {
-    // Note: the 'breaks' after each case are intentionally omitted to allow for fall-through to the default case,
-    // which handles OpenRouter and unknown providers in case API keys aren't available.
-    case "openai":
-      if (process.env.OPENAI_API_KEY) {
-        console.log("Using OpenAI chat model:", model);
-        return new ChatOpenAI({
-          model,
-          temperature: config.limits.temperature,
-          maxTokens: config.limits.maxTokens,
-          apiKey: process.env.OPENAI_API_KEY,
-          streaming: false,
-        });
-      }
-
-    case "anthropic":
-      if (process.env.ANTHROPIC_API_KEY) {
-        console.log("Using Anthropic chat model:", model);
-        return new ChatAnthropic({
-          model,
-          temperature: config.limits.temperature,
-          maxTokens: config.limits.maxTokens,
-          apiKey: process.env.ANTHROPIC_API_KEY,
-          streaming: false,
-        });
-      }
-
-    // case "openrouter": // Just having this here to make it more clear
-    // that this is the desired route for both, if the provider is specifically called 'openrouter',
-    // as well as for all unknown models (because openrouter handles those)
-    default:
-      if (process.env.OPENROUTER_API_KEY) {
-        console.log(
-          "Using OpenRouter chat model:",
-          model,
-          "(routed from provider:",
-          provider,
-          ")",
-        );
-        return new ChatOpenAI({
-          model,
-          temperature: config.limits.temperature,
-          maxTokens: config.limits.maxTokens,
-          apiKey: process.env.OPENROUTER_API_KEY,
-          configuration: {
-            baseURL: "https://openrouter.ai/api/v1",
-          },
-          streaming: false,
-        });
-      } else {
-        throw new Error(
-          `Unsupported AI provider or required API key not set: ${provider}`,
-        );
-      }
+  if (provider === "openai" && process.env.OPENAI_API_KEY) {
+    console.log("Using OpenAI chat model:", model);
+    return new ChatOpenAI({
+      model,
+      temperature: config.limits.temperature,
+      maxTokens: config.limits.maxTokens,
+      apiKey: process.env.OPENAI_API_KEY,
+      streaming: false,
+    });
   }
+
+  if (provider === "anthropic" && process.env.ANTHROPIC_API_KEY) {
+    console.log("Using Anthropic chat model:", model);
+    return new ChatAnthropic({
+      model,
+      temperature: config.limits.temperature,
+      maxTokens: config.limits.maxTokens,
+      apiKey: process.env.ANTHROPIC_API_KEY,
+      streaming: false,
+    });
+  }
+
+  // Use OpenRouter for explicit OpenRouter configs, bare namespaced model ids,
+  // and native-provider configs when their native API key is not available.
+  if (process.env.OPENROUTER_API_KEY) {
+    const openRouterModel =
+      provider !== "openrouter" && !model.includes("/")
+        ? `${provider}/${model}`
+        : model;
+    console.log(
+      "Using OpenRouter chat model:",
+      openRouterModel,
+      "(routed from provider:",
+      provider,
+      ")",
+    );
+    return new ChatOpenAI({
+      model: openRouterModel,
+      temperature: config.limits.temperature,
+      maxTokens: config.limits.maxTokens,
+      apiKey: process.env.OPENROUTER_API_KEY,
+      configuration: {
+        baseURL: "https://openrouter.ai/api/v1",
+      },
+      streaming: false,
+    });
+  }
+
+  throw new Error(
+    `Unsupported AI provider or required API key not set: ${provider}`,
+  );
 }
 
 /**

@@ -33,10 +33,11 @@ const PROMPT =
 const RUNS = Number(process.env.RUNS || "3");
 
 const DEFAULT_MODELS = [
-  "nvidia/nemotron-3-nano-30b-a3b:free",
-  "meta-llama/llama-3.2-3b-instruct:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "qwen/qwen3-next-80b-a3b-instruct:free",
+  "openrouter/google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free", // Should also use openrouter
+  "openrouter/openai/gpt-oss-20b:free",
+  "openrouter/openai/gpt-4o-mini", // Not free! but relatively cheap, want to compare.
+  "openai/gpt-4o-mini", // won't work because I don't have an API key for it with credits; but... just for illustration purposes ;-)
 ];
 
 function fmt(ms: number): string {

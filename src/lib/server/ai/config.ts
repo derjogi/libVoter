@@ -14,6 +14,7 @@ function isSupportedProvider(
 
 export function parseModelString(modelString: string): AIModelConfig {
   const separator = modelString.indexOf("/");
+  // Default to OpenAI if no provider specifically set:
   if (separator === -1) {
     return { provider: "openai", model: modelString };
   }
@@ -23,9 +24,10 @@ export function parseModelString(modelString: string): AIModelConfig {
   if (isSupportedProvider(prefix)) {
     // `openrouter/<provider>/<model>` is our config shorthand for routing a
     // provider/model id through OpenRouter, so strip only that leading routing
-    // prefix when the remainder is itself a namespaced model id. OpenRouter also
-    // publishes models in its own namespace (for example `openrouter/free` and
-    // `openrouter/owl-alpha`); those must be sent to OpenRouter unchanged.
+    // prefix when the remainder is itself a namespaced model id (e.g. openrouter/openai/gpt-5.5).
+    // OpenRouter also publishes models in its own namespace
+    // (for example `openrouter/free` and `openrouter/owl-alpha`);
+    // those must be sent to OpenRouter unchanged.
     if (prefix === "openrouter" && !rest.includes("/")) {
       return { provider: prefix, model: modelString };
     }
