@@ -14,6 +14,8 @@
     "ingest:sources": "bun scripts/ingest-sources.ts",
     "fetch:hansard": "bun scripts/fetch-hansard.ts",
     "scrape:nz-2026": "bun scripts/scrape-nz-2026.ts",
+    "scrape:nz-candidates": "bun scripts/scrape-nz-candidates.ts",
+    "verify:setup": "bun scripts/verify-setup.ts",
     "migrate:to-races": "bun scripts/migrate-to-races.ts",
     "test:election-config": "bun run scripts/test-election-config.ts",
     "bench:models": "bun run scripts/bench-models.ts",

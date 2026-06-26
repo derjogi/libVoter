@@ -141,7 +141,7 @@ export class AIChatHandler {
    * Deliberately does NOT rank candidates — that is the slow, RAG-backed work,
    * now run separately via {@link rankResponses} so the next question can be
    * returned to the user without waiting on it. Keeping the two decoupled also
-   * shortens each request, which makes it far less likely a dev Fast Refresh /
+   * shortens each request, which makes it less likely a dev Fast Refresh /
    * recompile lands mid-request and aborts the in-flight Server Action fetch.
    */
   async processMessage(

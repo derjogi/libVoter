@@ -152,7 +152,20 @@ where a source requires it (as the Auckland scraper does). Prefer official
         nz-2026 (0 unmatched, idempotent re-run). The active `electionConfig`
         is now `NZ_2026`. CC BY-SA text keeps `url` for attribution +
         link-out. Source `nz-party-policy`.
-  - [ ] Electoral Commission: candidate/party lists + donations/loans.
+  - [x] **Wikipedia candidate roster (NZ 2026)** —
+        [`scripts/scrape-nz-candidates.ts`](../../scripts/scrape-nz-candidates.ts)
+        (`bun run scrape:nz-candidates`). Until elections.nz publishes official
+        lists, this parses the MediaWiki wikitext of "Candidates in the 2026 NZ
+        general election by electorate" and populates the **structured roster**
+        (`races`→`people`→`candidacies`, linked to `election_parties`), not
+        `evidence_sources`. Real run: 309 candidacies across 71 electorates,
+        party names mapped to the canonical 13 + 3 off-config parties created
+        (Alliance, Build the Nation, Te Tai Tokerau Party), 4 independents.
+        Idempotent (stable ids + upserts); removes the old "Sample X Candidate"
+        placeholders and empty/renamed electorate races; `--prune` drops
+        candidacies no longer listed, `--dry-run` reports without writing.
+  - [ ] Electoral Commission: candidate/party lists + donations/loans
+        (authoritative replacement for the Wikipedia roster once published).
   - [x] Parliament / Hansard: speeches & debate contributions (+ votes
         where available). Corpus discovery/storage, participant and party
         relationships, utterance segmentation, deterministic mention rows, and

@@ -38,6 +38,7 @@ const DEFAULT_MODELS = [
   "openrouter/openai/gpt-oss-20b:free",
   "openrouter/openai/gpt-4o-mini", // Not free! but relatively cheap, want to compare.
   "openai/gpt-4o-mini", // won't work because I don't have an API key for it with credits; but... just for illustration purposes ;-)
+  "openrouter/free", // Openrouter routes its own free models
 ];
 
 function fmt(ms: number): string {
