@@ -53,7 +53,7 @@ self-contained, swappable unit.
   `getCandidatesForSeat(seat)` and reads `races → candidacies → people/parties`
   for the active election instead of calling Auckland-only mayor/ward helpers.
 - **Chroma is namespaced per election.** Runtime evidence retrieval uses
-  `evidence-${electionId}`. The `evidence-nz-2026` collection currently has 479
+  `election-${electionId}`. The `election-nz-2026` collection currently has 479
   chunks, all `nz-2026` `party_policy` chunks.
 
 ### What we actually want
@@ -112,7 +112,7 @@ electionConfig.id ──▶ resolveDbPath(id) ──▶ data/elections/<id>.db
   `DATABASE_URL`. [`src/lib/server/db.ts`](../../src/lib/server/db.ts) becomes
   a small resolver instead of a hard-coded singleton.
 - **Chroma already namespaces by collection** — give each election its own
-  collection (e.g. `evidence-nz-2026`) instead of a shared `evidence`
+  collection (e.g. `election-nz-2026`) instead of a shared `evidence`
   collection filtered by `election_id` metadata. Mirrors the SQLite split.
 - **Per-election wiring module.** Introduce an `Election` descriptor that
   bundles `ElectionConfig` + its ingestion adapter(s) + ballot/seat behaviour
@@ -152,7 +152,7 @@ The isolation + shippability wins fit a multi-election product and would have
 - [x] Split the current `voting-advisor.db` into `auckland-2025.db` and
       `nz-2026.db` via a one-off script (filter by `election_id`; move the
       legacy `candidates` rows into `auckland-2025.db`).
-- [x] Per-election Chroma collection name (`evidence-${electionId}`) in
+- [x] Per-election Chroma collection name (`election-${electionId}`) in
       [`vector-store.ts`](../../src/lib/server/rag/vector-store.ts).
 - [x] Route `actions/database.ts` and runtime DB/vector wiring through the active
       election descriptor/config (`electionConfig`) so generic helpers use the

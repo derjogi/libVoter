@@ -31,9 +31,9 @@ describe("per-election storage resolution", () => {
   });
 
   it("names Chroma collections per election", () => {
-    expect(collectionNameForElection("nz-2026")).toBe("evidence-nz-2026");
+    expect(collectionNameForElection("nz-2026")).toBe("election-nz-2026");
     expect(collectionNameForElection("auckland-2025")).toBe(
-      "evidence-auckland-2025",
+      "election-auckland-2025",
     );
   });
 });

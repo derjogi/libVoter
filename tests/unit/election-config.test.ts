@@ -23,6 +23,15 @@ describe("ElectionConfig presets", () => {
     );
   });
 
+  it("NZ_2026 separates election evidence from reusable reference corpora", () => {
+    expect(NZ_2026.evidence.electionCollection).toBe("election-nz-2026");
+    expect(NZ_2026.evidence.referenceCollections).toContainEqual({
+      id: "nz-parliament",
+      collection: "reference-nz-parliament",
+      databaseUrl: "file:./data/reference.db",
+    });
+  });
+
   it("the active electionConfig is one of the known presets", () => {
     const knownIds: string[] = [AUCKLAND_2025.id, NZ_2026.id];
     expect(knownIds).toContain(electionConfig.id);

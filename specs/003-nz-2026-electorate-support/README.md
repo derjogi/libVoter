@@ -137,6 +137,11 @@ is fine. Common helpers (DB upsert, RAG repopulate) can stay shared.
 
 ## Notes
 
+- 2026-06-28: Step 4 is now split into child specs so the work is trackable:
+  - [019 — MMP party-vote matching panel](../019-mmp-party-vote-panel/README.md)
+    covers party cards / party matching in the right panel.
+  - [020 — MMP two-vote conversation and prompt wiring](../020-mmp-two-vote-prompts/README.md)
+    covers MMP prompt language and party-vs-electorate question flow.
 - `key_positions` JSON probably stays the same shape, just sourced from
   party manifestos instead of candidate statements.
 - We may want a "what is this election about?" intro screen for first-time

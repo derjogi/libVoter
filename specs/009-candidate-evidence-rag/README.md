@@ -243,6 +243,12 @@ metadata above; associate each source with a `candidate_id` and/or
   10+ concurrent HTTP close listeners onto the same underlying client during
   large electorates while preserving result ordering for ranking.
 
+- 2026-06-28: Evidence storage is now scope-aware (spec 018). Election/campaign
+  evidence lives in `election-${electionId}` collections (currently
+  `election-nz-2026`), while reusable institutional corpora should live in
+  reference collections such as `reference-nz-parliament`. Phase 5/6 retrieval
+  should intentionally query both allowed scopes and label citations by scope.
+
 ## Dependencies
 
 - **Depends on**: spec 002 (parties / races schema), spec 003

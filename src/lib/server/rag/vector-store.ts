@@ -17,11 +17,11 @@ import { createEmbeddingModel, isMockMode } from "../ai/model-factory";
 import { db } from "../db";
 
 export function collectionNameForElection(electionId: string): string {
-  return `evidence-${electionId}`;
+  return `election-${electionId}`;
 }
 
-const DEFAULT_COLLECTION = collectionNameForElection(electionConfig.id);
-const REFERENCE_COLLECTION = "reference";
+const DEFAULT_COLLECTION = electionConfig.evidence.electionCollection;
+const REFERENCE_COLLECTION = "reference-nz-parliament";
 
 /** Structured pre-filter applied to the vector search (Stage 1 → Stage 2). */
 export interface EvidenceFilter {
