@@ -1,7 +1,6 @@
-// Smoke tests against the live SQLite DB. Verifies the spec-002 backfill
-// produced the expected number of rows and that the legacy `getCandidatesByWard`
-// API still returns matching candidate names compared to the new
-// candidacies-via-races path.
+// Smoke tests against the live SQLite DBs. Verifies the spec-002 backfill
+// produced the expected number of rows in the Auckland election DB and that the
+// active NZ DB still drives the generic candidate-loading actions.
 
 import { and, eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
@@ -14,13 +13,15 @@ import {
   people,
   races,
 } from "@/lib/db/schema";
-import { db } from "@/lib/server/db";
+import { db, getDbClient, getReferenceDbClient } from "@/lib/server/db";
 
 const AUCKLAND = "auckland-2025";
+const aucklandDb = getDbClient({ electionId: AUCKLAND });
+const referenceDb = getReferenceDbClient();
 
 describe("Spec 002 schema & backfill", () => {
   it("elections row exists for auckland-2025", async () => {
-    const rows = await db
+    const rows = await aucklandDb
       .select()
       .from(elections)
       .where(eq(elections.id, AUCKLAND))
@@ -30,13 +31,13 @@ describe("Spec 002 schema & backfill", () => {
   });
 
   it("race count matches distinct legacy wards (incl. Mayor)", async () => {
-    const allLegacy = await db
+    const allLegacy = await aucklandDb
       .select({ ward: legacyCandidates.ward })
       .from(legacyCandidates)
       .all();
     const distinct = new Set(allLegacy.map((r) => r.ward));
 
-    const raceRows = await db
+    const raceRows = await aucklandDb
       .select({ id: races.id })
       .from(races)
       .where(eq(races.electionId, AUCKLAND))
@@ -46,10 +47,13 @@ describe("Spec 002 schema & backfill", () => {
 
   it("candidacy count matches legacy candidate count", async () => {
     const legacyCount = (
-      await db.select({ id: legacyCandidates.id }).from(legacyCandidates).all()
+      await aucklandDb
+        .select({ id: legacyCandidates.id })
+        .from(legacyCandidates)
+        .all()
     ).length;
     const candidacyCount = (
-      await db
+      await aucklandDb
         .select({ id: candidacies.id })
         .from(candidacies)
         .where(eq(candidacies.electionId, AUCKLAND))
@@ -58,9 +62,9 @@ describe("Spec 002 schema & backfill", () => {
     expect(candidacyCount).toBe(legacyCount);
   });
 
-  it("legacy getCandidatesByWard returns same names as candidacy join for an arbitrary ward", async () => {
+  it("legacy Auckland candidates match the Auckland candidacy join for an arbitrary ward", async () => {
     // Pick the first non-mayor ward.
-    const firstRace = await db
+    const firstRace = await aucklandDb
       .select()
       .from(races)
       .where(and(eq(races.electionId, AUCKLAND), eq(races.kind, "ward")))
@@ -74,7 +78,7 @@ describe("Spec 002 schema & backfill", () => {
 
     // Names via the legacy table.
     const legacyNames = (
-      await db
+      await aucklandDb
         .select({ name: legacyCandidates.name })
         .from(legacyCandidates)
         .where(eq(legacyCandidates.ward, ward))
@@ -85,7 +89,7 @@ describe("Spec 002 schema & backfill", () => {
 
     // Names via candidacies → people.
     const newNames = (
-      await db
+      await aucklandDb
         .select({ name: people.name })
         .from(candidacies)
         .innerJoin(people, eq(people.id, candidacies.personId))
@@ -105,12 +109,12 @@ describe("Spec 002 schema & backfill", () => {
 });
 
 describe("Spec 015 Hansard segmentation schema", () => {
-  it("committed SQLite database has the utterance and mention tables", async () => {
+  it("reference SQLite database has the utterance and mention tables", async () => {
     await expect(
-      db.select().from(hansardUtterances).limit(1).all(),
+      referenceDb.select().from(hansardUtterances).limit(1).all(),
     ).resolves.toEqual(expect.any(Array));
     await expect(
-      db.select().from(hansardMentions).limit(1).all(),
+      referenceDb.select().from(hansardMentions).limit(1).all(),
     ).resolves.toEqual(expect.any(Array));
   });
 });

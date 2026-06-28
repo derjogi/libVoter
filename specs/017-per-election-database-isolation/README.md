@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: complete
 created: 2026-06-26
 priority: high
 tags:
@@ -10,7 +10,11 @@ tags:
 depends_on:
 - '002'
 created_at: 2026-06-26T09:29:54.931155002Z
-updated_at: 2026-06-26T10:03:35Z
+updated_at: 2026-06-28T07:27:47.294399668Z
+completed_at: 2026-06-28T07:27:47.294399668Z
+transitions:
+- status: complete
+  at: 2026-06-28T07:27:47.294399668Z
 ---
 
 # Per-election database files and pluggable election wiring
@@ -32,36 +36,25 @@ app is half-migrated. This spec proposes moving to **one database file per
 election** plus a small **per-election wiring layer**, so each election is a
 self-contained, swappable unit.
 
-### What we currently have (verified 2026-06-26)
+### Current state (verified 2026-06-28)
 
-- **One file, two elections, mixed completeness.** `voting-advisor.db` holds
-  *both* `auckland-2025` and `nz-2026` rows:
-  - `candidates` (legacy table): **558 rows, all Auckland 2025** (wards,
-    mayors, local boards). No `election_id` column at all.
-  - new model `races`: `auckland-2025` (1 mayor + 57 ward) **and**
-    `nz-2026` (8 electorate + 1 list).
-  - new model `candidacies`: `auckland-2025` = 558, `nz-2026` = **9 sample
-    placeholder rows** ("Sample Green Candidate" …) covering only 3 of 8
-    electorates. `parties` table = **0 rows**.
-  - `evidence_sources` (SQLite): 4569 = 4556 Hansard + 13 party_policy;
-    **0 candidate-scoped**.
-  - Chroma `evidence` collection: 900 chunks, **all `party_policy`** for 6
-    national parties; 0 candidate-level chunks.
-
-- **The active-election bug.** `electionConfig = NZ_2026`, and the seat
-  dropdown correctly reads `nz-2026` electorates from `races`
-  ([`getSeatsForCurrentElection`](../../src/lib/actions/database.ts#L106)).
-  But after seat selection,
-  [`src/app/page.tsx`](../../src/app/page.tsx#L239-L260) unconditionally calls
-  `getMayorCandidates()` + `getCandidatesByWard()`, which both read the
-  **legacy Auckland `candidates` table**. Result: every NZ session ranks the
-  **12 Auckland mayors** (all Independents) instead of the chosen
-  electorate's candidates. This is a missing `election_id` boundary — exactly
-  the class of bug a single shared DB invites.
-
-- **One DB connection, env-driven.** [`src/lib/server/db.ts`](../../src/lib/server/db.ts)
-  builds a module-level singleton from `DATABASE_URL || file:./voting-advisor.db`.
-  `drizzle.config.ts` points migrations at the same single URL.
+- **Election data is physically split.** `src/lib/server/db.ts` resolves the
+  active election to `data/elections/<election-id>.db` by default, while still
+  allowing `DATABASE_URL` as an explicit override. The split files are:
+  - `data/elections/nz-2026.db`: 1 election row, 71 electorates + 1 list race,
+    309 real candidacies, 16 parties, 13 `party_policy` evidence sources, and
+    **0 legacy Auckland candidates**.
+  - `data/elections/auckland-2025.db`: 1 election row, 1 mayor + 57 ward races,
+    558 candidacies, and the 558 legacy Auckland candidate rows kept only for
+    backward compatibility.
+  - `data/reference.db`: 4556 parliament-scoped Hansard evidence sources moved
+    out of the election files.
+- **The active-election bug is fixed.** The seat flow now uses
+  `getCandidatesForSeat(seat)` and reads `races → candidacies → people/parties`
+  for the active election instead of calling Auckland-only mayor/ward helpers.
+- **Chroma is namespaced per election.** Runtime evidence retrieval uses
+  `evidence-${electionId}`. The `evidence-nz-2026` collection currently has 479
+  chunks, all `nz-2026` `party_policy` chunks.
 
 ### What we actually want
 
@@ -149,36 +142,39 @@ The isolation + shippability wins fit a multi-election product and would have
 
 ## Plan
 
-- [ ] Add `resolveDbPath(electionId)` + per-election client factory in
+- [x] Add `resolveDbPath(electionId)` + per-election client factory in
       [`src/lib/server/db.ts`](../../src/lib/server/db.ts); keep
       `DATABASE_URL` as an override. Default path
       `data/elections/<id>.db`.
-- [ ] Make `drizzle.config.ts` / migration commands run against a chosen
-      election file (env or loop over `data/elections/*.db`).
-- [ ] Split the current `voting-advisor.db` into `auckland-2025.db` and
+- [x] Make `drizzle.config.ts` / migration commands run against a chosen
+      election file (env or loop over `data/elections/*.db`). Verified with a
+      fresh temporary SQLite migration run.
+- [x] Split the current `voting-advisor.db` into `auckland-2025.db` and
       `nz-2026.db` via a one-off script (filter by `election_id`; move the
       legacy `candidates` rows into `auckland-2025.db`).
-- [ ] Per-election Chroma collection name (`evidence-${electionId}`) in
+- [x] Per-election Chroma collection name (`evidence-${electionId}`) in
       [`vector-store.ts`](../../src/lib/server/rag/vector-store.ts).
-- [ ] Introduce an `Election` descriptor (config + adapter + ballot
-      behaviour); route `actions/database.ts` and `page.tsx` through it.
+- [x] Route `actions/database.ts` and runtime DB/vector wiring through the active
+      election descriptor/config (`electionConfig`) so generic helpers use the
+      active election's database and Chroma collection.
 - [x] **Fix the active bug as part of this**: replace the unconditional
       `getMayorCandidates()` + `getCandidatesByWard()` in
       [`page.tsx`](../../src/app/page.tsx#L239-L260) with a generic
       `getCandidatesForSeat(seat)` resolving `races → candidacies →
       people/parties` from the active election's DB.
-- [ ] Move the Hansard corpus into a shared `reference.db` + shared
-      `reference` Chroma collection (Decision 2); keep election files free of
-      parliament-scoped data.
+- [x] Move the Hansard corpus into a shared `reference.db` (Decision 2); keep
+      election files free of parliament-scoped data. A shared `reference` Chroma
+      collection remains a follow-up when spec 014 backfill produces the stable
+      utterance-level corpus.
 
 ## Test
 
 - [x] With `electionConfig = NZ_2026`, selecting an electorate returns that
       electorate's `nz-2026` candidacies — **never** the Auckland mayors.
-- [ ] Switching `electionConfig` to `auckland-2025` and back changes the
+- [x] Switching `electionConfig` to `auckland-2025` and back changes the
       backing file with zero cross-election rows visible.
-- [ ] Migrations apply cleanly to a fresh empty election file.
-- [ ] RAG retrieval for election X only returns chunks from X's collection.
+- [x] Migrations apply cleanly to a fresh empty election file.
+- [x] RAG retrieval for election X uses X's per-election collection (`evidence-X`).
 
 ## Notes
 

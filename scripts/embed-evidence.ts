@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
-// Chunk + embed evidence_sources into the Chroma vector store (spec 009
-// Phase 4). If the "evidence" collection already has chunks it is loaded
-// as-is; --repopulate replaces that derived collection before re-embedding.
+// Chunk + embed the active election's evidence_sources into its per-election
+// Chroma vector store (spec 017), e.g. `evidence-nz-2026`. If the collection
+// already has chunks it is loaded as-is; --repopulate replaces that derived
+// collection before re-embedding.
 //
 // Usage:
 //   bun run scripts/embed-evidence.ts                 # populate if empty

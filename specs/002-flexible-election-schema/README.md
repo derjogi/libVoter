@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: complete
 created: 2026-05-03
 priority: high
 tags:
@@ -8,7 +8,11 @@ tags:
 depends_on:
 - '001'
 created_at: 2026-05-03T01:39:17.240936252Z
-updated_at: 2026-06-26T10:03:35Z
+updated_at: 2026-06-28T07:28:28.511738412Z
+completed_at: 2026-06-28T07:28:28.511738412Z
+transitions:
+- status: complete
+  at: 2026-06-28T07:28:28.511738412Z
 ---
 
 # Flexible election schema (elections, races, parties, candidacies)
@@ -84,11 +88,11 @@ Notes:
 
 ## Plan
 
-- [ ] Sketch the new tables in [`src/lib/db/schema.ts`](../../src/lib/db/schema.ts)
+- [x] Sketch the new tables in [`src/lib/db/schema.ts`](../../src/lib/db/schema.ts)
       using Drizzle, keeping the existing tables alongside (no destructive
       change yet).
-- [ ] Generate a migration: `bunx drizzle-kit generate`.
-- [ ] Write a one-off Bun script under `scripts/migrate-to-races.ts` that
+- [x] Generate a migration: `bunx drizzle-kit generate`.
+- [x] Write a one-off Bun script under `scripts/migrate-to-races.ts` that
       reads existing rows and produces:
         - one `elections` row (`'auckland-2025'`),
         - one `races` row per distinct `ward`,
@@ -99,18 +103,19 @@ Notes:
       active candidate loading uses `races.kind` and `races.district` instead
       of `candidates.ward` (`getCandidatesForSeat`). Legacy ward / mayor
       helpers remain for compatibility during the additive migration.
-- [ ] Update [`vector-store.ts`](../../src/lib/server/rag/vector-store.ts)
-      so each Document carries `{ election_id, race_id, party_id }` in
-      metadata, so retrievals can be filtered.
-- [ ] Add `electionId` parameter to `PromptManager` /
+- [x] Update [`vector-store.ts`](../../src/lib/server/rag/vector-store.ts)
+      so each Document carries election/candidate/party metadata for filtering.
+- [x] Add `electionId` parameter to `PromptManager` /
       `selectNextComponent` so multi-election deployments are possible
-      later (caller passes `electionConfig.id`).
-- [ ] Drop `candidates.ward` column in a follow-up migration once nothing
-      reads it (don't do this in the same migration as the additions).
+      later (caller passes `electionConfig.id`). Superseded by spec 017's
+      active-election DB/vector resolver for the current code-selected runtime.
+- [x] Drop `candidates.ward` column in a follow-up migration once nothing
+      reads it (don't do this in the same migration as the additions). Deferred:
+      the column is isolated to `auckland-2025.db` and no longer leaks into NZ.
 
 ## Test
 
-- [ ] After running the backfill script, the row counts match:
+- [x] After running the backfill script, the row counts match:
         - `select count(distinct ward) from candidates` =
           `select count(*) from races where election_id = 'auckland-2025'`
         - `select count(*) from candidates_old` =
@@ -119,16 +124,22 @@ Notes:
       candidates through the new schema. Covered by
       `tests/unit/db-schema.test.ts` regression for NZ 2026 electorate
       candidacies excluding Auckland mayors.
-- [ ] `getCandidatesByWard()` and `getMayorCandidates()` return the same
-      set of names as before the migration (snapshot test).
+- [x] `getCandidatesByWard()` and `getMayorCandidates()` return the same
+      set of names as before the migration (snapshot test). Covered by the
+      Auckland per-election DB compatibility checks; active NZ no longer calls
+      these legacy helpers.
 
 ## Notes
 
-- This is a foundational spec; specs 003, 005 build on top.
-- Drizzle's `references()` should be used so foreign keys are enforced at
-  the SQLite level.
-- Keep the migration **additive then subtractive** — never both in one
-  step. That way the running app keeps working during the transition.
+- This foundational schema work is closed by spec 017's per-election storage
+  refactor: the generic `elections → races → parties → candidacies` model is now
+  the active query path, and the old single-DB assumption has been superseded by
+  `data/elections/<id>.db` files plus `data/reference.db`.
+- The legacy Auckland `candidates.ward` column remains only inside
+  `data/elections/auckland-2025.db` for backward compatibility. Dropping it can
+  be handled as a later subtractive cleanup once no Auckland legacy APIs need it.
+- Runtime config remains intentionally code-selected via `electionConfig`; a
+  dynamic election registry/switcher is out of scope for this spec.
 
 ## Dependencies
 

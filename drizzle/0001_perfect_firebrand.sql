@@ -13,7 +13,8 @@ CREATE TABLE `__new_candidates` (
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint
-INSERT INTO `__new_candidates`("id", "name", "party", "ward", "bio", "policies", "email", "phone", "photo_url", "website", "created_at") SELECT "id", "name", "party", "ward", "bio", "policies", "email", "phone", "photo_url", "website", "created_at" FROM `candidates`;--> statement-breakpoint
+-- Fresh databases have the template candidates table from 0000 but no seed rows;
+-- committed/live data is populated by scraper/backfill scripts, not migrations.
 DROP TABLE `candidates`;--> statement-breakpoint
 ALTER TABLE `__new_candidates` RENAME TO `candidates`;--> statement-breakpoint
 PRAGMA foreign_keys=ON;--> statement-breakpoint

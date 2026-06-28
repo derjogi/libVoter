@@ -35,7 +35,7 @@ AI_MAX_TOKENS=2000
 AI_TEMPERATURE=0.7
 
 # Database Configuration
-DATABASE_URL=file:./voting-advisor.db
+DATABASE_URL=file:./data/elections/nz-2026.db
 DATABASE_AUTH_TOKEN=your_turso_auth_token  # Only needed for Turso
 
 # Vector Database Configuration
@@ -75,7 +75,7 @@ AI_MAX_TOKENS=2000
 AI_TEMPERATURE=0.7
 
 # Database Configuration
-DATABASE_URL=file:./voting-advisor.db
+DATABASE_URL=file:./data/elections/nz-2026.db
 DATABASE_AUTH_TOKEN=
 
 # Vector Database Configuration

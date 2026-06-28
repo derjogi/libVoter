@@ -81,7 +81,7 @@ describe("VectorStoreManager collection reset", () => {
 
     await manager.reset();
 
-    expect(deleted).toEqual(["evidence"]);
+    expect(deleted).toEqual(["evidence-nz-2026"]);
     expect(created).toBe(2);
   });
 });

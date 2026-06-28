@@ -10,12 +10,18 @@
 import { Chroma } from "@langchain/community/vectorstores/chroma";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import { electionConfig } from "../../config/election";
 import { evidenceSources, hansardUtterances } from "../../db/schema";
 import type { EmbeddingModel } from "../ai/model-factory";
 import { createEmbeddingModel, isMockMode } from "../ai/model-factory";
 import { db } from "../db";
 
-const COLLECTION = "evidence";
+export function collectionNameForElection(electionId: string): string {
+  return `evidence-${electionId}`;
+}
+
+const DEFAULT_COLLECTION = collectionNameForElection(electionConfig.id);
+const REFERENCE_COLLECTION = "reference";
 
 /** Structured pre-filter applied to the vector search (Stage 1 → Stage 2). */
 export interface EvidenceFilter {
@@ -114,6 +120,12 @@ interface VectorStoreInitOptions {
   seedIfEmpty?: boolean;
 }
 
+interface VectorStoreManagerOptions {
+  collectionName?: string;
+}
+
+export { REFERENCE_COLLECTION };
+
 function chromaDbConfig(index?: Chroma["index"]) {
   if (index) return { index };
 
@@ -129,17 +141,20 @@ export class VectorStoreManager implements EvidenceVectorStore {
   private vectorStore: Chroma | null = null;
   private embeddings: EmbeddingModel;
   private createVectorStore: ChromaFactory;
+  private collectionName: string;
 
   constructor(
     embeddings: EmbeddingModel = createEmbeddingModel(),
     createVectorStore?: ChromaFactory,
+    options: VectorStoreManagerOptions = {},
   ) {
     this.embeddings = embeddings;
+    this.collectionName = options.collectionName ?? DEFAULT_COLLECTION;
     this.createVectorStore =
       createVectorStore ??
       ((index) =>
         new Chroma(this.embeddings, {
-          collectionName: COLLECTION,
+          collectionName: this.collectionName,
           ...chromaDbConfig(index),
         }));
   }
@@ -147,7 +162,7 @@ export class VectorStoreManager implements EvidenceVectorStore {
   async initialize({ seedIfEmpty = false }: VectorStoreInitOptions = {}) {
     try {
       this.vectorStore = await Chroma.fromExistingCollection(this.embeddings, {
-        collectionName: COLLECTION,
+        collectionName: this.collectionName,
         ...chromaDbConfig(),
       });
       const count = await this.vectorStore.collection?.count();
@@ -278,7 +293,7 @@ export class VectorStoreManager implements EvidenceVectorStore {
       throw new Error("Chroma client unavailable while resetting evidence");
     }
 
-    await client.deleteCollection({ name: COLLECTION });
+    await client.deleteCollection({ name: this.collectionName });
     // The old LangChain wrapper caches the deleted Collection handle.
     this.vectorStore = this.createVectorStore(client);
   }
