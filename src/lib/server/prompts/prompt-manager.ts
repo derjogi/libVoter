@@ -13,6 +13,7 @@ import type { ChatModel } from "@/lib/server/ai/model-factory";
 import { createChatModel } from "@/lib/server/ai/model-factory";
 import type { ConversationMessage, UserResponse } from "@/types";
 import { formatPrompt, getPrompt } from "./index";
+import { mmpVotingGuidance } from "./mmp-guidance";
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -33,6 +34,19 @@ export class PromptManager {
   constructor(electionConfigParam: ElectionConfig = electionConfig) {
     this.chatModel = createChatModel(); // Defaults to small model. For now. Should probably be variable and specified in the prompt...?
     this.electionConfig = electionConfigParam;
+  }
+
+  /**
+   * System message shared by every prompt this manager runs. For MMP elections
+   * (spec 020) it appends the two-vote guidance so question generation and
+   * component selection understand the party vote and electorate vote; for
+   * non-MMP elections it is unchanged. Public so it can be unit-tested without
+   * invoking the model.
+   */
+  buildSystemMessage(): string {
+    const base = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(", ")}.`;
+    const guidance = mmpVotingGuidance(this.electionConfig);
+    return guidance ? `${base}\n\n${guidance}` : base;
   }
 
   async executePrompt(
@@ -80,7 +94,7 @@ export class PromptManager {
         timeoutMs,
       });
       console.time(`[${traceId}] Prompt Execution: ${promptId}`);
-      const systemMessage = `You are a helpful AI assistant helping users discover their voting preferences for the ${this.electionConfig.year} ${this.electionConfig.type} in ${this.electionConfig.location}. Provide accurate, neutral responses focused on ${this.electionConfig.keyTopics.join(", ")}.`;
+      const systemMessage = this.buildSystemMessage();
       const response = await withTimeout(
         this.chatModel.invoke([
           new SystemMessage({ content: systemMessage }),

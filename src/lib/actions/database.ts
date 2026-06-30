@@ -15,6 +15,7 @@ import {
 } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { db } from "@/lib/server/db";
+import type { PartySummary } from "@/types";
 
 // Load all candidates
 export async function loadCandidates() {
@@ -150,6 +151,45 @@ export async function getSeatsForCurrentElection() {
   } catch (error) {
     console.error("Error loading seats:", error);
     return getUniqueWards();
+  }
+}
+
+/**
+ * Spec 019: list the parties contesting the currently configured election for
+ * the MMP party-vote lane. Reads the generic `election_parties` table (spec
+ * 002), scoped to the active election. Returns a lightweight, serializable
+ * shape suitable for crossing the Server Action boundary to the client panel.
+ */
+export async function getPartiesForCurrentElection(): Promise<{
+  success: boolean;
+  data?: PartySummary[];
+  error?: string;
+}> {
+  const traceId = newTraceId("action:getPartiesForCurrentElection");
+  const start = Date.now();
+  console.log(`[${traceId}] start`, { electionId: electionConfig.id });
+  try {
+    const rows = await db
+      .select({
+        id: electionParties.id,
+        name: electionParties.name,
+        leader: electionParties.leader,
+      })
+      .from(electionParties)
+      .where(eq(electionParties.electionId, electionConfig.id))
+      .orderBy(electionParties.name);
+
+    console.log(`[${traceId}] done`, {
+      elapsedMs: Date.now() - start,
+      count: rows.length,
+    });
+    return { success: true, data: rows };
+  } catch (error) {
+    console.error(`[${traceId}] failed`, {
+      elapsedMs: Date.now() - start,
+      error: serializeError(error),
+    });
+    return { success: false, error: "Failed to load parties for election" };
   }
 }
 

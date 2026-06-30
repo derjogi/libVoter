@@ -27,6 +27,10 @@ export function useChat() {
       "chat:followupQuestion",
       undefined,
     );
+  // MMP two-vote marker for the current question (spec 020).
+  const [voteLane, setVoteLane, , clearStoredVoteLane] = usePersistedState<
+    ChatResponse["voteLane"]
+  >("chat:voteLane", undefined);
 
   const sendMessage = useCallback(
     async (
@@ -87,6 +91,7 @@ export function useChat() {
         setConfidence(result.confidence);
         setShouldShowCandidates(result.shouldShowCandidates);
         setFollowupQuestion(result.followupQuestion);
+        setVoteLane(result.voteLane);
 
         console.log(`[${traceId}] done`, {
           elapsedMs: Date.now() - start,
@@ -108,7 +113,13 @@ export function useChat() {
         setIsLoading(false);
       }
     },
-    [setMessages, setConfidence, setShouldShowCandidates, setFollowupQuestion],
+    [
+      setMessages,
+      setConfidence,
+      setShouldShowCandidates,
+      setFollowupQuestion,
+      setVoteLane,
+    ],
   );
 
   const clearChat = useCallback(() => {
@@ -116,12 +127,14 @@ export function useChat() {
     clearStoredConfidence();
     clearStoredShouldShow();
     clearStoredFollowup();
+    clearStoredVoteLane();
     setError(null);
   }, [
     clearStoredMessages,
     clearStoredConfidence,
     clearStoredShouldShow,
     clearStoredFollowup,
+    clearStoredVoteLane,
   ]);
 
   return {
@@ -131,6 +144,7 @@ export function useChat() {
     confidence,
     shouldShowCandidates,
     followupQuestion,
+    voteLane,
     sendMessage,
     clearChat,
   };

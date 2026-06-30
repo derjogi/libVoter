@@ -7,7 +7,7 @@ import {
   type ChatResponse,
   type RankingResponse,
 } from "@/lib/server/ai/chat-handler";
-import type { ConversationMessage, UserResponse } from "@/types";
+import type { ConversationMessage, PartySummary, UserResponse } from "@/types";
 
 let chatHandler: AIChatHandler | null = null;
 
@@ -72,12 +72,14 @@ export async function processChatMessage(
 export async function rankCandidatesForSession(
   userResponseHistory: UserResponse[],
   availableCandidates: Candidate[],
+  availableParties: PartySummary[] = [],
 ): Promise<RankingResponse> {
   const traceId = newTraceId("action:rankCandidates");
   const start = Date.now();
   console.log(`[${traceId}] start`, {
     userResponses: userResponseHistory.length,
     availableCandidates: availableCandidates.length,
+    availableParties: availableParties.length,
   });
 
   try {
@@ -85,6 +87,7 @@ export async function rankCandidatesForSession(
     const response = await handler.rankResponses(
       userResponseHistory,
       availableCandidates,
+      availableParties,
     );
 
     console.log(`[${traceId}] done`, {
@@ -92,6 +95,7 @@ export async function rankCandidatesForSession(
       confidence: response.confidence,
       shouldShowCandidates: response.shouldShowCandidates,
       candidateMatches: response.candidateMatches.length,
+      partyMatches: response.partyMatches.length,
     });
     return response;
   } catch (error) {
@@ -101,6 +105,7 @@ export async function rankCandidatesForSession(
     });
     return {
       candidateMatches: [],
+      partyMatches: [],
       confidence: 0,
       shouldShowCandidates: false,
     };

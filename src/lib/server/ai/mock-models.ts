@@ -32,6 +32,8 @@ export class MockChatModel {
       invoke: async (_messages: unknown): Promise<T> => {
         // Branch on the caller's schema name so each structured call gets a
         // fixture of the right shape.
+        // Both candidate and party ranking share the candidate_ranking schema
+        // (see AIChatHandler.generateRanking), so one fixture covers both.
         if (name === "candidate_ranking") {
           return mockCandidateRanking(_messages) as unknown as T;
         }
@@ -58,7 +60,10 @@ function extractPromptText(messages: unknown): string {
 
 function mockCandidateRanking(messages: unknown) {
   const text = extractPromptText(messages);
-  const ids = [...text.matchAll(/\bid=(\d+)\b/g)].map((m) => m[1]);
+  // Match both numeric candidate ids (`id=12`) and slug party ids
+  // (`id=nz-2026-party-green`) so the shared ranking path is deterministic for
+  // either lane (spec 019).
+  const ids = [...text.matchAll(/\bid=([\w-]+)/g)].map((m) => m[1]);
   if (ids.length === 0) return MOCK_CANDIDATE_RANKING;
 
   const uniqueIds = [...new Set(ids)];

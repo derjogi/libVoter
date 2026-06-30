@@ -9,6 +9,11 @@ import { electionConfig } from "@/lib/config/election";
 import type { Candidate } from "@/lib/db/schema";
 import { withTimeout } from "@/lib/debug/logging";
 import {
+  isTwoVoteElection,
+  mmpVotingGuidance,
+  type VoteLane,
+} from "@/lib/server/prompts/mmp-guidance";
+import {
   type CandidateEvidence,
   RAGQueryEngine,
 } from "@/lib/server/rag/query-engine";
@@ -16,6 +21,8 @@ import type {
   CandidateMatch,
   ComponentData,
   ConversationMessage,
+  PartyMatch,
+  PartySummary,
   Source,
   UserResponse,
 } from "@/types";
@@ -44,6 +51,12 @@ const ChatTurnSchema = z.object({
     })
     .optional()
     .describe("Optional one-line follow-up suggestion the user can tap"),
+  voteLane: z
+    .enum(["party", "electorate", "both"])
+    .optional()
+    .describe(
+      "MMP only: which vote this turn's question informs — the party vote, the electorate vote, or both",
+    ),
 });
 
 type ChatTurn = z.infer<typeof ChatTurnSchema>;
@@ -103,6 +116,11 @@ export interface ChatResponse {
     type: string;
     reasoning?: string;
   };
+  /**
+   * MMP only (spec 020): which vote this turn's question informs, so the UI can
+   * label it. Undefined for non-MMP elections.
+   */
+  voteLane?: VoteLane;
 }
 
 // Ranking is computed separately from the chat turn (see rankResponses) so the
@@ -110,6 +128,12 @@ export interface ChatResponse {
 // RAG-backed candidate ranking.
 export interface RankingResponse {
   candidateMatches: CandidateMatch[];
+  /**
+   * MMP party-vote ranking (spec 019), kept separate from candidateMatches so
+   * party and candidate scores are never conflated. Empty for non-MMP
+   * elections or until there are parties + answers to rank.
+   */
+  partyMatches: PartyMatch[];
   confidence: number;
   shouldShowCandidates: boolean;
 }
@@ -206,6 +230,9 @@ export class AIChatHandler {
         shouldShowCandidates: false,
         nextComponent: turn.nextComponent,
         followupQuestion,
+        // Only surface the vote-lane marker for MMP elections (spec 020);
+        // non-MMP elections have a single vote, so it stays undefined.
+        voteLane: isTwoVoteElection() ? turn.voteLane : undefined,
       };
     } catch (error) {
       console.error("AI chat processing error:", error);
@@ -223,15 +250,20 @@ export class AIChatHandler {
   async rankResponses(
     userResponseHistory: UserResponse[],
     availableCandidates: Candidate[],
+    availableParties: PartySummary[] = [],
   ): Promise<RankingResponse> {
     try {
-      const candidateMatches = await this.rankCandidates(
-        userResponseHistory,
-        availableCandidates,
-      );
+      // Candidate (electorate vote) and party (party vote) ranking are
+      // independent MMP lanes — run them in parallel so the party lane never
+      // delays the candidate panel and vice versa.
+      const [candidateMatches, partyMatches] = await Promise.all([
+        this.rankCandidates(userResponseHistory, availableCandidates),
+        this.rankParties(userResponseHistory, availableParties),
+      ]);
 
-      // UI confidence reflects how confident we are in the *ranking* (margin
-      // between the top candidates + topic coverage) — see deriveConfidence.
+      // UI confidence reflects how confident we are in the *candidate ranking*
+      // (margin between the top candidates + topic coverage) — see
+      // deriveConfidence.
       const confidence = this.deriveConfidence(
         candidateMatches,
         userResponseHistory,
@@ -242,12 +274,18 @@ export class AIChatHandler {
         confidence >= config.thresholds.confidence &&
         userResponseHistory.length >= config.thresholds.minInteractions;
 
-      return { candidateMatches, confidence, shouldShowCandidates };
+      return {
+        candidateMatches,
+        partyMatches,
+        confidence,
+        shouldShowCandidates,
+      };
     } catch (error) {
       console.error("Candidate ranking failed:", error);
       // Non-gating empty result → client keeps its current (unranked) list.
       return {
         candidateMatches: [],
+        partyMatches: [],
         confidence: 0,
         shouldShowCandidates: false,
       };
@@ -259,7 +297,16 @@ export class AIChatHandler {
    * model provider can cache it as a prompt prefix.
    */
   private buildSystemPreamble(_availableSeats: string[]): string {
-    return `You are an AI voting advisor for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.
+    // MMP two-vote guidance (spec 020). Empty string for non-MMP elections, so
+    // their preamble — and the cached prompt prefix — is byte-identical to
+    // before.
+    const mmpGuidance = mmpVotingGuidance();
+    const mmpSection = mmpGuidance ? `\n\n${mmpGuidance}` : "";
+    const voteLaneOutputNote = mmpGuidance
+      ? `\n- voteLane: which vote this question informs — "party", "electorate", or "both".`
+      : "";
+
+    return `You are an AI voting advisor for the ${electionConfig.year} ${electionConfig.type} in ${electionConfig.location}.${mmpSection}
 
 Each turn you produce two distinct things:
 1. message — a SHORT (one sentence), friendly, neutral reaction to the user's previous answer. Do NOT ask the next question here, and never list options or choices in the message.
@@ -301,7 +348,7 @@ Example output shape:
 Output fields:
 - message: your conversational reply.
 - nextComponent: the next component; its "data" MUST match the chosen "type".
-- followupQuestion: optional short suggestion chip the user can tap to continue.`;
+- followupQuestion: optional short suggestion chip the user can tap to continue.${voteLaneOutputNote}`;
   }
 
   /**
@@ -452,6 +499,70 @@ If a candidate has little relevant information, score them lower. Return exactly
     } catch (error) {
       console.error("Candidate ranking failed:", error);
       // Empty → client keeps the unranked list rather than blanking the panel.
+      return [];
+    }
+  }
+
+  /**
+   * Heuristic party-vote ranking (spec 019). Scores every party for the MMP
+   * party vote from the user's stated preferences using a single structured
+   * LLM call — deliberately separate from candidate ranking so the two scores
+   * are never conflated. Evidence-backed party citations are intentionally out
+   * of scope here and land with spec 009; until then parties that the model
+   * does not score keep a neutral 0 and `sources` stays empty. Returns [] when
+   * there's nothing to rank yet so the client keeps its unranked list.
+   */
+  private async rankParties(
+    userResponses: UserResponse[],
+    parties: PartySummary[],
+  ): Promise<PartyMatch[]> {
+    if (parties.length === 0 || userResponses.length === 0) {
+      return [];
+    }
+
+    try {
+      const userProfile = this.createUserProfileSummary(userResponses);
+      const partyBlock = parties
+        .map(
+          (p) =>
+            `id=${p.id} | ${p.name}${p.leader ? ` (leader: ${p.leader})` : ""}`,
+        )
+        .join("\n");
+
+      const system = `You rank political parties for the ${electionConfig.name} PARTY VOTE (MMP) by how well each party matches a voter's stated preferences.
+Score EVERY party from 0-100 (100 = excellent match, 0 = poor or irrelevant match).
+Be discriminating — spread the scores out; do NOT give everyone a similar number.
+The party vote is independent of any single electorate candidate. Judge the party as a whole.
+Return exactly one entry per party id, using the ids exactly as given.`;
+
+      const human = `Voter preferences:\n${userProfile}\n\nParties:\n${partyBlock}`;
+
+      const expectedIds = parties.map((p) => p.id);
+      const ranking = await this.generateRanking(
+        [
+          new SystemMessage({ content: system }),
+          new HumanMessage({ content: human }),
+        ],
+        expectedIds,
+      );
+
+      const byId = new Map(ranking.rankings.map((r) => [r.id, r]));
+
+      return parties
+        .map((party) => {
+          const r = byId.get(party.id);
+          return {
+            party,
+            score: r ? Math.round(r.score) : 0,
+            reasoning: r?.reasoning?.trim() || "",
+            topMatchingPolicies: [],
+            sources: [],
+          } satisfies PartyMatch;
+        })
+        .sort((a, b) => b.score - a.score);
+    } catch (error) {
+      console.error("Party ranking failed:", error);
+      // Empty → client keeps the unranked party list rather than blanking it.
       return [];
     }
   }
@@ -623,10 +734,18 @@ If a candidate has little relevant information, score them lower. Return exactly
 
   /**
    * UI confidence derived from the *ranking* (spec 009 Phase 5; interim,
-   * tunable). A clear leader (large gap to #2) drives most of the score; topic
-   * coverage adds a floor so we don't over-claim after one answer. Many
-   * similarly-matched candidates ⇒ small margin ⇒ low confidence, matching the
-   * maintainer's intent.
+   * tunable).
+   *
+   * Previous versions keyed almost entirely off the margin between the top two
+   * candidates plus literal key-topic keyword matches. That collapsed to ~0 in
+   * practice: models rarely spread scores enough to open a big margin, and user
+   * answers almost never contain election key-topic phrases verbatim (e.g.
+   * "Cost of living", "Treaty of Waitangi"). So confidence was stuck at 0%.
+   *
+   * This version instead treats the *best match's absolute score* as the
+   * primary signal (how strong is our top pick), adds a decisive-lead bonus and
+   * a topic-coverage bonus, and ramps the whole thing up with engagement so a
+   * single answer can't over-claim confidence.
    */
   private deriveConfidence(
     ranked: CandidateMatch[],
@@ -634,9 +753,9 @@ If a candidate has little relevant information, score them lower. Return exactly
   ): number {
     if (ranked.length === 0) return 0;
 
-    const top = ranked[0]?.score ?? 0;
+    const top = ranked[0]?.score ?? 0; // 0..100 — strength of the best match
     const second = ranked[1]?.score ?? 0;
-    const margin = top - second; // 0..100
+    const margin = Math.max(0, top - second); // decisiveness of the lead, 0..100
 
     const text = userResponses
       .map((r) => this.extractTextFromResponse(r))
@@ -647,8 +766,13 @@ If a candidate has little relevant information, score them lower. Return exactly
     ).length;
     const coverage = covered / electionConfig.keyTopics.length; // 0..1
 
-    const confidence = margin + coverage * 30;
-    return Math.min(100, Math.max(0, Math.round(confidence)));
+    // Ramp with the number of answers so confidence grows as the conversation
+    // progresses; reaches full weight after ~4 answers.
+    const engagement = Math.min(1, userResponses.length / 4);
+
+    const raw =
+      (top * 0.6 + margin * 0.25 + coverage * 100 * 0.15) * engagement;
+    return Math.min(100, Math.max(0, Math.round(raw)));
   }
 
   private createUserProfileSummary(userResponses: UserResponse[]): string {

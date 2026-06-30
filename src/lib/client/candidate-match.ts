@@ -1,5 +1,5 @@
 import type { Candidate } from "@/lib/db/schema";
-import type { CandidateMatch } from "@/types";
+import type { CandidateMatch, PartyMatch, PartySummary } from "@/types";
 
 /**
  * Pull up to three display policies from a candidate's structured data, used
@@ -45,4 +45,22 @@ export function toUnrankedMatch(candidate: Candidate): CandidateMatch {
 
 export function toUnrankedMatches(candidates: Candidate[]): CandidateMatch[] {
   return candidates.map(toUnrankedMatch);
+}
+
+/**
+ * Spec 019: show the active election's parties in the party-vote lane
+ * immediately, before any ranking exists. Neutral score 0 until ranking lands.
+ */
+export function toUnrankedPartyMatch(party: PartySummary): PartyMatch {
+  return {
+    party,
+    score: 0,
+    reasoning: "",
+    topMatchingPolicies: [],
+    sources: [],
+  };
+}
+
+export function toUnrankedPartyMatches(parties: PartySummary[]): PartyMatch[] {
+  return parties.map(toUnrankedPartyMatch);
 }

@@ -1,17 +1,24 @@
 "use client";
 
-import { TrendingUp, User, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Landmark, TrendingUp, User, Users } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CandidateList } from "@/components/candidates/CandidateList";
 import { CandidateModal } from "@/components/candidates/CandidateModal";
 import { ComparisonView } from "@/components/candidates/ComparisonView";
+import { PartyList } from "@/components/candidates/PartyList";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { CandidateMatch, UserResponse } from "@/types";
+import { summarizeUserPreferences } from "@/lib/actions/prompts";
+import type { CandidateMatch, PartyMatch, UserResponse } from "@/types";
 
 interface RightPanelProps {
   candidates: CandidateMatch[];
+  /**
+   * MMP party-vote matches (spec 019). Omitted / empty for non-MMP elections,
+   * in which case the party-vote section is hidden and behavior is unchanged.
+   */
+  partyMatches?: PartyMatch[];
   confidence: number;
   /**
    * @deprecated The right panel is always visible per spec 005; this prop is
@@ -27,12 +34,16 @@ interface RightPanelProps {
 
 export function RightPanel({
   candidates,
+  partyMatches = [],
   confidence,
   isMobile = false,
   onCandidateSelect,
   userResponses = [],
   onReadyToDecide,
 }: RightPanelProps) {
+  // Only MMP elections seed party matches; non-MMP elections pass none, so the
+  // party-vote section stays hidden and the panel behaves exactly as before.
+  const showPartyVote = partyMatches.length > 0;
   const [selectedCandidate, setSelectedCandidate] =
     useState<CandidateMatch | null>(null);
   const [comparisonCandidates, setComparisonCandidates] = useState<
@@ -41,6 +52,9 @@ export function RightPanel({
   const [showComparison, setShowComparison] = useState(false);
   const [preferenceSummary, setPreferenceSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
+  // Monotonic id so a slow, in-flight summary request can't overwrite a newer
+  // one (the LLM summary is regenerated whenever the user answers again).
+  const summarySeqRef = useRef(0);
 
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
 
@@ -75,10 +89,11 @@ export function RightPanel({
         return;
       }
 
+      const seq = ++summarySeqRef.current;
       setIsLoadingSummary(true);
       try {
-        // const result = await summarizeUserPreferences(responses);
-        const result = { success: true, data: "Fake Summary", error: "" };
+        const result = await summarizeUserPreferences(responses);
+        if (seq !== summarySeqRef.current) return; // superseded by a newer call
         if (result.success) {
           setPreferenceSummary(result.data || "");
         } else {
@@ -87,9 +102,9 @@ export function RightPanel({
         }
       } catch (error) {
         console.error("Error fetching preference summary:", error);
-        setPreferenceSummary("");
+        if (seq === summarySeqRef.current) setPreferenceSummary("");
       } finally {
-        setIsLoadingSummary(false);
+        if (seq === summarySeqRef.current) setIsLoadingSummary(false);
       }
     },
     [],
@@ -164,12 +179,28 @@ export function RightPanel({
           </CardContent>
         </Card>
 
-        {/* Candidates List */}
+        {/* Party vote (MMP only). Stacked above the electorate vote so the two
+            ballots read top-to-bottom; both work on mobile without tabs. */}
+        {showPartyVote && (
+          <Card data-testid="party-matches">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Landmark className="mr-2 h-5 w-5" />
+                Party Vote
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PartyList parties={partyMatches} confidence={confidence} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Electorate / candidate vote. */}
         <Card data-testid="candidate-matches">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Users className="mr-2 h-5 w-5" />
-              Candidate Matches
+              {showPartyVote ? "Electorate Vote" : "Candidate Matches"}
             </CardTitle>
           </CardHeader>
           <CardContent>

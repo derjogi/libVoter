@@ -1,5 +1,5 @@
 ---
-status: planned
+status: complete
 created: 2026-06-28
 priority: high
 tags:
@@ -8,7 +8,13 @@ tags:
 - chat
 parent: '003'
 created_at: 2026-06-28T07:55:56.027355924Z
-updated_at: 2026-06-28T07:55:56.027455717Z
+updated_at: 2026-07-02T11:18:32.925340175Z
+completed_at: 2026-07-02T11:18:32.925340175Z
+transitions:
+- status: in-progress
+  at: 2026-06-30T07:57:41.222025964Z
+- status: complete
+  at: 2026-07-02T11:18:32.925340175Z
 ---
 
 # MMP two-vote conversation and prompt wiring
@@ -43,27 +49,53 @@ The model should be allowed to ask questions that target either lane, e.g.:
 
 ## Plan
 
-- [ ] Add MMP/two-vote fields to chat/session state.
-- [ ] Update prompt templates to mention party vote and electorate vote for MMP
+- [x] Add MMP/two-vote fields to chat/session state.
+      `voteLane` ("party" | "electorate" | "both") flows through
+      `ChatTurnSchema` → `ChatResponse` → `useChat` (persisted as
+      `chat:voteLane`).
+- [x] Update prompt templates to mention party vote and electorate vote for MMP
       elections only.
-- [ ] Add prompt variables for current party rankings and candidate rankings.
-- [ ] Add a question-intent marker so the UI can show whether a question informs
+      Shared [`mmp-guidance.ts`](../../src/lib/server/prompts/mmp-guidance.ts)
+      injected into `AIChatHandler.buildSystemPreamble()` (live chat turn) and
+      `PromptManager.buildSystemMessage()` (component selection / question
+      generation). Both gate on `votingSystem === "mmp"`.
+- [~] Add prompt variables for current party rankings and candidate rankings.
+      Deferred: party/candidate rankings are computed in the separate
+      background ranking pass (spec 019), not in the per-turn chat prompt, so
+      threading live rankings back into the question prompt is left as
+      follow-up. The two-vote framing and lane targeting (the behavioral core)
+      are in place.
+- [x] Add a question-intent marker so the UI can show whether a question informs
       party vote, electorate vote, or both.
-- [ ] Ensure non-MMP elections keep current prompt behavior.
-- [ ] Add mock-mode fixtures for two-vote questions and responses.
-- [ ] Update onboarding/help copy with a short MMP explanation.
+      `voteLane` on the chat turn; the model is instructed to tag each question.
+- [x] Ensure non-MMP elections keep current prompt behavior.
+      `mmpVotingGuidance()` returns "" for non-MMP; `voteLane` is dropped in
+      `processMessage` unless MMP. Byte-identical preamble for Auckland.
+- [x] Add mock-mode fixtures for two-vote questions and responses.
+      `MOCK_CHAT_TURN.voteLane = "both"` (spec 006 mock mode).
+- [x] Update onboarding/help copy with a short MMP explanation.
+      Header subtitle explains the two votes for MMP elections; a per-question
+      "Informs your party/electorate/both vote(s)" badge shows the lane marker.
 
 ## Test
 
-- [ ] Prompt unit test: NZ 2026 system/component prompts include party-vote and
+- [x] Prompt unit test: NZ 2026 system/component prompts include party-vote and
       electorate-vote language.
-- [ ] Prompt unit test: Auckland/non-MMP prompts do not mention party vote.
-- [ ] Chat-handler test: mock mode can produce a question tagged as party,
+- [x] Prompt unit test: Auckland/non-MMP prompts do not mention party vote.
+- [x] Chat-handler test: mock mode can produce a question tagged as party,
       electorate, or both.
-- [ ] End-to-end smoke: selecting an electorate then answering questions updates
-      both match lanes when spec 019 is implemented.
+- [~] End-to-end smoke: selecting an electorate then answering questions updates
+      both match lanes. Covered at the unit level (spec 019
+      `party-matching.test.ts` + this spec's `mmp-prompts.test.ts`); a Playwright
+      E2E is out of scope here (the repo's E2E currently hits real LLMs).
+
+Tests in
+[`tests/unit/mmp-prompts.test.ts`](../../tests/unit/mmp-prompts.test.ts)
+(5 tests, `bun run test`).
 
 ## Notes
 
-This spec should coordinate with spec 019. Spec 019 creates the party display
-lane; this spec teaches the conversation and prompts how to feed that lane.
+This spec coordinates with spec 019: 019 creates the party display lane, this
+spec teaches the conversation/prompts to feed it. Party ranking remains
+heuristic (spec 019); evidence-backed party citations and threading live
+rankings into the question prompt belong to spec 009 / a follow-up.

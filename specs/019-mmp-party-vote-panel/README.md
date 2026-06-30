@@ -1,5 +1,5 @@
 ---
-status: planned
+status: complete
 created: 2026-06-28
 priority: high
 tags:
@@ -8,7 +8,13 @@ tags:
 - party-ranking
 parent: '003'
 created_at: 2026-06-28T07:55:55.982432999Z
-updated_at: 2026-06-28T07:55:55.982550576Z
+updated_at: 2026-06-30T07:57:09.275853162Z
+completed_at: 2026-06-30T07:57:09.275853162Z
+transitions:
+- status: in-progress
+  at: 2026-06-29T10:47:59.862365308Z
+- status: complete
+  at: 2026-06-30T07:57:09.275853162Z
 ---
 
 # MMP party-vote matching panel
@@ -45,26 +51,60 @@ lists with separate explanations.
 
 ## Plan
 
-- [ ] Add a typed `PartyMatch` model parallel to `CandidateMatch`.
-- [ ] Add a server/database action to list/rank all parties for the active
+- [x] Add a typed `PartyMatch` model parallel to `CandidateMatch`.
+      `PartyMatch` + `PartySummary` in
+      [`src/types/index.ts`](../../src/types/index.ts).
+- [x] Add a server/database action to list/rank all parties for the active
       election from `election_parties`.
-- [ ] Update chat/ranking response shape to carry both `candidateMatches` and
+      `getPartiesForCurrentElection()` in
+      [`src/lib/actions/database.ts`](../../src/lib/actions/database.ts)
+      (scoped to `electionConfig.id`, returns lightweight serializable rows).
+- [x] Update chat/ranking response shape to carry both `candidateMatches` and
       `partyMatches` without conflating scores.
-- [ ] Update `RightPanel` to render party-vote and electorate-vote sections.
-- [ ] Preserve existing candidate sidebar behavior while adding party matches.
-- [ ] Add empty/loading states for missing party evidence.
-- [ ] Add responsive UX decision: tabs vs stacked sections.
+      `RankingResponse.partyMatches` + `AIChatHandler.rankParties()`; the two
+      lanes are ranked in parallel and `rankCandidatesForSession` now takes an
+      optional `availableParties` arg.
+- [x] Update `RightPanel` to render party-vote and electorate-vote sections.
+      New [`PartyList`](../../src/components/candidates/PartyList.tsx) component;
+      `RightPanel` shows a **Party Vote** card above the renamed **Electorate
+      Vote** card when party matches exist.
+- [x] Preserve existing candidate sidebar behavior while adding party matches.
+      Non-MMP elections pass no parties → party section hidden and the
+      candidate card keeps its original "Candidate Matches" title; party scores
+      update via a separate setter so they never overwrite candidate scores.
+- [x] Add empty/loading states for missing party evidence.
+      `PartyList` renders an empty-state message; unranked party cards (neutral
+      score, dashed/dimmed via the existing low-confidence styling) seed
+      immediately on load.
+- [x] Add responsive UX decision: tabs vs stacked sections.
+      **Decision: stacked sections.** Two stacked cards read top-to-bottom and
+      work on mobile without extra tab state; the existing mobile
+      Questions/Candidates toggle already separates the panel from the chat.
 
 ## Test
 
-- [ ] Unit test: active NZ election returns all parties for party matching.
-- [ ] Unit test: electorate candidate list is unchanged when party matches are
+- [x] Unit test: active NZ election returns all parties for party matching.
+- [x] Unit test: electorate candidate list is unchanged when party matches are
       added.
-- [ ] Component test: right panel displays party and electorate sections
-      independently.
-- [ ] Mock chat flow returns both lists deterministically.
+- [~] Component test: right panel displays party and electorate sections
+      independently. Component/JSX tests are disabled in this repo (Vitest runs
+      in the `node` environment and the project's JSX transform fails on
+      component tests — see `component-renderer.test.disabled.ts`). Behavior is
+      covered structurally via the handler/action tests instead; revive when the
+      JSX test setup is fixed.
+- [x] Mock chat flow returns both lists deterministically.
+
+Tests live in
+[`tests/unit/party-matching.test.ts`](../../tests/unit/party-matching.test.ts)
+(4 tests, run under `bun run test`). The mock ranking fixture was broadened to
+match slug party ids so the shared `candidate_ranking` path is deterministic for
+either lane.
 
 ## Notes
 
-Party ranking can start heuristic/mock-backed. Evidence-backed party ranking and
-citations belong to spec 009 once the evidence-scope cleanup is in place.
+Party ranking is heuristic/LLM-backed for now: a single structured ranking call
+scores parties from the user's stated preferences (no RAG, no citations).
+Evidence-backed party ranking and `sources` citations belong to spec 009 once
+the evidence-scope cleanup (spec 018) is in place — `PartyMatch.sources` already
+exists for that to populate. Spec 020 wires the conversation/prompts to feed
+this party lane.

@@ -79,6 +79,9 @@ export const MOCK_CHAT_TURN = {
     type: "chat",
     reasoning: "mock followup",
   },
+  // MMP two-vote marker (spec 020). The handler only surfaces this for MMP
+  // elections; for non-MMP it is dropped, so a constant fixture is safe.
+  voteLane: "both" as const,
 };
 
 /**

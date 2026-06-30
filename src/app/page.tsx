@@ -9,10 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { rankCandidatesForSession } from "@/lib/actions/chat";
 import {
   getCandidatesForSeat,
+  getPartiesForCurrentElection,
   getSeatsForCurrentElection,
 } from "@/lib/actions/database";
 import { selectNextComponent } from "@/lib/actions/prompts";
-import { toUnrankedMatches } from "@/lib/client/candidate-match";
+import {
+  toUnrankedMatches,
+  toUnrankedPartyMatches,
+} from "@/lib/client/candidate-match";
 import { extractQuestionText } from "@/lib/client/extract-question-text";
 import { useChat } from "@/lib/client/hooks/useChat";
 import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
@@ -22,6 +26,8 @@ import { newTraceId, serializeError } from "@/lib/debug/logging";
 import type {
   CandidateMatch,
   ComponentData,
+  PartyMatch,
+  PartySummary,
   RawAnswer,
   TranscriptStep,
   UserResponse,
@@ -32,6 +38,10 @@ export default function VotingAdvisor() {
     usePersistedState<TranscriptStep[]>("session:steps", []);
   const [candidates, setCandidates, , clearStoredCandidates] =
     usePersistedState<CandidateMatch[]>("session:candidates", []);
+  const [partyMatches, setPartyMatches, , clearStoredPartyMatches] =
+    usePersistedState<PartyMatch[]>("session:partyMatches", []);
+  const [availableParties, setAvailableParties, , clearStoredAvailableParties] =
+    usePersistedState<PartySummary[]>("session:availableParties", []);
   const [confidence, setConfidence, , clearStoredConfidence] =
     usePersistedState<number>("session:confidence", 0);
   const [isMobile, setIsMobile] = useState(false);
@@ -55,7 +65,23 @@ export default function VotingAdvisor() {
   // Pretty user-facing label for the seat ("ward" / "electorate").
   const seatLabel = electionConfig.seatLabel;
 
-  const { isLoading, sendMessage, clearChat, followupQuestion } = useChat();
+  // MMP elections have a second, independent party vote (spec 019). Non-MMP
+  // elections never fetch/seed parties, so the party-vote lane stays hidden.
+  const isMMP = electionConfig.votingSystem === "mmp";
+
+  const { isLoading, sendMessage, clearChat, followupQuestion, voteLane } =
+    useChat();
+
+  // Human-readable label for the MMP vote-lane marker (spec 020). Inlined here
+  // because the canonical helper lives in server-only code.
+  const voteLaneLabel =
+    voteLane === "party"
+      ? "Informs your party vote"
+      : voteLane === "electorate"
+        ? "Informs your electorate vote"
+        : voteLane === "both"
+          ? "Informs both votes"
+          : null;
 
   // `userResponses` is derived from the locked steps — it is what the LLM and
   // the right panel consume, so the transcript stays the single source of truth.
@@ -87,6 +113,29 @@ export default function VotingAdvisor() {
     };
     fetchSeats();
   }, []);
+
+  // Fetch the party-vote lane (MMP only). Seeds unranked party cards so the
+  // party-vote section is populated before any ranking exists, mirroring the
+  // electorate-candidate Phase-1 behavior. Skips entirely for non-MMP.
+  useEffect(() => {
+    if (!isMMP) return;
+    const fetchParties = async () => {
+      try {
+        const result = await getPartiesForCurrentElection();
+        if (result.success && result.data) {
+          setAvailableParties(result.data);
+          // Only seed unranked cards if we don't already have a (persisted)
+          // ranking from a previous turn.
+          setPartyMatches((prev) =>
+            prev.length > 0 ? prev : toUnrankedPartyMatches(result.data ?? []),
+          );
+        }
+      } catch (error) {
+        console.error("Error fetching parties:", error);
+      }
+    };
+    fetchParties();
+  }, [isMMP, setAvailableParties, setPartyMatches]);
 
   // Build the initial ward-selection step.
   const buildWardStep = useCallback(
@@ -133,10 +182,19 @@ export default function VotingAdvisor() {
   // turn. The next question is already on screen; the panel + confidence update
   // when this resolves. Stale results are dropped via rankSeqRef.
   const runRanking = useCallback(
-    (history: UserResponse[], candidates: Candidate[]) => {
-      if (candidates.length === 0 || history.length === 0) return;
+    (
+      history: UserResponse[],
+      candidates: Candidate[],
+      parties: PartySummary[],
+    ) => {
+      // Run if there's anything to rank in either lane.
+      if (
+        (candidates.length === 0 && parties.length === 0) ||
+        history.length === 0
+      )
+        return;
       const seq = ++rankSeqRef.current;
-      rankCandidatesForSession(history, candidates)
+      rankCandidatesForSession(history, candidates, parties)
         .then((ranking) => {
           if (seq < appliedRankSeqRef.current) return;
           appliedRankSeqRef.current = seq;
@@ -145,12 +203,17 @@ export default function VotingAdvisor() {
           if (ranking.candidateMatches.length > 0) {
             setCandidates(ranking.candidateMatches);
           }
+          // Party vote is an independent lane — update it separately so its
+          // scores never overwrite or get overwritten by candidate scores.
+          if (ranking.partyMatches.length > 0) {
+            setPartyMatches(ranking.partyMatches);
+          }
         })
         .catch((error) => {
           console.error("[ui:ranking] failed", serializeError(error));
         });
     },
-    [setConfidence, setShowCandidates, setCandidates],
+    [setConfidence, setShowCandidates, setCandidates, setPartyMatches],
   );
 
   const handleComponentResponse = async (
@@ -239,7 +302,8 @@ export default function VotingAdvisor() {
         console.log(`[${traceId}] ${phase}:done`, {
           success: candidatesResult.success,
           count: candidatesResult.data?.length ?? 0,
-          error: candidatesResult.error,
+          error:
+            "error" in candidatesResult ? candidatesResult.error : undefined,
         });
         const allCandidates = candidatesResult.success
           ? candidatesResult.data || []
@@ -298,10 +362,10 @@ export default function VotingAdvisor() {
         // Render the next question immediately — do NOT wait for ranking.
         appendActive(aiResponse?.nextComponent ?? fallbackChat);
 
-        // Kick off candidate ranking in the background; the panel + confidence
-        // update when it resolves (see runRanking). This keeps the per-turn
-        // request short instead of blocking on the slow RAG ranking.
-        runRanking(history, availableCandidates);
+        // Kick off candidate + party ranking in the background; the panel +
+        // confidence update when it resolves (see runRanking). This keeps the
+        // per-turn request short instead of blocking on the slow RAG ranking.
+        runRanking(history, availableCandidates, availableParties);
       }
     } catch (error) {
       console.error(`[${traceId}] component response failed`, {
@@ -332,10 +396,19 @@ export default function VotingAdvisor() {
     clearStoredConfidence();
     clearStoredShowCandidates();
     clearStoredAvailableCandidates();
+    clearStoredAvailableParties();
     setIsCompiling(false);
 
     if (seats.length > 0) {
       setSteps([buildWardStep()]);
+    }
+
+    // Re-seed unranked party cards so the party-vote lane stays populated after
+    // a reset (the parties themselves don't change within an election).
+    if (isMMP && availableParties.length > 0) {
+      setPartyMatches(toUnrankedPartyMatches(availableParties));
+    } else {
+      clearStoredPartyMatches();
     }
   };
 
@@ -348,7 +421,9 @@ export default function VotingAdvisor() {
             <div>
               <h1 className="text-2xl font-bold">AI Voting Advisor</h1>
               <p className="text-muted-foreground">
-                Discover candidates that match your values
+                {isMMP
+                  ? "MMP has two votes: a party vote (who governs) and an electorate vote (your local MP). I'll help with both — they don't have to be the same party."
+                  : "Discover candidates that match your values"}
               </p>
             </div>
             <div className="flex items-center space-x-2">
@@ -372,10 +447,15 @@ export default function VotingAdvisor() {
           >
             <Card className="flex-1 min-h-0 overflow-hidden">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex items-center justify-between gap-2">
                   <Badge variant="outline">
                     {userResponses.length} responses
                   </Badge>
+                  {isMMP && voteLaneLabel && (
+                    <Badge variant="secondary" className="font-normal">
+                      {voteLaneLabel}
+                    </Badge>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0 flex flex-col">
@@ -409,6 +489,7 @@ export default function VotingAdvisor() {
           >
             <RightPanel
               candidates={candidates}
+              partyMatches={partyMatches}
               confidence={confidence}
               isMobile={isMobile}
               onCandidateSelect={handleCandidateSelect}

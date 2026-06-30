@@ -124,6 +124,33 @@ export interface Source {
   date?: Date;
 }
 
+// === Party Types (spec 019: MMP party-vote lane) ===
+
+/**
+ * Lightweight, serializable view of an `election_parties` row, used by the
+ * party-vote panel. Deliberately a plain shape (not the Drizzle row) so it
+ * crosses the Server Action boundary without carrying Date / JSON columns.
+ */
+export interface PartySummary {
+  id: string;
+  name: string;
+  leader: string | null;
+}
+
+/**
+ * A ranked party for the MMP **party vote**, parallel to {@link CandidateMatch}
+ * for the electorate vote. Kept as a separate list so party and candidate
+ * scores are never conflated. Evidence-backed citations (`sources`) are
+ * populated later by spec 009; party ranking starts heuristic/LLM-backed.
+ */
+export interface PartyMatch {
+  party: PartySummary;
+  score: number; // 0-100
+  reasoning: string;
+  topMatchingPolicies: string[];
+  sources: Source[];
+}
+
 // === UI Component Types ===
 // The single source of truth is `src/types/components.zod.ts` — the Zod
 // schemas there are used both to validate LLM-generated component specs and
