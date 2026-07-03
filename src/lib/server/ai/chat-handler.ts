@@ -34,6 +34,7 @@ import { ConfidenceCalculator } from "./confidence-calculator";
 import { getAIConfig } from "./config";
 import type { ChatModel } from "./model-factory";
 import { createChatModel } from "./model-factory";
+import { rankingConfidence } from "./ranking-confidence";
 
 // A single turn of advisor output. One structured LLM call now produces the
 // conversational reply, the next UI component, and an optional follow-up chip —
@@ -261,13 +262,15 @@ export class AIChatHandler {
         this.rankParties(userResponseHistory, availableParties),
       ]);
 
-      // UI confidence reflects how confident we are in the *candidate ranking*
-      // (margin between the top candidates + topic coverage) — see
-      // deriveConfidence.
-      const confidence = this.deriveConfidence(
-        candidateMatches,
-        userResponseHistory,
-      );
+      // UI confidence reflects how confident we are in the *candidate ranking*:
+      // the spread (margin) between the top candidates plus how many key topics
+      // the voter has covered. Uses the shared, unit-tested rankingConfidence so
+      // this is the single source of truth for the number (spec 009 Phase 5).
+      const { score: confidence } = rankingConfidence({
+        ranked: candidateMatches,
+        coveredTopicCount: this.countCoveredTopics(userResponseHistory),
+        totalTopicCount: electionConfig.keyTopics.length,
+      });
 
       const config = getAIConfig();
       const shouldShowCandidates =
@@ -315,6 +318,7 @@ Each turn you produce two distinct things:
 Key topics: ${electionConfig.keyTopics.join(", ")}.
 
 Conversation discipline:
+- Guiding principle: each turn, ask the ONE question that would most increase your confidence in which candidate(s) and part${isTwoVoteElection() ? "y/parties" : "y"} best align with this voter. Prefer questions that discriminate between the available candidates/parties on the key topics — i.e. topics where they clearly differ and where the voter's stance is still unknown. Avoid questions whose answer wouldn't change the ranking.
 - Ask exactly one question per turn. Never bundle multiple independent questions into one component.
 - After a multiselect answer, ask one focused follow-up about a single selected topic — not another broad multiselect (unless no priorities were chosen yet).
 - If your question offers a fixed set of choices, you MUST use an interactive component (dropdown, multiselect, priority, yesno, or slider) — never list the options inside a chat/freetext prompt.
@@ -733,46 +737,20 @@ Return exactly one entry per party id, using the ids exactly as given.`;
   }
 
   /**
-   * UI confidence derived from the *ranking* (spec 009 Phase 5; interim,
-   * tunable).
-   *
-   * Previous versions keyed almost entirely off the margin between the top two
-   * candidates plus literal key-topic keyword matches. That collapsed to ~0 in
-   * practice: models rarely spread scores enough to open a big margin, and user
-   * answers almost never contain election key-topic phrases verbatim (e.g.
-   * "Cost of living", "Treaty of Waitangi"). So confidence was stuck at 0%.
-   *
-   * This version instead treats the *best match's absolute score* as the
-   * primary signal (how strong is our top pick), adds a decisive-lead bonus and
-   * a topic-coverage bonus, and ramps the whole thing up with engagement so a
-   * single answer can't over-claim confidence.
+   * Count how many of the election's key topics the voter has touched on so
+   * far. Feeds the topic-coverage term of {@link rankingConfidence}. Matching is
+   * a case-insensitive substring check against the concatenated response text —
+   * intentionally simple; the structured questions we ask use the topic names as
+   * option labels, so answers usually contain them verbatim.
    */
-  private deriveConfidence(
-    ranked: CandidateMatch[],
-    userResponses: UserResponse[],
-  ): number {
-    if (ranked.length === 0) return 0;
-
-    const top = ranked[0]?.score ?? 0; // 0..100 — strength of the best match
-    const second = ranked[1]?.score ?? 0;
-    const margin = Math.max(0, top - second); // decisiveness of the lead, 0..100
-
+  private countCoveredTopics(userResponses: UserResponse[]): number {
     const text = userResponses
       .map((r) => this.extractTextFromResponse(r))
       .join(" ")
       .toLowerCase();
-    const covered = electionConfig.keyTopics.filter((t) =>
+    return electionConfig.keyTopics.filter((t) =>
       text.includes(t.toLowerCase()),
     ).length;
-    const coverage = covered / electionConfig.keyTopics.length; // 0..1
-
-    // Ramp with the number of answers so confidence grows as the conversation
-    // progresses; reaches full weight after ~4 answers.
-    const engagement = Math.min(1, userResponses.length / 4);
-
-    const raw =
-      (top * 0.6 + margin * 0.25 + coverage * 100 * 0.15) * engagement;
-    return Math.min(100, Math.max(0, Math.round(raw)));
   }
 
   private createUserProfileSummary(userResponses: UserResponse[]): string {

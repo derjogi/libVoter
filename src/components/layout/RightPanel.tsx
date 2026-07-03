@@ -2,6 +2,7 @@
 
 import { Landmark, TrendingUp, User, Users } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { CandidateList } from "@/components/candidates/CandidateList";
 import { CandidateModal } from "@/components/candidates/CandidateModal";
 import { ComparisonView } from "@/components/candidates/ComparisonView";
@@ -134,7 +135,47 @@ export function RightPanel({
                     Generating summary...
                   </p>
                 ) : preferenceSummary ? (
-                  <p className="text-sm">{preferenceSummary}</p>
+                  <div className="text-sm">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => (
+                          <p className="mb-2 last:mb-0">{children}</p>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
+                            {children}
+                          </ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
+                            {children}
+                          </ol>
+                        ),
+                        li: ({ children }) => <li>{children}</li>,
+                        strong: ({ children }) => (
+                          <strong className="font-semibold">{children}</strong>
+                        ),
+                        em: ({ children }) => <em>{children}</em>,
+                        h1: ({ children }) => (
+                          <h3 className="mb-1 mt-2 font-semibold first:mt-0">
+                            {children}
+                          </h3>
+                        ),
+                        h2: ({ children }) => (
+                          <h3 className="mb-1 mt-2 font-semibold first:mt-0">
+                            {children}
+                          </h3>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="mb-1 mt-2 font-semibold first:mt-0">
+                            {children}
+                          </h3>
+                        ),
+                      }}
+                    >
+                      {preferenceSummary}
+                    </ReactMarkdown>
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Based on your {userResponses.length} response
