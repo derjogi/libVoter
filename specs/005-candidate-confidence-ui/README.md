@@ -100,6 +100,21 @@ prompt (`TAG_TOPICS`) returning which of `electionConfig.keyTopics` it
 addressed. Cheap (`small` model) and cached. The result feeds
 `coveredTopics`.
 
+### Preference-summary refresh cadence
+
+The live preference summary must not invoke the LLM after every answer.
+Electorate/ward selection is setup, not a substantive answer, and does not
+count toward the cadence.
+
+- Build the first summary after three substantive answers.
+- After a summary request, renew it after two more substantive answers.
+- Renew it immediately when the latest answer came from a `chat` or
+  `freetext` component, provided the first-summary threshold has already been
+  reached.
+- An immediate free-text renewal resets the two-answer counter.
+- Keep the previous summary visible while a renewal is in flight, and issue
+  only one request when both renewal conditions match.
+
 ## Plan
 
 - [ ] Extend `ChatResponse` (in
