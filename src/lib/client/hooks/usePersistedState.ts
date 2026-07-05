@@ -60,7 +60,11 @@ export function usePersistedState<T>(
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(fullKey);
-      if (raw !== null) {
+      // `raw` can be the literal string "undefined" if a previous version
+      // persisted an `undefined` state (JSON.stringify(undefined) === undefined,
+      // which localStorage coerces to "undefined"). Guard against it so we don't
+      // throw on JSON.parse.
+      if (raw !== null && raw !== "undefined") {
         setState(reviveDates(JSON.parse(raw)) as T);
       }
     } catch (err) {
@@ -78,7 +82,15 @@ export function usePersistedState<T>(
   useEffect(() => {
     if (!hydratedRef.current) return;
     try {
-      window.localStorage.setItem(fullKey, JSON.stringify(state));
+      const serialised = JSON.stringify(state);
+      // `JSON.stringify(undefined)` returns `undefined`, which localStorage
+      // would coerce to the invalid-JSON string "undefined". Remove the entry
+      // instead so the next load falls back to `initial`.
+      if (serialised === undefined) {
+        window.localStorage.removeItem(fullKey);
+      } else {
+        window.localStorage.setItem(fullKey, serialised);
+      }
     } catch (err) {
       console.warn(`usePersistedState: failed to persist ${fullKey}`, err);
     }
