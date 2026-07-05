@@ -115,6 +115,14 @@ count toward the cadence.
 - Keep the previous summary visible while a renewal is in flight, and issue
   only one request when both renewal conditions match.
 
+Implemented July 2026 via the pure client policy in
+`src/lib/client/preference-summary-refresh.ts` and the gated effect in
+`RightPanel`. Unit/component coverage verifies ward exclusion, the initial
+three-answer threshold, two-answer renewals, immediate `chat`/`freetext`
+renewals, duplicate suppression, counter reset, and preservation of the old
+summary while updating. Verified with `bun run test`, `bun run lint`, and
+`bunx tsc --noEmit`.
+
 ## Plan
 
 - [ ] Extend `ChatResponse` (in

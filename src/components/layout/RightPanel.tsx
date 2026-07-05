@@ -11,6 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { summarizeUserPreferences } from "@/lib/actions/prompts";
+import {
+  countSubstantiveResponses,
+  shouldRequestPreferenceSummary,
+} from "@/lib/client/preference-summary-refresh";
 import type { CandidateMatch, PartyMatch, UserResponse } from "@/types";
 
 interface RightPanelProps {
@@ -54,8 +58,11 @@ export function RightPanel({
   const [preferenceSummary, setPreferenceSummary] = useState<string>("");
   const [isLoadingSummary, setIsLoadingSummary] = useState(false);
   // Monotonic id so a slow, in-flight summary request can't overwrite a newer
-  // one (the LLM summary is regenerated whenever the user answers again).
+  // cadence-triggered request.
   const summarySeqRef = useRef(0);
+  // The cadence is measured from the most recent request, including free-text
+  // renewals, so an immediate renewal resets the two-answer interval.
+  const lastSummaryRequestCountRef = useRef(0);
 
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
 
@@ -99,11 +106,9 @@ export function RightPanel({
           setPreferenceSummary(result.data || "");
         } else {
           console.error("Failed to fetch preference summary:", result.error);
-          setPreferenceSummary("");
         }
       } catch (error) {
         console.error("Error fetching preference summary:", error);
-        if (seq === summarySeqRef.current) setPreferenceSummary("");
       } finally {
         if (seq === summarySeqRef.current) setIsLoadingSummary(false);
       }
@@ -111,8 +116,28 @@ export function RightPanel({
     [],
   );
 
-  // Update preference summary when user responses change
+  // Build after three substantive answers, then renew after two more answers
+  // or immediately for chat/free-text input. Ward selection is setup only.
   useEffect(() => {
+    const substantiveCount = countSubstantiveResponses(userResponses);
+    if (substantiveCount === 0) {
+      summarySeqRef.current += 1;
+      lastSummaryRequestCountRef.current = 0;
+      setPreferenceSummary("");
+      setIsLoadingSummary(false);
+      return;
+    }
+
+    if (
+      !shouldRequestPreferenceSummary(
+        userResponses,
+        lastSummaryRequestCountRef.current,
+      )
+    ) {
+      return;
+    }
+
+    lastSummaryRequestCountRef.current = substantiveCount;
     fetchPreferenceSummary(userResponses);
   }, [userResponses, fetchPreferenceSummary]);
 
@@ -130,52 +155,61 @@ export function RightPanel({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {isLoadingSummary ? (
+                {preferenceSummary ? (
+                  <>
+                    <div className="text-sm">
+                      <ReactMarkdown
+                        components={{
+                          p: ({ children }) => (
+                            <p className="mb-2 last:mb-0">{children}</p>
+                          ),
+                          ul: ({ children }) => (
+                            <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
+                              {children}
+                            </ul>
+                          ),
+                          ol: ({ children }) => (
+                            <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
+                              {children}
+                            </ol>
+                          ),
+                          li: ({ children }) => <li>{children}</li>,
+                          strong: ({ children }) => (
+                            <strong className="font-semibold">
+                              {children}
+                            </strong>
+                          ),
+                          em: ({ children }) => <em>{children}</em>,
+                          h1: ({ children }) => (
+                            <h3 className="mb-1 mt-2 font-semibold first:mt-0">
+                              {children}
+                            </h3>
+                          ),
+                          h2: ({ children }) => (
+                            <h3 className="mb-1 mt-2 font-semibold first:mt-0">
+                              {children}
+                            </h3>
+                          ),
+                          h3: ({ children }) => (
+                            <h3 className="mb-1 mt-2 font-semibold first:mt-0">
+                              {children}
+                            </h3>
+                          ),
+                        }}
+                      >
+                        {preferenceSummary}
+                      </ReactMarkdown>
+                    </div>
+                    {isLoadingSummary && (
+                      <p className="text-xs text-muted-foreground">
+                        Updating summary...
+                      </p>
+                    )}
+                  </>
+                ) : isLoadingSummary ? (
                   <p className="text-sm text-muted-foreground">
                     Generating summary...
                   </p>
-                ) : preferenceSummary ? (
-                  <div className="text-sm">
-                    <ReactMarkdown
-                      components={{
-                        p: ({ children }) => (
-                          <p className="mb-2 last:mb-0">{children}</p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
-                            {children}
-                          </ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
-                            {children}
-                          </ol>
-                        ),
-                        li: ({ children }) => <li>{children}</li>,
-                        strong: ({ children }) => (
-                          <strong className="font-semibold">{children}</strong>
-                        ),
-                        em: ({ children }) => <em>{children}</em>,
-                        h1: ({ children }) => (
-                          <h3 className="mb-1 mt-2 font-semibold first:mt-0">
-                            {children}
-                          </h3>
-                        ),
-                        h2: ({ children }) => (
-                          <h3 className="mb-1 mt-2 font-semibold first:mt-0">
-                            {children}
-                          </h3>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="mb-1 mt-2 font-semibold first:mt-0">
-                            {children}
-                          </h3>
-                        ),
-                      }}
-                    >
-                      {preferenceSummary}
-                    </ReactMarkdown>
-                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Based on your {userResponses.length} response
