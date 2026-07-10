@@ -36,6 +36,23 @@ ranking call and supplies the compact preference state needed by spec 020's
 next-question prompt. Evidence ingestion and citations remain owned by specs
 009, 010, and 018.
 
+### Known current bug: question context is dropped
+
+`UserResponse.question` currently stores the visible question, but
+`createUserProfileSummary()` ignores it and emits only `questionId: value`.
+Generated questions commonly have a meaningless timestamp-based id. Some
+components happen to repeat their question inside `value`, while multiselect
+and priority responses normally submit only selected labels. Consequently the
+same answer can lose its meaning or be interpreted differently depending on
+which UI component collected it. Candidate and party ranking both consume this
+lossy profile.
+
+Spec 021 fixes the root cause: extraction always receives the latest visible
+question and answer verbatim, while structured answers also carry explicit
+semantic metadata. As an early compatibility fix, the existing ranker should
+format every response from `question ?? questionId` plus the answer rather than
+relying on component-specific value formatting.
+
 ### Goals
 
 - Preserve the voter's topic, direction, importance, uncertainty, and source.
@@ -370,6 +387,9 @@ revision, versioned, reviewable, and cached.
 
 ## Plan
 
+- [ ] Add the compatibility fix and regression coverage so the current ranker
+      always receives the visible question with every answer before the larger
+      profile migration lands.
 - [ ] Add the versioned proposition taxonomy plus Zod-validated extraction,
       canonical profile, and local score types with response-only migration.
 - [ ] Add semantic metadata to structured components and deterministic
@@ -397,6 +417,10 @@ revision, versioned, reviewable, and cached.
 
 ## Test
 
+- [ ] Current-profile regression: dropdown, multiselect, priority, yes/no,
+      slider, chat, and freetext responses all preserve visible question plus
+      answer; two identical answer strings to different questions remain
+      distinguishable.
 - [ ] Structured answers update the profile without an AI call before the next
       question is generated.
 - [ ] A free-text delta is validated and merged before next-question generation;
