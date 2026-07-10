@@ -309,19 +309,19 @@ Format as conversational explanation, not a list.`,
     id: "summarize_preferences",
     name: "Summarize User Preferences",
     category: "analysis",
-    template: `Summarize the user's political preferences based on their responses for the {electionYear} {electionType} in {electionLocation}.
+    template: `Summarize why the proposed candidates are a good match for the user based on their responses for the {electionYear} {electionType} in {electionLocation}.
 
 User responses:
 {allResponses}
 
-Create a clear, organized summary that includes:
-- Top 3-5 priority issues for this user from topics like {electionKeyTopics}
-- Their general political leanings (if discernible)
-- Any interesting or nuanced positions
-- Areas where they seem undecided
-- How their preferences relate to {electionDescription}
+Create a concise match-focused summary:
+- Prefer one short paragraph; never exceed two paragraphs.
+- Focus on why the currently proposed candidates fit the user's priorities.
+- Connect candidate strengths to topics like {electionKeyTopics} and the context of {electionDescription}.
+- Mention uncertainty only when it affects confidence in the candidate match.
+- Do not simply restate the user's views or list their preferences.
 
-Keep it neutral and descriptive, not prescriptive.`,
+Keep it neutral, specific, and candidate-centered.`,
     variables: [
       "allResponses",
       "electionYear",

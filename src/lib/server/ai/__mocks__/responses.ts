@@ -50,7 +50,7 @@ export const MOCK_RESPONSES: Record<string, string> = {
     "Mock explanation: this candidate aligns closely with your stated values on housing and transport.",
 
   SUMMARIZE_PREFERENCES:
-    "Mock summary: you prioritise housing affordability, public transport, and a strong climate response.",
+    "Mock summary: the proposed candidates look strongest where they pair housing affordability with practical transport investment and credible climate action, which makes them a close fit for the priorities surfaced so far.",
 
   TAG_TOPICS: JSON.stringify(["housing", "transport"]),
 
