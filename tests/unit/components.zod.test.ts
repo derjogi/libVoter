@@ -1,4 +1,6 @@
+import { ChatAnthropic } from "@langchain/anthropic";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import {
   ComponentDataSchema,
   ComponentSpecSchema,
@@ -226,5 +228,24 @@ describe("ComponentDataSchema narrowing", () => {
 
   it("ComponentDataSchema is the same instance the runtime uses", () => {
     expect(ComponentDataSchema).toBe(ComponentSpecSchema);
+  });
+
+  it("can be converted to Anthropic jsonSchema structured output", () => {
+    const chatTurnSchema = z.object({
+      message: z.string(),
+      nextComponent: ComponentDataSchema,
+    });
+    const model = new ChatAnthropic({
+      model: "claude-haiku-4-5",
+      apiKey: "test-key",
+      streaming: false,
+    });
+
+    expect(() =>
+      model.withStructuredOutput(chatTurnSchema, {
+        name: "chat_turn",
+        method: "jsonSchema",
+      }),
+    ).not.toThrow();
   });
 });

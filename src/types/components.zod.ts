@@ -19,7 +19,7 @@ export const SelectOptionSchema = z.object({
 });
 
 export const ChatDataSchema = z.object({
-  messages: z.array(z.any()).optional(),
+  messages: z.array(z.string()).optional(),
   placeholder: z.string().optional(),
   prompt: z.string().optional(),
 });
