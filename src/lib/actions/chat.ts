@@ -1,13 +1,12 @@
 "use server";
 
-import type { Candidate } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import {
   AIChatHandler,
   type ChatResponse,
   type RankingResponse,
 } from "@/lib/server/ai/chat-handler";
-import type { ConversationMessage, PartySummary, UserResponse } from "@/types";
+import type { Candidate, ConversationMessage, PartySummary, UserResponse } from "@/types";
 
 let chatHandler: AIChatHandler | null = null;
 

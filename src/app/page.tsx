@@ -21,9 +21,9 @@ import { extractQuestionText } from "@/lib/client/extract-question-text";
 import { useChat } from "@/lib/client/hooks/useChat";
 import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
 import { electionConfig } from "@/lib/config/election";
-import type { Candidate } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import type {
+  Candidate,
   CandidateMatch,
   ComponentData,
   PartyMatch,
@@ -137,7 +137,7 @@ export default function VotingAdvisor() {
     fetchParties();
   }, [isMMP, setAvailableParties, setPartyMatches]);
 
-  // Build the initial ward-selection step.
+  // Build the initial seat-selection step.
   const buildWardStep = useCallback(
     (): TranscriptStep => ({
       id: `step_${Date.now()}`,
@@ -152,14 +152,14 @@ export default function VotingAdvisor() {
             description: "",
           })),
           placeholder: `Select your ${electionConfig.seatLabel}...`,
-          questionId: "ward_selection",
+          questionId: "seat_selection",
         },
       },
     }),
     [seats],
   );
 
-  // Seed the transcript with the ward step once persisted state has hydrated.
+  // Seed the transcript with the seat step once persisted state has hydrated.
   useEffect(() => {
     if (
       isStepsHydrated &&
@@ -291,14 +291,14 @@ export default function VotingAdvisor() {
 
       if (
         comp.type === "dropdown" &&
-        comp.data.questionId === "ward_selection"
+        comp.data.questionId === "seat_selection"
       ) {
-        const wardName =
+        const seatName =
           raw?.kind === "dropdown" ? raw.label : String(response);
 
         phase = "load-seat-candidates";
-        console.log(`[${traceId}] ${phase}`, { wardName });
-        const candidatesResult = await getCandidatesForSeat(wardName);
+        console.log(`[${traceId}] ${phase}`, { seatName });
+        const candidatesResult = await getCandidatesForSeat(seatName);
         console.log(`[${traceId}] ${phase}:done`, {
           success: candidatesResult.success,
           count: candidatesResult.data?.length ?? 0,
@@ -316,7 +316,7 @@ export default function VotingAdvisor() {
         setCandidates(toUnrankedMatches(allCandidates));
 
         const candidateNames = allCandidates.map((c) => c.name);
-        const conversationState = `I am voting in the ${wardName} ${seatLabel}, and the following candidates are running: \n${candidateNames.join(
+        const conversationState = `I am voting in the ${seatName} ${seatLabel}, and the following candidates are running: \n${candidateNames.join(
           "\n",
         )}\n\nI have not stated any opinion yet. I want you to help me figure out which of these candidates I should vote for.`;
 

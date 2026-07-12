@@ -87,7 +87,22 @@ export interface UserPreferences {
 }
 
 // === Candidate Types ===
-import type { Candidate } from "@/lib/db/schema";
+
+/** Serializable candidate model owned by the application boundary. */
+export interface Candidate {
+  id: string;
+  name: string;
+  party: string | null;
+  seat: string;
+  candidate_statement: string | null;
+  key_positions: Record<string, string> | null;
+  why: string | null;
+  key_skills: string | null;
+  top_issues: string | null;
+  supporting_links: string[] | null;
+  photo_url: string | null;
+  created_at: Date;
+}
 
 export interface CandidateProfile {
   // Extensible - can add more fields as data becomes available
@@ -305,23 +320,14 @@ export const UserSessionSchema = z.object({
 export const CandidateSchema = z.object({
   id: z.string(),
   name: z.string(),
-  party: z.string(),
-  profileData: z
-    .object({
-      positions: z.array(
-        z.object({
-          topic: z.string(),
-          stance: z.string(),
-          details: z.string().optional(),
-          sources: z.array(z.string()).optional(),
-          confidence: z.number().min(0).max(1).optional(),
-        }),
-      ),
-      biography: z.string().optional(),
-      experience: z.array(z.string()).optional(),
-      website: z.string().optional(),
-      socialMedia: z.record(z.string(), z.string()).optional(),
-    })
-    .catchall(z.any()), // Allow additional fields
-  createdAt: z.date(),
+  party: z.string().nullable(),
+  seat: z.string(),
+  candidate_statement: z.string().nullable(),
+  key_positions: z.record(z.string(), z.string()).nullable(),
+  why: z.string().nullable(),
+  key_skills: z.string().nullable(),
+  top_issues: z.string().nullable(),
+  supporting_links: z.array(z.string()).nullable(),
+  photo_url: z.string().nullable(),
+  created_at: z.date(),
 });

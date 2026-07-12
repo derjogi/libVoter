@@ -15,7 +15,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { Candidate } from "@/lib/db/schema";
+import type { Candidate } from "@/types";
 
 // How many times to call the model.
 const RUNS = Number(process.env.LATENCY_RUNS || "5");
@@ -67,16 +67,16 @@ const HAS_KEY = Boolean(
 // A minimal candidate so processMessage can derive the available seat (ward).
 const fakeCandidates = [
   {
-    id: 1,
+    id: "1",
     name: "Alex Example",
     party: "Independent",
-    ward: "Howick Flat Bush Subdivision",
+    seat: "Howick Flat Bush Subdivision",
   },
   {
-    id: 2,
+    id: "2",
     name: "Sam Sample",
     party: "Independent",
-    ward: "Howick Flat Bush Subdivision",
+    seat: "Howick Flat Bush Subdivision",
   },
 ] as unknown as Candidate[];
 

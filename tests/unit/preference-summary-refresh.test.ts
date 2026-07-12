@@ -18,23 +18,23 @@ function response(
   };
 }
 
-const ward = response("ward_selection");
+const seat = response("seat_selection");
 const ordinary = (number: number) => response(`question_${number}`);
 
 describe("preference summary refresh policy", () => {
   it("does not count electorate selection as a substantive answer", () => {
     expect(
-      countSubstantiveResponses([ward, ordinary(1), ordinary(2), ordinary(3)]),
+      countSubstantiveResponses([seat, ordinary(1), ordinary(2), ordinary(3)]),
     ).toBe(3);
   });
 
   it("waits for three substantive answers before the first summary", () => {
     expect(
-      shouldRequestPreferenceSummary([ward, ordinary(1), ordinary(2)], 0),
+      shouldRequestPreferenceSummary([seat, ordinary(1), ordinary(2)], 0),
     ).toBe(false);
     expect(
       shouldRequestPreferenceSummary(
-        [ward, ordinary(1), ordinary(2), ordinary(3)],
+        [seat, ordinary(1), ordinary(2), ordinary(3)],
         0,
       ),
     ).toBe(true);
@@ -43,14 +43,14 @@ describe("preference summary refresh policy", () => {
   it("does not let free text build the first summary early", () => {
     expect(
       shouldRequestPreferenceSummary(
-        [ward, ordinary(1), response("more_detail", "freetext")],
+        [seat, ordinary(1), response("more_detail", "freetext")],
         0,
       ),
     ).toBe(false);
   });
 
   it("renews after two ordinary answers since the previous request", () => {
-    const firstSummary = [ward, ordinary(1), ordinary(2), ordinary(3)];
+    const firstSummary = [seat, ordinary(1), ordinary(2), ordinary(3)];
 
     expect(
       shouldRequestPreferenceSummary([...firstSummary, ordinary(4)], 3),
@@ -69,7 +69,7 @@ describe("preference summary refresh policy", () => {
       expect(
         shouldRequestPreferenceSummary(
           [
-            ward,
+            seat,
             ordinary(1),
             ordinary(2),
             ordinary(3),
@@ -84,7 +84,7 @@ describe("preference summary refresh policy", () => {
   it("does not request the same substantive response count twice", () => {
     expect(
       shouldRequestPreferenceSummary(
-        [ward, ordinary(1), ordinary(2), ordinary(3)],
+        [seat, ordinary(1), ordinary(2), ordinary(3)],
         3,
       ),
     ).toBe(false);
@@ -92,7 +92,7 @@ describe("preference summary refresh policy", () => {
 
   it("resets the two-answer interval after a free-text renewal", () => {
     const afterFreeText = [
-      ward,
+      seat,
       ordinary(1),
       ordinary(2),
       ordinary(3),

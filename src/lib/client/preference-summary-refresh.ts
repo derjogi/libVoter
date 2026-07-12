@@ -4,7 +4,7 @@ const FIRST_SUMMARY_ANSWER_COUNT = 3;
 const ANSWERS_BETWEEN_SUMMARIES = 2;
 
 function isSubstantiveResponse(response: UserResponse): boolean {
-  return response.questionId !== "ward_selection";
+  return response.questionId !== "seat_selection";
 }
 
 function isFreeTextResponse(response: UserResponse): boolean {

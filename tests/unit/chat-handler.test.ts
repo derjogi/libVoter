@@ -10,7 +10,7 @@ beforeAll(() => {
 });
 
 function candidate(overrides: {
-  id: number;
+  id: string;
   name: string;
   party: string | null;
 }) {
@@ -18,7 +18,7 @@ function candidate(overrides: {
     id: overrides.id,
     name: overrides.name,
     party: overrides.party,
-    ward: "Wellington Central",
+    seat: "Wellington Central",
     candidate_statement: null,
     key_positions: null,
     why: null,
@@ -96,7 +96,7 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
           timestamp: new Date(),
         },
       ],
-      [candidate({ id: 1, name: "Greta Green", party: "Green" })],
+      [candidate({ id: "1", name: "Greta Green", party: "Green" })],
     );
 
     expect(result.candidateMatches).toHaveLength(1);
@@ -148,8 +148,8 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
         },
       ],
       [
-        candidate({ id: 1, name: "Greta Green", party: "Green" }),
-        candidate({ id: 2, name: "Laura Labour", party: "Labour" }),
+        candidate({ id: "1", name: "Greta Green", party: "Green" }),
+        candidate({ id: "2", name: "Laura Labour", party: "Labour" }),
       ],
     );
 
@@ -158,8 +158,8 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     expect(
       result.candidateMatches.map((m) => [m.candidate.id, m.score]),
     ).toEqual([
-      [1, 82],
-      [2, 43],
+      ["1", 82],
+      ["2", 43],
     ]);
   });
 });

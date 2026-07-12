@@ -25,7 +25,7 @@ function response(
   };
 }
 
-const ward = response("ward_selection");
+const seat = response("seat_selection");
 const ordinary = (number: number) => response(`question_${number}`);
 
 describe("RightPanel preference summary", () => {
@@ -63,17 +63,17 @@ describe("RightPanel preference summary", () => {
   }
 
   it("requests at three substantive answers and then every second answer", async () => {
-    await render([ward, ordinary(1), ordinary(2)]);
+    await render([seat, ordinary(1), ordinary(2)]);
     expect(summarizeUserPreferences).not.toHaveBeenCalled();
 
-    await render([ward, ordinary(1), ordinary(2), ordinary(3)]);
+    await render([seat, ordinary(1), ordinary(2), ordinary(3)]);
     expect(summarizeUserPreferences).toHaveBeenCalledTimes(1);
 
-    await render([ward, ordinary(1), ordinary(2), ordinary(3), ordinary(4)]);
+    await render([seat, ordinary(1), ordinary(2), ordinary(3), ordinary(4)]);
     expect(summarizeUserPreferences).toHaveBeenCalledTimes(1);
 
     await render([
-      ward,
+      seat,
       ordinary(1),
       ordinary(2),
       ordinary(3),
@@ -95,11 +95,11 @@ describe("RightPanel preference summary", () => {
         }),
       );
 
-    await render([ward, ordinary(1), ordinary(2), ordinary(3)]);
+    await render([seat, ordinary(1), ordinary(2), ordinary(3)]);
     expect(container.textContent).toContain("Initial summary");
 
     await render([
-      ward,
+      seat,
       ordinary(1),
       ordinary(2),
       ordinary(3),

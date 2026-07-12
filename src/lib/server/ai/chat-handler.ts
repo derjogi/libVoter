@@ -6,7 +6,6 @@ import {
 } from "@langchain/core/messages";
 import { z } from "zod";
 import { electionConfig } from "@/lib/config/election";
-import type { Candidate } from "@/lib/db/schema";
 import { withTimeout } from "@/lib/debug/logging";
 import {
   isTwoVoteElection,
@@ -18,6 +17,7 @@ import {
   RAGQueryEngine,
 } from "@/lib/server/rag/query-engine";
 import type {
+  Candidate,
   CandidateMatch,
   ComponentData,
   ConversationMessage,
@@ -184,16 +184,11 @@ export class AIChatHandler {
         conversationHistory,
       );
 
-      // Available seats (electorates/wards) derived from the candidate list.
-      const availableSeats = [
-        ...new Set(availableCandidates.map((c) => c.ward)),
-      ];
-
       // Static, cache-friendly preamble first; only the per-turn dynamic data
       // (confidence) goes in the final user message so the cached prefix stays
       // byte-stable across turns (OpenAI/OpenRouter automatic prefix caching,
       // Anthropic cache_control).
-      const systemPreamble = this.buildSystemPreamble(availableSeats);
+      const systemPreamble = this.buildSystemPreamble();
 
       const recentHistory = conversationHistory.slice(-50); // we'll find out when we reach the limit.
       const messages: (HumanMessage | AIMessage | SystemMessage)[] = [
@@ -299,7 +294,7 @@ export class AIChatHandler {
    * Static instructions shared by every turn. Stable within a session so the
    * model provider can cache it as a prompt prefix.
    */
-  private buildSystemPreamble(_availableSeats: string[]): string {
+  private buildSystemPreamble(): string {
     // MMP two-vote guidance (spec 020). Empty string for non-MMP elections, so
     // their preamble — and the cached prompt prefix — is byte-identical to
     // before.

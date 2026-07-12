@@ -14,7 +14,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { Candidate } from "@/lib/db/schema";
+import type { Candidate } from "@/types";
 
 // The free OpenRouter models can be very slow / queued, so default to a single
 // run and give each run a generous budget. Bump LIVE_LLM_RUNS for variety checks.
@@ -62,16 +62,16 @@ const HAS_KEY = Boolean(
 // A minimal candidate so processMessage can derive the available seat (ward).
 const fakeCandidates = [
   {
-    id: 1,
+    id: "1",
     name: "Alex Example",
     party: "Independent",
-    ward: "Howick Flat Bush Subdivision",
+    seat: "Howick Flat Bush Subdivision",
   },
   {
-    id: 2,
+    id: "2",
     name: "Sam Sample",
     party: "Independent",
-    ward: "Howick Flat Bush Subdivision",
+    seat: "Howick Flat Bush Subdivision",
   },
 ] as unknown as Candidate[];
 

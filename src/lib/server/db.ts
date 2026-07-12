@@ -13,6 +13,7 @@ export interface DbClientOptions {
   url?: string;
   /** Environment lookup override for tests. Defaults to process.env. */
   env?: DatabaseEnv;
+  authToken?: string;
 }
 
 function assertSafeElectionId(electionId: string): string {
@@ -37,10 +38,10 @@ export function resolveDatabaseUrl(
   return (env ?? process.env).DATABASE_URL || resolveElectionDbPath(electionId);
 }
 
-function createDrizzleClient(url: string) {
+export function createDbConnection(url: string, authToken?: string) {
   const client = createClient({
     url,
-    authToken: process.env.DATABASE_AUTH_TOKEN, // Only needed for Turso
+    authToken: authToken ?? process.env.DATABASE_AUTH_TOKEN,
   });
   return {
     client,
@@ -48,18 +49,25 @@ function createDrizzleClient(url: string) {
   };
 }
 
-const active = createDrizzleClient(resolveDatabaseUrl(electionConfig.id));
+export type DbConnection = ReturnType<typeof createDbConnection>;
+
+const active = createDbConnection(resolveDatabaseUrl(electionConfig.id));
 
 export const db = active.db;
 
 export const getDbClient = (options: DbClientOptions = {}) => {
   const url =
     options.url ?? resolveDatabaseUrl(options.electionId, options.env);
-  return createDrizzleClient(url).db;
+  return createDbConnection(url, options.authToken).db;
+};
+
+export const getDbConnection = (options: DbClientOptions = {}) => {
+  const url = options.url ?? resolveDatabaseUrl(options.electionId, options.env);
+  return createDbConnection(url, options.authToken);
 };
 
 export const getReferenceDbClient = () => {
-  return createDrizzleClient(resolveReferenceDbPath()).db;
+  return createDbConnection(resolveReferenceDbPath()).db;
 };
 
 // Export the client for direct SQL queries if needed

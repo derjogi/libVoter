@@ -32,6 +32,8 @@ export const candidates = sqliteTable("candidates", {
   created_at: integer("created_at", { mode: "timestamp" }).notNull(),
 });
 
+export type LegacyCandidateRow = typeof candidates.$inferSelect;
+
 // === Generic election data model (spec 002) ===
 //
 //   elections 1───n races 1───n candidacies n───1 candidates

@@ -9,7 +9,7 @@ beforeAll(() => {
 });
 
 function candidate(overrides: {
-  id: number;
+  id: string;
   name: string;
   party: string | null;
 }) {
@@ -17,7 +17,7 @@ function candidate(overrides: {
     id: overrides.id,
     name: overrides.name,
     party: overrides.party,
-    ward: "Wellington Central",
+    seat: "Wellington Central",
     candidate_statement: null,
     key_positions: null,
     why: null,
@@ -68,8 +68,8 @@ describe("AIChatHandler.rankResponses party lane (spec 019)", () => {
     const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
     const handler = new AIChatHandler();
     const candidates = [
-      candidate({ id: 1, name: "Greta Green", party: "Green" }),
-      candidate({ id: 2, name: "Laura Labour", party: "Labour" }),
+      candidate({ id: "1", name: "Greta Green", party: "Green" }),
+      candidate({ id: "2", name: "Laura Labour", party: "Labour" }),
     ];
 
     const withoutParties = await handler.rankResponses(responses, candidates);
@@ -105,7 +105,7 @@ describe("AIChatHandler.rankResponses party lane (spec 019)", () => {
     const handler = new AIChatHandler();
 
     const result = await handler.rankResponses(responses, [
-      candidate({ id: 1, name: "Greta Green", party: "Green" }),
+      candidate({ id: "1", name: "Greta Green", party: "Green" }),
     ]);
 
     expect(result.partyMatches).toEqual([]);
@@ -118,12 +118,12 @@ describe("AIChatHandler.rankResponses party lane (spec 019)", () => {
 
     const a = await handler.rankResponses(
       responses,
-      [candidate({ id: 1, name: "Greta Green", party: "Green" })],
+      [candidate({ id: "1", name: "Greta Green", party: "Green" })],
       parties,
     );
     const b = await handler.rankResponses(
       responses,
-      [candidate({ id: 1, name: "Greta Green", party: "Green" })],
+      [candidate({ id: "1", name: "Greta Green", party: "Green" })],
       parties,
     );
 

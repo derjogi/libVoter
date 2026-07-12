@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { electionConfig } from "@/lib/config/election";
 import {
   appSettings,
-  type Candidate,
   candidacies,
   candidates,
   electionParties,
@@ -15,7 +14,8 @@ import {
 } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { db } from "@/lib/server/db";
-import type { PartySummary } from "@/types";
+import { electionDataRepository } from "@/lib/server/election-data";
+import type { Candidate, PartySummary } from "@/types";
 
 // Load all candidates
 export async function loadCandidates() {
@@ -119,38 +119,10 @@ export async function getUniqueWards() {
  */
 export async function getSeatsForCurrentElection() {
   try {
-    const electionId = electionConfig.id;
-
-    // Try the new schema first.
-    const userFacingKinds = electionConfig.seatTypes.filter(
-      (k) => k !== "mayor" && k !== "list",
-    );
-
-    if (userFacingKinds.length > 0) {
-      const rows = await db
-        .selectDistinct({ name: races.name, district: races.district })
-        .from(races)
-        .where(
-          and(
-            eq(races.electionId, electionId),
-            inArray(races.kind, userFacingKinds),
-          ),
-        )
-        .orderBy(races.name);
-
-      if (rows.length > 0) {
-        return {
-          success: true,
-          data: rows.map((r) => r.district ?? r.name),
-        };
-      }
-    }
-
-    // Fallback: legacy candidates.ward.
-    return getUniqueWards();
+    return { success: true, data: await electionDataRepository.listSeats() };
   } catch (error) {
     console.error("Error loading seats:", error);
-    return getUniqueWards();
+    return { success: false, error: "Failed to load seats" };
   }
 }
 
@@ -169,15 +141,7 @@ export async function getPartiesForCurrentElection(): Promise<{
   const start = Date.now();
   console.log(`[${traceId}] start`, { electionId: electionConfig.id });
   try {
-    const rows = await db
-      .select({
-        id: electionParties.id,
-        name: electionParties.name,
-        leader: electionParties.leader,
-      })
-      .from(electionParties)
-      .where(eq(electionParties.electionId, electionConfig.id))
-      .orderBy(electionParties.name);
+    const rows = await electionDataRepository.listParties();
 
     console.log(`[${traceId}] done`, {
       elapsedMs: Date.now() - start,
@@ -262,68 +226,8 @@ export async function getCandidatesForSeat(seat: string) {
   console.log(`[${traceId}] start`, { seat, electionId: electionConfig.id });
 
   try {
-    const userFacingKinds = electionConfig.seatTypes.filter(
-      (k) => k !== "mayor" && k !== "list",
-    );
-
-    if (userFacingKinds.length > 0) {
-      const rows = await db
-        .select({
-          candidacyId: candidacies.id,
-          legacyCandidateId: candidacies.legacyCandidateId,
-          name: people.name,
-          party: electionParties.name,
-          seatName: races.name,
-          district: races.district,
-          candidateStatement: candidacies.candidateStatement,
-          keyPositions: candidacies.keyPositions,
-          why: candidacies.why,
-          keySkills: candidacies.keySkills,
-          topIssues: candidacies.topIssues,
-          supportingLinks: candidacies.supportingLinks,
-          photoUrl: people.photoUrl,
-          createdAt: candidacies.createdAt,
-        })
-        .from(candidacies)
-        .innerJoin(races, eq(races.id, candidacies.raceId))
-        .innerJoin(people, eq(people.id, candidacies.personId))
-        .leftJoin(electionParties, eq(electionParties.id, candidacies.partyId))
-        .where(
-          and(
-            eq(candidacies.electionId, electionConfig.id),
-            inArray(races.kind, userFacingKinds),
-            or(eq(races.district, seat), eq(races.name, seat)),
-          ),
-        )
-        .orderBy(people.name);
-
-      if (rows.length > 0) {
-        const data: Candidate[] = rows.map((row) => ({
-          id: row.legacyCandidateId ?? stableNumericId(row.candidacyId),
-          name: row.name,
-          party: row.party,
-          ward: row.district ?? row.seatName,
-          candidate_statement: row.candidateStatement,
-          key_positions: row.keyPositions,
-          why: row.why,
-          key_skills: row.keySkills,
-          top_issues: row.topIssues,
-          supporting_links: row.supportingLinks,
-          photo_url: row.photoUrl,
-          created_at: row.createdAt,
-        }));
-
-        console.log(`[${traceId}] done`, {
-          elapsedMs: Date.now() - start,
-          count: data.length,
-        });
-        return { success: true, data };
-      }
-    }
-
-    // Fallback for a DB that has not been backfilled yet. Still intentionally
-    // excludes the old Auckland mayor path.
-    return getCandidatesByWard(seat);
+    const data = await electionDataRepository.getCandidatesForSeat(seat);
+    return { success: true, data };
   } catch (error) {
     console.error(`[${traceId}] failed`, {
       elapsedMs: Date.now() - start,
