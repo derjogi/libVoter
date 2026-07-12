@@ -157,7 +157,7 @@ These give you a usable test signal in an afternoon:
    and just stub `chatModel.invoke` for now via a small monkey-patch in a
    Playwright global setup file.
 2. **Add `data-testid` attributes** to each dynamic component
-   (`data-testid="ward-dropdown"`, etc.) so the spec doesn't rely on visible
+   (`data-testid="seat-dropdown"`, etc.) so the spec doesn't rely on visible
    text, which the LLM keeps changing.
 3. **Replace `waitForTimeout` with `expect(locator).toBeVisible({ timeout })`**
    — Playwright auto-retries until the element appears.

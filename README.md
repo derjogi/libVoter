@@ -1,5 +1,5 @@
 This is an AI-driven voting advisor for the **New Zealand elections**. 
-A user picks their ward/region, the app asks adaptive questions, 
+A user picks their configured seat, the app asks adaptive questions, 
 to filter for candidates matches with AI-generated explanations.
 
 Single-page Next.js 15 (App Router, React 19, Tailwind/shadcn, Bun runtime).

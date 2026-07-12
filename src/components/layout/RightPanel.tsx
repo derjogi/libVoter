@@ -117,7 +117,7 @@ export function RightPanel({
   );
 
   // Build after three substantive answers, then renew after two more answers
-  // or immediately for chat/free-text input. Ward selection is setup only.
+  // or immediately for chat/free-text input. Seat selection is setup only.
   useEffect(() => {
     const substantiveCount = countSubstantiveResponses(userResponses);
     if (substantiveCount === 0) {

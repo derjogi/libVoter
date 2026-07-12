@@ -62,7 +62,7 @@ export default function VotingAdvisor() {
     clearStoredAvailableCandidates,
   ] = usePersistedState<Candidate[]>("session:availableCandidates", []);
 
-  // Pretty user-facing label for the seat ("ward" / "electorate").
+  // Pretty user-facing label for the seat (configured by the election).
   const seatLabel = electionConfig.seatLabel;
 
   // MMP elections have a second, independent party vote (spec 019). Non-MMP
@@ -99,7 +99,7 @@ export default function VotingAdvisor() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Fetch seats (electorates / wards) on mount.
+  // Fetch seats (seats) on mount.
   useEffect(() => {
     const fetchSeats = async () => {
       try {
@@ -138,7 +138,7 @@ export default function VotingAdvisor() {
   }, [isMMP, setAvailableParties, setPartyMatches]);
 
   // Build the initial seat-selection step.
-  const buildWardStep = useCallback(
+  const buildSeatStep = useCallback(
     (): TranscriptStep => ({
       id: `step_${Date.now()}`,
       locked: false,
@@ -167,14 +167,14 @@ export default function VotingAdvisor() {
       !isLoadingSeats &&
       seats.length > 0
     ) {
-      setSteps([buildWardStep()]);
+      setSteps([buildSeatStep()]);
     }
   }, [
     isStepsHydrated,
     steps.length,
     isLoadingSeats,
     seats,
-    buildWardStep,
+    buildSeatStep,
     setSteps,
   ]);
 
@@ -397,7 +397,7 @@ export default function VotingAdvisor() {
     setIsCompiling(false);
 
     if (seats.length > 0) {
-      setSteps([buildWardStep()]);
+      setSteps([buildSeatStep()]);
     }
 
     // Re-seed unranked party cards so the party-vote lane stays populated after

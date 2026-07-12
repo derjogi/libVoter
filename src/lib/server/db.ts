@@ -62,7 +62,8 @@ export const getDbClient = (options: DbClientOptions = {}) => {
 };
 
 export const getDbConnection = (options: DbClientOptions = {}) => {
-  const url = options.url ?? resolveDatabaseUrl(options.electionId, options.env);
+  const url =
+    options.url ?? resolveDatabaseUrl(options.electionId, options.env);
   return createDbConnection(url, options.authToken);
 };
 

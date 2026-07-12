@@ -6,7 +6,12 @@ import {
   type ChatResponse,
   type RankingResponse,
 } from "@/lib/server/ai/chat-handler";
-import type { Candidate, ConversationMessage, PartySummary, UserResponse } from "@/types";
+import type {
+  Candidate,
+  ConversationMessage,
+  PartySummary,
+  UserResponse,
+} from "@/types";
 
 let chatHandler: AIChatHandler | null = null;
 

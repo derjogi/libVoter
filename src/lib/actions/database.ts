@@ -1,21 +1,13 @@
 "use server";
 
-import { and, eq, inArray, like, ne, or } from "drizzle-orm";
+import { eq, inArray, like, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { electionConfig } from "@/lib/config/election";
-import {
-  appSettings,
-  candidacies,
-  candidates,
-  electionParties,
-  parties,
-  people,
-  races,
-} from "@/lib/db/schema";
+import { appSettings, candidates, parties } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { db } from "@/lib/server/db";
 import { electionDataRepository } from "@/lib/server/election-data";
-import type { Candidate, PartySummary } from "@/types";
+import type { PartySummary } from "@/types";
 
 // Load all candidates
 export async function loadCandidates() {
@@ -89,26 +81,6 @@ export async function getAppSetting(key: string) {
   }
 }
 
-// Get unique wards from candidates table, excluding "Mayor"
-//
-// Kept for backward compatibility. Prefer `getSeatsForCurrentElection()` which
-// uses the new `races` table and works for any election.
-export async function getUniqueWards() {
-  try {
-    const data = await db
-      .selectDistinct({ ward: candidates.ward })
-      .from(candidates)
-      .where(ne(candidates.ward, "Mayor"))
-      .orderBy(candidates.ward);
-
-    const wards = data.map((row) => row.ward);
-    return { success: true, data: wards };
-  } catch (error) {
-    console.error("Error loading wards:", error);
-    return { success: false, error: "Failed to load wards" };
-  }
-}
-
 /**
  * Generic version of `getUniqueWards()`: returns the list of seats (wards or
  * electorates) the user can pick from for the currently configured election.
@@ -179,40 +151,6 @@ export async function searchCandidates(query: string) {
   }
 }
 
-// Get candidates by ward
-export async function getCandidatesByWard(ward: string) {
-  const traceId = newTraceId("action:getCandidatesByWard");
-  const start = Date.now();
-  console.log(`[${traceId}] start`, { ward });
-  try {
-    const data = await db
-      .select()
-      .from(candidates)
-      .where(eq(candidates.ward, ward))
-      .orderBy(candidates.name);
-
-    console.log(`[${traceId}] done`, {
-      elapsedMs: Date.now() - start,
-      count: data.length,
-    });
-    return { success: true, data };
-  } catch (error) {
-    console.error(`[${traceId}] failed`, {
-      elapsedMs: Date.now() - start,
-      error: serializeError(error),
-    });
-    return { success: false, error: "Failed to load candidates by ward" };
-  }
-}
-
-function stableNumericId(value: string): number {
-  let hash = 0;
-  for (let i = 0; i < value.length; i++) {
-    hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
-  }
-  return hash || 1;
-}
-
 /**
  * Generic active-election candidate lookup for a user-facing seat.
  *
@@ -234,32 +172,6 @@ export async function getCandidatesForSeat(seat: string) {
       error: serializeError(error),
     });
     return { success: false, error: "Failed to load candidates for seat" };
-  }
-}
-
-// Get mayor candidates
-export async function getMayorCandidates() {
-  const traceId = newTraceId("action:getMayorCandidates");
-  const start = Date.now();
-  console.log(`[${traceId}] start`);
-  try {
-    const data = await db
-      .select()
-      .from(candidates)
-      .where(eq(candidates.ward, "Mayor"))
-      .orderBy(candidates.name);
-
-    console.log(`[${traceId}] done`, {
-      elapsedMs: Date.now() - start,
-      count: data.length,
-    });
-    return { success: true, data };
-  } catch (error) {
-    console.error(`[${traceId}] failed`, {
-      elapsedMs: Date.now() - start,
-      error: serializeError(error),
-    });
-    return { success: false, error: "Failed to load mayor candidates" };
   }
 }
 

@@ -190,7 +190,7 @@ lib-voter/
 
 1. Browser renders a component spec (`{ type, data }`).
 2. User submits → `handleComponentResponse` in `page.tsx`.
-3. For the initial **ward dropdown**: candidates are fetched from libSQL
+3. For the initial **seat dropdown**: candidates are fetched from libSQL
    (`getMayorCandidates` + `getCandidatesByWard`), a synthetic
    "conversation state" string is built, and `selectNextComponent` calls the
    `COMPONENT_SELECTOR` prompt. The LLM returns `{component, reasoning, data}`
@@ -207,7 +207,7 @@ lib-voter/
 
 - **`AIChatHandler.processMessage` is broken**: references `messages` /
   `candidates` that were commented out. Needs to be repaired before chat
-  beyond the first ward question can work.
+  beyond the first seat question can work.
 - **`README.md` is the default Next.js template** — no project-specific
   setup notes.
 - **`voting-advisor.db` is committed**, so the candidate data ships with the

@@ -2,10 +2,9 @@
 
 import { useCallback, useState } from "react";
 import { processChatMessage } from "@/lib/actions/chat";
-import type { Candidate } from "@/types";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import type { ChatResponse } from "@/lib/server/ai/chat-handler";
-import type { ConversationMessage, UserResponse } from "@/types";
+import type { Candidate, ConversationMessage, UserResponse } from "@/types";
 import { usePersistedState } from "./usePersistedState";
 
 export function useChat() {

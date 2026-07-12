@@ -64,7 +64,7 @@ prefix isn't recognised the whole string is treated as an OpenRouter model id.
 
 ## What runs the first time you hit the app
 
-1. `getUniqueWards()` reads from libSQL → populates the ward dropdown.
+1. `getSeatsForCurrentElection()` reads from libSQL → populates the seat dropdown.
 2. The first chat-or-component request constructs `VectorStoreManager`,
    which downloads the HuggingFace embedding model (one-time, large) and then
    queries Chroma.
@@ -179,7 +179,7 @@ source attribution.
 1. **Chat past the first question fails.**
    `AIChatHandler.processMessage` (`src/lib/server/ai/chat-handler.ts`)
    references `messages` and `candidates` that were commented out (around
-   lines 55–80). The first ward dropdown works because it bypasses this and
+   lines 55–80). The first seat dropdown works because it bypasses this and
    calls `selectNextComponent` directly. Repair plan:
    - Re-enable `buildConversationContext()` (or build a minimal
      `[SystemMessage, ...history, HumanMessage(userMessage)]`).

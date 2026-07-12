@@ -25,13 +25,13 @@ floating "Questions / Candidates" pill.
 
 ```diagram
  ╭──────────────────────────╮
- │ 1. App loads             │  fetch wards via getUniqueWards()
- │    → Ward dropdown shown │  (questionId = 'ward_selection')
+ │ 1. App loads             │  fetch wards via getSeatsForCurrentElection()
+ │    → Seat dropdown shown │  (questionId = 'seat_selection')
  ╰────────────┬─────────────╯
               ▼
  ╭──────────────────────────╮
- │ 2. User picks ward       │  page.tsx handleComponentResponse:
- │    + clicks Continue     │   - getMayorCandidates() + getCandidatesByWard(ward)
+ │ 2. User picks seat       │  page.tsx handleComponentResponse:
+ │    + clicks Continue     │   - getMayorCandidates() + getCandidatesForSeat(seat)
  │                          │   - build "available candidates" list
  │                          │   - call selectNextComponent(state)  ← LLM #1
  ╰────────────┬─────────────╯
@@ -72,7 +72,7 @@ Held in `page.tsx`:
 | -------------------------- | ----------------------------------------------------------------- |
 | `currentComponent`         | The single `{type, data}` rendered on the left.                   |
 | `userResponses`            | `UserResponse[]` accumulated for confidence + summary.            |
-| `availableCandidates`      | Mayoral + selected-ward candidates, fetched once after step 2.    |
+| `availableCandidates`      | Mayoral + selected-seat candidates, fetched once after step 2.    |
 | `candidates`               | `CandidateMatch[]` shown on the right.                            |
 | `confidence`               | 0–100, taken from the most recent AI response.                    |
 | `showCandidates`           | Toggle for the right panel reveal.                                |
@@ -114,5 +114,5 @@ specs on the fly.
      Chroma evidence collection that needs offline embedding via
      `scripts/embed-evidence.ts`.
   2. Slow OpenRouter completions (20–90 s observed in `run.log`).
-- The full chat path (post ward selection) crashes due to the
+- The full chat path (post seat selection) crashes due to the
   `messages`/`candidates` issue in `chat-handler.ts` — see `SETUP.md`.

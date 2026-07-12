@@ -173,7 +173,7 @@ export class AIChatHandler {
     userMessage: string,
     conversationHistory: ConversationMessage[],
     userResponseHistory: UserResponse[],
-    availableCandidates: Candidate[],
+    _availableCandidates: Candidate[],
   ): Promise<ChatResponse> {
     try {
       // Confidence is computed deterministically — no LLM call needed. Used for
@@ -245,7 +245,7 @@ export class AIChatHandler {
    */
   async rankResponses(
     userResponseHistory: UserResponse[],
-    availableCandidates: Candidate[],
+    _availableCandidates: Candidate[],
     availableParties: PartySummary[] = [],
   ): Promise<RankingResponse> {
     try {
@@ -435,7 +435,7 @@ Output fields:
    */
   private async rankCandidates(
     userResponses: UserResponse[],
-    availableCandidates: Candidate[],
+    _availableCandidates: Candidate[],
   ): Promise<CandidateMatch[]> {
     if (availableCandidates.length === 0 || userResponses.length === 0) {
       return [];

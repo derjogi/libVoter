@@ -169,9 +169,11 @@ describe("database actions", () => {
     expect(names).not.toContain("Wayne Brown");
   });
 
-  it('getUniqueWards excludes "Mayor"', async () => {
-    const { getUniqueWards } = await import("@/lib/actions/database");
-    const result = await getUniqueWards();
+  it("getSeatsForCurrentElection excludes non-user-facing races", async () => {
+    const { getSeatsForCurrentElection } = await import(
+      "@/lib/actions/database"
+    );
+    const result = await getSeatsForCurrentElection();
     expect(result.success).toBe(true);
     expect(result.data).not.toContain("Mayor");
   });

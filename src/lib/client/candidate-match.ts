@@ -1,4 +1,9 @@
-import type { Candidate, CandidateMatch, PartyMatch, PartySummary } from "@/types";
+import type {
+  Candidate,
+  CandidateMatch,
+  PartyMatch,
+  PartySummary,
+} from "@/types";
 
 /**
  * Pull up to three display policies from a candidate's structured data, used
