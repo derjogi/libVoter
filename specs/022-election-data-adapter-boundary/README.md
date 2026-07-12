@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-07-12
 priority: high
 tags:
@@ -7,7 +7,10 @@ tags:
 - data
 - multi-election
 created_at: 2026-07-12T00:52:40.790100729Z
-updated_at: 2026-07-12T00:53:22.276692133Z
+updated_at: 2026-07-12T01:19:03.458820618Z
+transitions:
+- status: in-progress
+  at: 2026-07-12T01:19:03.458820618Z
 ---
 
 # Election Data Adapter Boundary
