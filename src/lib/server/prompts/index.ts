@@ -229,7 +229,6 @@ Consider:
 - Variety in interaction types used so far
 - User's response patterns and depth of answers
 - What would most effectively narrow down their political preferences for {electionDescription}
-- Available {electionSeatLabelPlural} (the seat the voter lives in): {electionSeats}
 
 Your task: Choose the most appropriate next component type and generate the specific data for that component using the EXACT structure specified above.
 
@@ -257,8 +256,6 @@ Guidelines for data generation:
       "electionLocation",
       "electionKeyTopics",
       "electionDescription",
-      "electionSeatLabelPlural",
-      "electionSeats",
     ],
     description:
       "Determines optimal UI component for next user interaction and generates component data",

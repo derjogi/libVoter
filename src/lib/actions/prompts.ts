@@ -128,23 +128,16 @@ export async function generateFollowupQuestion(
   }
 }
 
-export async function selectNextComponent(
-  conversationState: string,
-  availableSeats?: string[],
-) {
+export async function selectNextComponent(conversationState: string) {
   const traceId = newTraceId("action:selectNextComponent");
   const start = Date.now();
   console.log(`[${traceId}] start`, {
     conversationStateChars: conversationState.length,
-    availableSeatsCount: availableSeats?.length ?? 0,
   });
 
   try {
     const manager = getPromptManager();
-    const result = await manager.selectComponent(
-      conversationState,
-      availableSeats,
-    );
+    const result = await manager.selectComponent(conversationState);
 
     if (!result.success) {
       console.warn(`[${traceId}] prompt failed; returning fallback`, {

@@ -17,15 +17,14 @@ describe("formatPrompt", () => {
       electionLocation: "NZ",
       electionKeyTopics: "Housing, Health",
       electionDescription: "NZ general election",
-      electionSeatLabelPlural: "electorates",
-      electionSeats: "Auckland Central, Wellington Central",
     };
     const out = formatPrompt(tpl, vars);
     expect(out.content).toContain("NZ general election");
-    expect(out.content).toContain("Auckland Central");
-    expect(out.content).toContain("electorates");
+    expect(out.content).not.toContain("Auckland Central");
+    expect(tpl.variables).not.toContain("electionSeats");
+    expect(tpl.variables).not.toContain("electionSeatLabelPlural");
     // No leftover {placeholders}
-    expect(out.content).not.toMatch(/\{electionSeats\}|\{electionYear\}/);
+    expect(out.content).not.toMatch(/\{electionYear\}/);
   });
 
   it("throws on missing required variables", () => {
@@ -61,6 +60,7 @@ describe("prompt registry", () => {
     );
     expect(tpl.template).toContain("dropdown");
     expect(tpl.template).toContain("After a multiselect answer");
+    expect(tpl.template).not.toContain("Available {electionSeatLabelPlural}");
   });
 
   it("getPromptsByCategory returns matching templates", () => {

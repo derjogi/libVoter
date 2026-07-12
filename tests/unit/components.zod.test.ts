@@ -36,6 +36,30 @@ describe("parseComponentSpec", () => {
     }
   });
 
+  it("accepts a valid component spec wrapped in a JSON code fence", () => {
+    const raw = `\`\`\`json
+{
+  "type": "slider",
+  "data": { "label": "How much?", "min": 0, "max": 10 }
+}
+\`\`\``;
+
+    const { spec, ok } = parseComponentSpec(raw);
+
+    expect(ok).toBe(true);
+    expect(spec.type).toBe("slider");
+  });
+
+  it("rejects prose wrapped around otherwise valid JSON", () => {
+    const raw =
+      'Here is the result: {"type":"slider","data":{"label":"How much?","min":0,"max":10}}';
+
+    const { spec, ok } = parseComponentSpec(raw);
+
+    expect(ok).toBe(false);
+    expect(spec).toEqual(SAFE_FALLBACK_COMPONENT);
+  });
+
   it("accepts a valid yesno spec", () => {
     const raw = JSON.stringify({
       type: "yesno",

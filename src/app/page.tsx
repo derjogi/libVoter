@@ -325,10 +325,7 @@ export default function VotingAdvisor() {
           allCandidates: allCandidates.length,
           seats: seats.length,
         });
-        const componentResult = await selectNextComponent(
-          conversationState,
-          seats,
-        );
+        const componentResult = await selectNextComponent(conversationState);
         console.log(`[${traceId}] ${phase}:done`, {
           success: componentResult.success,
           validationFailed: componentResult.validationFailed,

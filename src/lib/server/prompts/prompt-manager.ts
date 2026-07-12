@@ -66,10 +66,15 @@ export class PromptManager {
       // Merge election variables into the provided variables.
       // `electionSeats` is the generic name; `electionWards` is the legacy alias
       // some prompt templates still use. Both resolve to the same list.
-      const seats =
-        variables.electionSeats ||
-        variables.electionWards ||
-        (await getSeatsForCurrentElection()).data?.join(", ");
+      const needsSeats = template.variables.some(
+        (variable) =>
+          variable === "electionSeats" || variable === "electionWards",
+      );
+      const seats = needsSeats
+        ? variables.electionSeats ||
+          variables.electionWards ||
+          (await getSeatsForCurrentElection()).data?.join(", ")
+        : undefined;
 
       const electionVariables = {
         electionYear: this.electionConfig.year,
@@ -177,11 +182,9 @@ export class PromptManager {
 
   async selectComponent(
     conversationState: string,
-    availableSeats?: string[],
   ): Promise<PromptExecutionResult> {
     return this.executePrompt("COMPONENT_SELECTOR", {
       conversationState,
-      electionSeats: availableSeats?.join(", "),
     });
   }
 

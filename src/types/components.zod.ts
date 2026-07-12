@@ -195,7 +195,9 @@ export function parseComponentSpec(raw: string): {
 } {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    const trimmed = raw.trim();
+    const fenced = trimmed.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i);
+    parsed = JSON.parse(fenced?.[1] ?? trimmed);
   } catch (e) {
     console.warn("parseComponentSpec: invalid JSON", { raw, error: String(e) });
     return { spec: SAFE_FALLBACK_COMPONENT, ok: false, error: "invalid JSON" };
