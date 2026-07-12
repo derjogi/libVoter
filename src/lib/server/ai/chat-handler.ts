@@ -245,7 +245,7 @@ export class AIChatHandler {
    */
   async rankResponses(
     userResponseHistory: UserResponse[],
-    _availableCandidates: Candidate[],
+    availableCandidates: Candidate[],
     availableParties: PartySummary[] = [],
   ): Promise<RankingResponse> {
     try {
@@ -435,7 +435,7 @@ Output fields:
    */
   private async rankCandidates(
     userResponses: UserResponse[],
-    _availableCandidates: Candidate[],
+    availableCandidates: Candidate[],
   ): Promise<CandidateMatch[]> {
     if (availableCandidates.length === 0 || userResponses.length === 0) {
       return [];

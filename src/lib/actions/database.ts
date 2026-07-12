@@ -1,35 +1,13 @@
 "use server";
 
-import { eq, inArray, like, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { electionConfig } from "@/lib/config/election";
-import { appSettings, candidates, parties } from "@/lib/db/schema";
+import { appSettings } from "@/lib/db/schema";
 import { newTraceId, serializeError } from "@/lib/debug/logging";
 import { db } from "@/lib/server/db";
 import { electionDataRepository } from "@/lib/server/election-data";
 import type { PartySummary } from "@/types";
-
-// Load all candidates
-export async function loadCandidates() {
-  try {
-    const data = await db.select().from(candidates).orderBy(candidates.name);
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error loading candidates:", error);
-    return { success: false, error: "Failed to load candidates" };
-  }
-}
-
-// Load parties
-export async function loadParties() {
-  try {
-    const data = await db.select().from(parties).orderBy(parties.name);
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error loading parties:", error);
-    return { success: false, error: "Failed to load parties" };
-  }
-}
 
 // Update app settings
 export async function updateAppSetting(key: string, value: any) {
@@ -81,14 +59,7 @@ export async function getAppSetting(key: string) {
   }
 }
 
-/**
- * Generic version of `getUniqueWards()`: returns the list of seats (wards or
- * electorates) the user can pick from for the currently configured election.
- *
- * Prefers the new `races` table (filled by spec-002 migration). Falls back to
- * the legacy `candidates.ward` column if races haven't been backfilled yet,
- * so the running app keeps working.
- */
+/** List the user-selectable seats for the configured election. */
 export async function getSeatsForCurrentElection() {
   try {
     return { success: true, data: await electionDataRepository.listSeats() };
@@ -129,34 +100,9 @@ export async function getPartiesForCurrentElection(): Promise<{
   }
 }
 
-// Search candidates by name or party
-export async function searchCandidates(query: string) {
-  try {
-    const data = await db
-      .select()
-      .from(candidates)
-      .where(
-        or(
-          like(candidates.name, `%${query}%`),
-          like(candidates.party, `%${query}%`),
-        ),
-      )
-      .orderBy(candidates.name)
-      .limit(20);
-
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error searching candidates:", error);
-    return { success: false, error: "Failed to search candidates" };
-  }
-}
-
 /**
  * Generic active-election candidate lookup for a user-facing seat.
- *
- * Reads `races -> candidacies -> people/election_parties` instead of the
- * legacy Auckland-only `candidates.ward` table, so NZ electorates cannot leak
- * Auckland mayoral candidates into the selected race.
+ * Storage-specific fields are translated by the election data repository.
  */
 export async function getCandidatesForSeat(seat: string) {
   const traceId = newTraceId("action:getCandidatesForSeat");
@@ -172,30 +118,5 @@ export async function getCandidatesForSeat(seat: string) {
       error: serializeError(error),
     });
     return { success: false, error: "Failed to load candidates for seat" };
-  }
-}
-
-// Get candidates by IDs
-export async function getCandidatesByIds(ids: string[]) {
-  try {
-    if (ids.length === 0) {
-      return { success: true, data: [] };
-    }
-
-    const data = await db
-      .select()
-      .from(candidates)
-      .where(
-        inArray(
-          candidates.id,
-          ids.map((id) => parseInt(id, 10)),
-        ),
-      )
-      .orderBy(candidates.name);
-
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error loading candidates by IDs:", error);
-    return { success: false, error: "Failed to load candidates by IDs" };
   }
 }
