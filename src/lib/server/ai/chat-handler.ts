@@ -87,7 +87,7 @@ export async function mapWithConcurrency<T, R>(
 }
 
 // Interim candidate ranking (spec 009 Phase 5). One structured call scores the
-// whole electorate pool at once — fine because a single ward/electorate has at
+// whole electorate pool at once — fine because a single seat has at
 // most a few dozen candidates. Replaced/augmented later by evidence-based
 // retrieval ranking (spec 009 Phases 2–4).
 const CandidateRankingSchema = z.object({
@@ -321,7 +321,7 @@ Conversation discipline:
 
 Choosing the component type:
 - chat: the STRONG DEFAULT. Use chat (free-text) for the large majority of questions — aim for it roughly 3 out of every 4 turns. Whenever a plain typed answer would work, use chat. Only reach for a structured component when it is clearly and substantially better than a free-text reply, not merely acceptable. When in doubt, use chat.
-- dropdown: ONLY when the user truly benefits from selecting exactly one from a curated named list (e.g. picking their ward) — NOT for questions where a chat reply is equally informative and more natural.
+- dropdown: ONLY when the user truly benefits from selecting exactly one from a curated named list (e.g. picking their configured seat) — NOT for questions where a chat reply is equally informative and more natural.
 - multiselect: ONLY for broad discovery when a chat answer would be too vague — never as the default.
 - priority: ONLY when ranking several named options is genuinely important to the matching.
 - yesno: ONLY for a small set of closely-related statements where agreement/disagreement is meaningful.
