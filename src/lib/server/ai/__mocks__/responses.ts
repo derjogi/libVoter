@@ -50,7 +50,7 @@ export const MOCK_RESPONSES: Record<string, string> = {
     "Mock explanation: this candidate aligns closely with your stated values on housing and transport.",
 
   SUMMARIZE_PREFERENCES:
-    "Mock summary: the proposed candidates look strongest where they pair housing affordability with practical transport investment and credible climate action, which makes them a close fit for the priorities surfaced so far.",
+    "Mock summary: the voter prioritises housing affordability, practical transport investment, and credible climate action, with the relative importance of those priorities still to be clarified.",
 
   TAG_TOPICS: JSON.stringify(["housing", "transport"]),
 
@@ -117,7 +117,7 @@ export function pickMockResponse(promptText: string): string {
   if (promptText.includes("Provide a clear, balanced explanation")) {
     return MOCK_RESPONSES.EXPLAIN_MATCH;
   }
-  if (promptText.includes("Summarize the user's political preferences")) {
+  if (promptText.includes("Create a concise preference summary")) {
     return MOCK_RESPONSES.SUMMARIZE_PREFERENCES;
   }
   if (promptText.includes("Calculate match scores")) {

@@ -14,6 +14,7 @@ import { electionDataRepository } from "@/lib/server/election-data";
 import type { ConversationMessage, UserResponse } from "@/types";
 import { formatPrompt, getPrompt } from "./index";
 import { mmpVotingGuidance } from "./mmp-guidance";
+import { formatUserResponses } from "./user-response-format";
 
 export interface PromptExecutionResult {
   success: boolean;
@@ -196,12 +197,8 @@ export class PromptManager {
   async summarizePreferences(
     allResponses: UserResponse[],
   ): Promise<PromptExecutionResult> {
-    const responsesText = allResponses
-      .map((r) => `${r.questionId}: ${r.value}`)
-      .join("\n");
-
     return this.executePrompt("SUMMARIZE_PREFERENCES", {
-      allResponses: responsesText,
+      allResponses: formatUserResponses(allResponses),
     });
   }
 

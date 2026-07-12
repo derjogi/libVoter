@@ -63,6 +63,13 @@ describe("prompt registry", () => {
     expect(tpl.template).not.toContain("Available {electionSeatLabelPlural}");
   });
 
+  it("SUMMARIZE_PREFERENCES asks only for a voter preference summary", () => {
+    const tpl = getPrompt("SUMMARIZE_PREFERENCES");
+
+    expect(tpl.template).toContain("voter's expressed priorities");
+    expect(tpl.template).not.toMatch(/proposed candidates|candidate-centered/i);
+  });
+
   it("getPromptsByCategory returns matching templates", () => {
     const matching = getPromptsByCategory("matching");
     expect(matching.some((p) => p.id === "candidate_matching")).toBe(true);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { MOCK_RESPONSES } from "@/lib/server/ai/__mocks__/responses";
 import { MockChatModel, MockEmbeddings } from "@/lib/server/ai/mock-models";
+import { formatPrompt, PROMPTS } from "@/lib/server/prompts";
 import {
   parseComponentSpec,
   parseQuestionResponse,
@@ -52,6 +53,25 @@ describe("MockChatModel.invoke", () => {
       },
     ]);
     expect(reply.content).toContain("Mock explanation");
+  });
+
+  it("returns the preference-only summary fixture for the actual summary prompt", async () => {
+    const model = new MockChatModel();
+    const prompt = formatPrompt(PROMPTS.SUMMARIZE_PREFERENCES, {
+      allResponses: "[]",
+      electionYear: 2026,
+      electionType: "general election",
+      electionLocation: "New Zealand",
+      electionKeyTopics: "housing, health",
+      electionDescription: "New Zealand general election",
+    });
+    const reply = await model.invoke([
+      { role: "user", content: prompt.content },
+    ]);
+
+    expect(reply.content).toBe(MOCK_RESPONSES.SUMMARIZE_PREFERENCES);
+    expect(reply.content).toContain("voter prioritises");
+    expect(reply.content).not.toMatch(/candidate/i);
   });
 
   it("falls back to a generic chat reply for unknown prompts", async () => {

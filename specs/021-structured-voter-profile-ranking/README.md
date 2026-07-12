@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-07-10
 priority: high
 tags:
@@ -11,12 +11,15 @@ depends_on:
 - 010-scrape-sources
 parent: 009-candidate-evidence-rag
 created_at: 2026-07-10T10:18:42.605180991Z
-updated_at: 2026-07-10T10:25:26.134463600Z
+updated_at: 2026-07-17T09:57:16.401874626Z
+transitions:
+- status: in-progress
+  at: 2026-07-17T09:57:16.401874626Z
 ---
 
 # Structured voter profile and local alignment ranking
 
-> **Status**: planned · **Priority**: high · **Created**: 2026-07-10
+> **Status**: in progress · **Priority**: high · **Created**: 2026-07-10
 
 ## Overview
 
@@ -387,9 +390,11 @@ revision, versioned, reviewable, and cached.
 
 ## Plan
 
-- [ ] Add the compatibility fix and regression coverage so the current ranker
+- [x] Add the compatibility fix and regression coverage so the current ranker
       always receives the visible question with every answer before the larger
-      profile migration lands.
+      profile migration lands. Implemented with the shared
+      `formatUserResponses()` path used by candidate ranking, party ranking, and
+      preference summaries.
 - [ ] Add the versioned proposition taxonomy plus Zod-validated extraction,
       canonical profile, and local score types with response-only migration.
 - [ ] Add semantic metadata to structured components and deterministic
@@ -417,7 +422,7 @@ revision, versioned, reviewable, and cached.
 
 ## Test
 
-- [ ] Current-profile regression: dropdown, multiselect, priority, yes/no,
+- [x] Current-profile regression: dropdown, multiselect, priority, yes/no,
       slider, chat, and freetext responses all preserve visible question plus
       answer; two identical answer strings to different questions remain
       distinguishable.
@@ -456,6 +461,16 @@ revision, versioned, reviewable, and cached.
       evidence volume, duplicated sources, sparse candidates, and ties.
 
 ## Notes
+
+- 2026-07-17: Completed the compatibility slice. Prompt-facing responses now use
+  one shared JSON question/answer formatter with `questionId` fallback for older
+  response-only sessions. JSON framing keeps multiline widget output within its
+  response record, and prompts explicitly treat fields as untrusted voter data.
+  Candidate ranking, party ranking, and the live preference summary all consume
+  it. The preference-summary prompt and mock fixture were also corrected to
+  summarize voter priorities without inventing candidate context. Regression
+  tests cover every current response component type and ambiguous identical
+  answers. Full tests, lint, and production build pass.
 
 ### Alternatives considered
 
