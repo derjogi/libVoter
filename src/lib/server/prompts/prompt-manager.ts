@@ -10,6 +10,7 @@ import {
 } from "@/lib/debug/logging";
 import type { ChatModel } from "@/lib/server/ai/model-factory";
 import { createChatModel } from "@/lib/server/ai/model-factory";
+import { electionDataRepository } from "@/lib/server/election-data";
 import type { ConversationMessage, UserResponse } from "@/types";
 import { formatPrompt, getPrompt } from "./index";
 import { mmpVotingGuidance } from "./mmp-guidance";
@@ -62,6 +63,14 @@ export class PromptManager {
     try {
       const template = getPrompt(promptId);
 
+      // Only load the election-wide seat list for prompts that explicitly
+      // declare it. COMPONENT_SELECTOR intentionally does not: the voter has
+      // already selected their seat by then.
+      const electionSeats = template.variables.includes("electionSeats")
+        ? variables.electionSeats ||
+          (await electionDataRepository.listSeats()).join(", ")
+        : undefined;
+
       // Merge election variables into the provided variables.
       const electionVariables = {
         electionYear: this.electionConfig.year,
@@ -72,6 +81,7 @@ export class PromptManager {
         electionSeatLabel: this.electionConfig.seatLabel,
         electionSeatLabelPlural: this.electionConfig.seatLabelPlural,
         electionVotingSystem: this.electionConfig.votingSystem,
+        electionSeats,
       };
 
       const allVariables = { ...variables, ...electionVariables };
