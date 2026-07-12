@@ -72,14 +72,12 @@ export async function generateNextQuestion(
 export async function generateFollowupQuestion(
   lastResponse: string,
   context: string,
-  availableSeats?: string[],
 ) {
   try {
     const manager = getPromptManager();
     const result = await manager.generateFollowupQuestion(
       lastResponse,
       context,
-      availableSeats,
     );
 
     if (!result.success) {

@@ -1,7 +1,6 @@
 // Server-only prompt manager
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getSeatsForCurrentElection } from "@/lib/actions/database";
 import { type ElectionConfig, electionConfig } from "@/lib/config/election";
 import {
   newTraceId,
@@ -64,18 +63,6 @@ export class PromptManager {
       const template = getPrompt(promptId);
 
       // Merge election variables into the provided variables.
-      // `electionSeats` is the generic name; `electionWards` is the legacy alias
-      // some prompt templates still use. Both resolve to the same list.
-      const needsSeats = template.variables.some(
-        (variable) =>
-          variable === "electionSeats" || variable === "electionWards",
-      );
-      const seats = needsSeats
-        ? variables.electionSeats ||
-          variables.electionWards ||
-          (await getSeatsForCurrentElection()).data?.join(", ")
-        : undefined;
-
       const electionVariables = {
         electionYear: this.electionConfig.year,
         electionType: this.electionConfig.type,
@@ -85,8 +72,6 @@ export class PromptManager {
         electionSeatLabel: this.electionConfig.seatLabel,
         electionSeatLabelPlural: this.electionConfig.seatLabelPlural,
         electionVotingSystem: this.electionConfig.votingSystem,
-        electionWards: seats,
-        electionSeats: seats,
       };
 
       const allVariables = { ...variables, ...electionVariables };
@@ -171,12 +156,10 @@ export class PromptManager {
   async generateFollowupQuestion(
     lastResponse: string,
     context: string,
-    availableSeats?: string[],
   ): Promise<PromptExecutionResult> {
     return this.executePrompt("FOLLOWUP_QUESTION", {
       lastResponse,
       context,
-      electionSeats: availableSeats?.join(", "),
     });
   }
 
