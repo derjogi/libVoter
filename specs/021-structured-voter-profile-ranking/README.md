@@ -76,7 +76,93 @@ relying on component-specific value formatting.
 - Treating embedding similarity as a probability of political agreement.
 - Generating an AI-written explanation for every candidate after every answer.
 
+### Accepted direction from the July 2026 design conversation
+
+These decisions supersede conflicting fixed-taxonomy and trusted-component-
+metadata proposals later in this umbrella. Split/rewrite those sections into
+child specs before implementing beyond the completed compatibility slice.
+
+- Session state is browser-authoritative and persisted as one versioned
+  `SessionSnapshot`; server actions remain stateless and retain no voter profile.
+- The configured AI provider may receive the latest exact visible Q/A and the
+  compact previously accepted claims needed for extraction and adaptive question
+  planning. The application does not persist them server-side, omits session and
+  provenance identifiers from prompts, and excludes raw answers/claims from
+  production logs and shadow metrics. The UI discloses third-party AI processing
+  and applicable provider retention terms; reset clears the local snapshot and
+  derived caches. Local embeddings do not imply local chat/claim inference.
+- Existing test-only split-key sessions are discarded when the new snapshot
+  namespace lands; no migration or historical extraction is required.
+- The AI may continue generating adaptive questions freely. Structured claims
+  are extracted from the exact visible question and answer after submission;
+  hidden scoring metadata generated with a question is not trusted.
+- Next-question generation does not wait for claim extraction. It uses the
+  latest exact raw Q/A, the previously accepted compact claims, and compact
+  asked-question/topic coverage so it can respond immediately without blindly
+  repeating itself. Claim extraction runs in parallel and affects subsequent
+  planning after its validated result joins the snapshot.
+- Claims are dynamic, versioned text with zero or more non-exclusive, free-form
+  topic tags, not members of a maintained topic or proposition catalogue.
+  Conditions and qualifiers remain part of the claim. Topic tags organize UI
+  summaries and question planning only; compatibility uses each claim's
+  voter-confirmed importance exactly once. Retagging does not change political
+  meaning or invalidate claim/evidence scoring relationships.
+- Persist claims, source-linked evidence passages, and claim/evidence
+  relationships as normalized records. The nested per-claim/per-candidate
+  `resonance` map is a UI projection, not the persisted source of truth.
+- A clarification or changed view revises the same claim when it concerns the
+  same underlying position. The old revision and source response remain in
+  history. A genuinely distinct position creates a new claim; uncertain
+  same-claim decisions stay pending for clarification rather than auto-merging.
+- AI proposes topic/claim importance; the voter can reorder or adjust it before
+  final ranking. The accepted result is stored as claim importance rather than a
+  second topic multiplier. Final compatibility is claim-weighted, while dynamic
+  topic views expose grouped alignment rather than only one opaque overall score.
+- Retrieval and pairwise claim/evidence classification run incrementally in the
+  background. Cache keys include claim version, evidence content revision, and
+  classifier version. The UI exposes pending-work progress and waits only when
+  the voter explicitly requests final results.
+- Retrieval combines semantic and lexical signals and must be described as
+  "relevant evidence found", not all statements. Classify each relationship as
+  aligned, partially aligned, unclear, partially opposed, or opposed, with a
+  reason and separate interpretation confidence. The versioned numeric mapping
+  may use `+1`, `+0.5`, unknown, `-0.5`, and `-1`; those values express the
+  category, never model confidence.
+- Aggregate the balance of a bounded set of deduplicated, independent evidence
+  rather than using one best passage or rewarding statement volume. Preserve
+  conflicting and historical evidence, record source authority/recency, and
+  produce at most one contribution per voter claim and subject. Exact evidence
+  limits, recency/source weights, and presentation bands require evaluation and
+  remain open.
+- Candidate evidence and official party evidence remain distinct. Member
+  consensus or disagreement with official policy is a separately visible party
+  cohesion/credibility signal, not silently attributed as the party line.
+- For an electorate candidate, show personal compatibility and affiliated-party
+  compatibility separately, plus an explicitly labelled combined score. The
+  combined score starts near equal personal/party weight and shifts modestly
+  toward the side covering more of the voter's weighted claims. Weighting uses
+  claim coverage, never passage count; its cap and exact formula are versioned
+  and calibrated. Evidence and citations remain provenance-separated.
+- Member disagreement does not change the party-policy compatibility score.
+  Instead it lowers confidence in the party result and produces a separate,
+  cited cohesion warning; alignment and likely adherence remain distinct ideas.
+- Alignment and evidence coverage remain separate. Missing evidence is unknown,
+  never neutral or opposed.
+- Personal, affiliated-party, and combined scores remain visible when applicable,
+  even below a versioned minimum usable coverage threshold. Low-coverage scores
+  are styled and labelled as provisional/insufficient evidence and reduce result
+  confidence, but candidate ordering always follows the combined score. An
+  independent candidate has no party score and uses the personal score as the
+  combined score. Coverage and compatibility remain separate, and the warning
+  threshold is calibrated from evaluation data rather than guessed.
+
 ## Design
+
+> **Historical draft warning:** Sections below this notice predate the accepted
+> direction above. Fixed proposition taxonomies, trusted generated semantic
+> metadata, exact-proposition lookup, and response-history migration are not
+> approved implementation instructions. Child specs must replace these sections;
+> only non-conflicting constraints remain informative.
 
 ### Canonical voter profile
 
@@ -134,57 +220,57 @@ same session. An explicit later correction supersedes the earlier preference
 instead of averaging contradictory values. Ambiguous extraction has
 `resolution: "unresolved"` and may coexist until a later question resolves it.
 
-Persist the profile as `session:voterProfile` beside `session:steps`, with a
-stable persisted `sessionId`. A delta carries `sessionId`, `responseId`, and
+Persist one browser-authoritative, schema-versioned `SessionSnapshot` containing
+the transcript, extracted claims/deltas, selected race, profile projection, and
+profile version. A delta carries `sessionId`, `responseId`, and
 `baseProfileVersion`. Applying it is idempotent: ignore an already-applied
-response id, reject a stale base version, and increment the version once per
-accepted response. Reset clears steps, profile, hashes, and ranking caches
-together. On reload, hydrate them as one logical snapshot before accepting a
-new answer.
+response id, reject a stale base version in the client reducer, and increment
+the version once per accepted response. Reset clears the snapshot and derived
+ranking caches together. On reload, hydrate the snapshot before accepting a new
+answer. Server actions remain stateless validators and do not persist political
+preferences.
 
-For old response-only sessions, deterministically rebuild responses whose
-stored component metadata is sufficient. Mark the remainder `pending` and run
-one validated batch extraction from their verbatim questions/answers before
-ranking. Do not silently treat an incomplete migration as an empty profile.
+No legacy-session migration is required: the application has not been used
+outside testing environments. Introducing the snapshot starts a new storage
+namespace and discards the existing split-key test sessions without sending old
+responses for extraction or adding migration UI.
 
 ### Turn ordering
 
-The preferred turn pipeline is hybrid:
+Every submitted response is first committed to the local transcript with a
+stable response id. Conversation planning and durable claim extraction then
+branch in parallel:
 
 ```text
-structured answer
-  -> deterministic stance delta
-  -> merge canonical profile
-  -> in parallel:
-       next-question call(updated profile + latest Q/A)
-       local ranking(updated profile)
-
-free-text answer
-  -> small structured stance-extraction call(current profile + latest Q/A)
-  -> validate delta and merge canonical profile
-  -> in parallel:
-       next-question call(updated profile + latest Q/A)
-       local ranking(updated profile)
+submitted answer -> persist response in SessionSnapshot
+                 |-> next-question call
+                 |     (accepted earlier claims + latest raw Q/A
+                 |      + compact asked-question/topic coverage)
+                 |
+                 `-> claim-extraction call(exact visible Q/A + base version)
+                       -> validate and apply/queue claim revision
+                       -> retrieve/classify changed claims in background
+                       -> refresh derived ranking and progress
 ```
 
-Structured components carry hidden semantic metadata (`topic`, `proposition`,
-`stance`, `importance`, and `voteLane`) on their options/statements, so their
-answers need no stance-extraction AI call. This merge happens before selecting
-the next question.
+The next-question call may interpret the latest raw answer conversationally but
+cannot commit canonical claims or scoring metadata. Therefore it knows enough to
+ask a relevant follow-up without putting unvalidated interpretation into durable
+ranking state. If extraction later identifies an unresolved compound statement
+or possible correction, that state can guide a clarification on a subsequent
+turn; it does not interrupt or replace the question already shown.
 
-For chat/freetext, extract and validate the stance delta before asking for the
-next question. This creates a strict state boundary: next-question generation
-and ranking consume the same complete profile version and can run in parallel.
-The extraction call is deliberately small and returns only a delta. A combined
-`stanceDelta + next question` call may later be benchmarked as a latency
-optimization, but must not become the default unless it matches the strict
-pipeline on correction, contradiction, and redundant-question evaluations.
+Extraction results carry their response id and base snapshot/profile version.
+The reducer applies them in response order, queues a result whose predecessor is
+still pending, and discards or retries results that no longer match the claim
+revision they were based on. Ranking is disposable derived state and runs only
+from accepted claims, never directly from an unvalidated extraction result.
 
 The next-question prompt receives only:
 
-- the complete compact set of active preferences;
-- unresolved conflicts and low-confidence preferences;
-- topic and vote-lane coverage;
+- the compact set of claims accepted before the latest response;
+- unresolved conflicts and pending clarification signals already accepted;
+- compact asked-question and topic coverage needed to avoid repetition;
 - the latest question and answer verbatim; and
 - ranking uncertainty or the topics most likely to discriminate candidates,
   when available.
@@ -395,27 +481,43 @@ revision, versioned, reviewable, and cached.
       profile migration lands. Implemented with the shared
       `formatUserResponses()` path used by candidate ranking, party ranking, and
       preference summaries.
-- [ ] Add the versioned proposition taxonomy plus Zod-validated extraction,
-      canonical profile, and local score types with response-only migration.
-- [ ] Add semantic metadata to structured components and deterministic
-      response-to-delta mapping; exclude seat selection.
-- [ ] Add a small structured stance-extraction action for free text, then build
-      the next-turn prompt from the validated updated profile plus latest
-      verbatim Q/A.
-- [ ] Implement provenance-preserving profile merge, conflict/supersession
-      rules, idempotency/version checks, profile hashing, migration, and failure
-      fallbacks.
-- [ ] Add the versioned normalized evidence-claim schema and coordinate its
-      offline population with spec 010.
-- [ ] Replace per-candidate retrieval with exhaustive proposition claim lookup,
-      plus cached per-preference vector fallback and grouped candidate/party
-      evidence contributions.
-- [ ] Implement deterministic lane-aware scoring, coverage, confidence, and
-      source-backed templated explanations; remove the holistic ranking LLM
-      call after parity evaluation.
-- [ ] Add offline evidence-claim normalization to spec 010's ingestion path;
-      keep the current ranker behind a feature flag until canonical claims pass
-      coverage evaluation rather than scoring unnormalized runtime output.
+- [ ] Split this umbrella into child specs for (1) local session and dynamic
+      claims, (2) incremental evidence relationships, and (3) aggregation,
+      evaluation, and rollout. Preserve the parallel next-question/extraction
+      ordering in the first child.
+- [ ] Add one browser-local `SessionSnapshot`, stable UUID identities, a pure
+      reducer, dynamic claim extraction, claim revision history, idempotency,
+      stale-result rejection, and hashing in shadow mode. Discard old test-only
+      split-key sessions; exclude seat selection from political claims.
+- [ ] Store zero or more dynamic topic tags on each claim for display/planning
+      only. Scoring uses accepted claim importance once; retagging does not
+      invalidate evidence relationships or alter compatibility.
+- [ ] Enforce the privacy boundary: prompt-safe compact claim projection without
+      session/provenance ids, no application-side server retention, raw-data log
+      redaction, reset semantics, and user disclosure of configured-provider
+      processing/retention.
+- [ ] Add normalized source-linked evidence passages and versioned cached
+      claim/evidence relationships. Coordinate source revisions, lineage,
+      deduplication, and corpus publication with spec 010.
+- [ ] Add incremental semantic-plus-lexical retrieval and background pairwise
+      classification with visible pending-work progress. Reprocess only changed
+      claim/evidence/classifier versions.
+- [ ] Add deterministic bounded evidence aggregation, AI-proposed/voter-adjusted
+      importance, topic-level results, compatibility versus coverage, and cited
+      explanations. Keep candidate, official-party, and member-cohesion signals
+      distinct.
+- [ ] For electorate candidates, return separate personal and affiliated-party
+      results plus a labelled combined result whose capped weighting shifts from
+      an equal baseline using weighted claim coverage, not statement volume.
+- [ ] Keep official party-policy compatibility unchanged by member disagreement;
+      derive a separately cited cohesion warning and confidence reduction.
+- [ ] Add explicit low-evidence status, confidence reduction, and strong visual
+      treatment while retaining all applicable scores and ordering candidates by
+      combined score regardless of coverage. Independents omit the party result
+      and use their personal result as combined.
+- [ ] Keep the current ranker behind a feature flag until the dynamic-claim
+      pipeline passes reviewed coverage and human-labelled quality evaluation;
+      parity with the old holistic LLM score is not a correctness criterion.
 - [ ] Instrument latency, query count, cache hit rate, token use, ranking
       stability, and evidence coverage; compare against the existing ranking on
       a fixed evaluation set before switching the default.
@@ -426,35 +528,43 @@ revision, versioned, reviewable, and cached.
       slider, chat, and freetext responses all preserve visible question plus
       answer; two identical answer strings to different questions remain
       distinguishable.
-- [ ] Structured answers update the profile without an AI call before the next
-      question is generated.
-- [ ] A free-text delta is validated and merged before next-question generation;
-      both ranking and next-question calls receive the same profile hash/version.
-- [ ] Invalid free-text deltas do not mutate prior state and lead to one retry,
-      then a neutral clarification with the answer retained as pending.
-- [ ] Explicit corrections supersede old preferences while preserving response
-      provenance; ambiguous contradictions remain unresolved.
-- [ ] Extraction output cannot set canonical ids, provenance, status, or
-      arbitrary superseded preference ids; the merge layer assigns them.
-- [ ] Explicit neutral and unresolved preferences do not affect scores,
-      evidence coverage, margins, or ranking-confidence topic coverage.
-- [ ] Mixed taxonomy versions are rejected, and the declared migration map
-      migrates both voter preferences and evidence claims consistently.
+- [ ] Every response type is extracted from its exact visible Q/A; generated
+      hidden component metadata cannot directly create scoring claims.
+- [ ] Extraction and next-question prompts contain only the permitted exact Q/A
+      and compact prior claims, omit session/provenance ids, and raw political
+      content never appears in production logs or shadow metrics.
+- [ ] Invalid extraction does not mutate prior state; the answer remains pending
+      and can trigger a neutral clarification.
+- [ ] Clarifications revise the same claim with history; distinct claims remain
+      separate; uncertain merge decisions remain pending.
+- [ ] Claims may carry multiple free-form topic tags; changing only tags leaves
+      claim/evidence classifications and scores unchanged.
+- [ ] Extraction output cannot set trusted identity, provenance, revision, or
+      status fields; the reducer assigns them.
+- [ ] Unresolved claims and unknown evidence do not affect compatibility and are
+      not silently converted to neutral positions.
+- [ ] Low-evidence personal/party/combined scores remain visible and clearly
+      provisional; coverage changes warnings/confidence but never the combined-
+      score ordering. Independents have no fabricated party score.
 - [ ] Seat selection never creates a political preference.
-- [ ] Retrieval query count scales with changed preferences, not candidates,
-      and repeated party evidence is deduplicated.
+- [ ] Retrieval/classification work scales with changed claim/evidence versions,
+      cached relationships are reused, and repeated evidence is deduplicated.
 - [ ] Local scoring distinguishes supporting, opposing, and merely topical
       evidence; missing evidence lowers coverage rather than compatibility.
 - [ ] Candidate and party-vote lanes remain independent and deterministic.
+- [ ] Candidate cards expose personal, affiliated-party, and combined results;
+      changing duplicate passage volume cannot alter the combined weighting.
+- [ ] Member disagreement never rewrites official-policy alignment; it changes
+      party-result confidence and the separate cohesion warning only.
 - [ ] Profile/version changes invalidate stale ranking results and unchanged
       profiles hit the cache.
-- [ ] Duplicate submissions are idempotent; out-of-order versions are rejected;
-      reset/reload and response-only session migration preserve consistent state.
-- [ ] An evidence-rich candidate cannot starve a sparse candidate's canonical
-      proposition claims, and global vector top-k absence is never treated as
-      proof that the sparse candidate has no evidence.
-- [ ] Golden fixtures lock the exact v1 component mappings, agreement formula,
-      source/recency weights, coverage, lane blend, confidence, and tie-breaks.
+- [ ] Duplicate submissions are idempotent; stale outputs are rejected; reset and
+      reload preserve the single snapshot consistently; no legacy migration runs.
+- [ ] An evidence-rich candidate cannot starve a sparse candidate's retrieval,
+      and global vector top-k absence is never treated as proof of no evidence.
+- [ ] Golden fixtures lock categorical relationship mapping, bounded independent
+      evidence aggregation, source/recency handling, importance, coverage, lane
+      separation, confidence, and tie-breaks.
 - [ ] Mock-mode tests make no paid AI or embedding calls and return stable
       scores with cited contribution details.
 - [ ] Evaluation fixtures cover negation, trade-offs, corrections, uneven
@@ -474,13 +584,14 @@ revision, versioned, reviewable, and cached.
 
 ### Alternatives considered
 
-1. **Combined free-text extraction + next-question call:** reduces serial
-   latency, but the next question is not based on a separately validated and
-   committed profile. Keep it as a possible optimization after evaluation,
-   rather than the default.
-2. **Update stance asynchronously after asking the next question:** lowest
-   immediate latency, but the question is selected from stale state and may be
-   redundant. Rejected.
+1. **Combined claim-extraction + next-question call:** one fewer model request,
+   but it couples untrusted durable interpretation to conversational generation
+   and makes each failure harder to retry independently. Rejected for the first
+   version.
+2. **Wait for claim extraction before asking the next question:** gives planning
+   the newest validated claim set but adds a serial model call to every turn.
+   Rejected. The next-question call instead uses the exact latest raw Q/A plus
+   previously accepted claims and compact asked-question/topic coverage.
 3. **Embed one running prose summary:** cheap, but blends topics, loses
    importance and contradictions, and cannot distinguish agreement from
    opposition. It may remain a weak supplemental retrieval signal only.
