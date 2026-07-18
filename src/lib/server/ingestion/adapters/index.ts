@@ -6,12 +6,17 @@
 
 import type { SourceAdapter } from "../types";
 import { AucklandCandidateAdapter } from "./auckland";
+import {
+  type CandidateEvidenceManifest,
+  CandidateEvidenceManifestAdapter,
+} from "./candidate-evidence-manifest";
 import { NzHansardAdapter } from "./hansard";
 import { WikipediaPartyAdapter } from "./wikipedia-party";
 
 export interface AdapterRegistryOptions {
   hansardCacheDir?: string;
   allowPartialHansardCache?: boolean;
+  candidateEvidenceManifest?: CandidateEvidenceManifest;
 }
 
 export const adapterRegistry: Record<
@@ -19,6 +24,16 @@ export const adapterRegistry: Record<
   (options?: AdapterRegistryOptions) => SourceAdapter
 > = {
   auckland: () => new AucklandCandidateAdapter(),
+  "nz-candidate-manifest": (options) => {
+    if (!options?.candidateEvidenceManifest) {
+      throw new Error(
+        "nz-candidate-manifest requires --candidate-manifest <path>",
+      );
+    }
+    return new CandidateEvidenceManifestAdapter(
+      options.candidateEvidenceManifest,
+    );
+  },
   "nz-hansard": (options) =>
     new NzHansardAdapter({
       cacheDir: options?.hansardCacheDir,

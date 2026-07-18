@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "electionId": "nz-2026",
+  "slice": "auckland-central",
+  "coverage": [
+    {
+      "candidateName": "Antonia Modkova",
+      "candidacyId": "nz-2026-candidacy-antonia-modkova-auckland-central",
+      "status": "no_reliable_personal_source",
+      "note": "ACT lists Antonia Modkova for Auckland Central, but no attributable position-bearing candidate statement was publicly available when this slice was reviewed. Party policy must not be represented as her personal view."
+    },
+    {
+      "candidateName": "Candace Kinser",
+      "candidacyId": "nz-2026-candidacy-candace-kinser-auckland-central",
+      "status": "covered_by_manifest"
+    },
+    {
+      "candidateName": "Chlöe Swarbrick",
+      "candidacyId": "nz-2026-candidacy-chl-e-swarbrick-auckland-central",
+      "status": "covered_by_hansard",
+      "note": "Personal evidence is selected from exact speaker utterances in the official 54th Parliament Hansard cache."
+    },
+    {
+      "candidateName": "Johan Chang",
+      "candidacyId": "nz-2026-candidacy-johan-chang-auckland-central",
+      "status": "covered_by_manifest"
+    },
+    {
+      "candidateName": "Naisi Chen",
+      "candidacyId": "nz-2026-candidacy-naisi-chen-auckland-central",
+      "status": "covered_by_manifest",
+      "note": "Personal evidence is an exact excerpt from her official 53rd Parliament Hansard contribution."
+    }
+  ],
+  "sources": [
+    {
+      "externalId": "national:candace-kinser-auckland-central",
+      "candidateName": "Candace Kinser",
+      "candidacyId": "nz-2026-candidacy-candace-kinser-auckland-central",
+      "district": "Auckland Central",
+      "sourceType": "statement",
+      "title": "Candace Kinser — Candidate for Auckland Central",
+      "url": "https://www.national.org.nz/team/candacekinser",
+      "author": "Candace Kinser",
+      "documentType": "candidate_profile",
+      "sourceStatus": "published",
+      "content": "She is committed to backing local businesses, supporting safe and connected communities, and helping the city continue to grow as a place where people and opportunity thrive.\n\nShe believes Auckland Central should lead with confidence as a place people are proud to live, work, and invest in.\n\nI want to see Queen Street thriving again, but that can only happen with a National Government."
+    },
+    {
+      "externalId": "opportunity:johan-chang-auckland-central",
+      "candidateName": "Johan Chang",
+      "candidacyId": "nz-2026-candidacy-johan-chang-auckland-central",
+      "district": "Auckland Central",
+      "sourceType": "statement",
+      "title": "Johan Chang for Auckland Central",
+      "url": "https://www.opportunity.org.nz/candidate-johan-chang",
+      "author": "Johan Chang",
+      "documentType": "candidate_profile",
+      "sourceStatus": "published",
+      "content": "My family and I were welcomed to this country by an amazing community with kindness and grace. I’m standing in this election because I want everyone to feel the same charity once afforded to me, and to make sure that no New Zealander is left behind by political decisions that don't feel like they have been made with their best interest at heart.\n\nHe is passionate about the importance of democracy and greater civics education, and more importantly, the need for a stronger focus on long-term outcomes that is about respecting human dignity rather than just business efficiency. Johan believes in supporting our young people to achieve their very best. Shaping a solarpunk future through better legislation is society’s true test, and creating a better tomorrow for all Kiwis should be our cause.\n\nJohan sees the current political landscape as untenable for the future of Aotearoa. The focus on three-year election cycles, imported populist politics, and hyper-focus on austerity economics means degradation in infrastructure, public service, and the local communities he has come to love and call home. He believes politics should be, first and foremost, about service to the people, putting integrity, practical solutions, and open transparency at the heart of decision-making."
+    },
+    {
+      "externalId": "hansard-53:1d6b58bc-a39e-4cf4-ae5e-c50ad74008f9:naisi-chen",
+      "candidateName": "Naisi Chen",
+      "candidacyId": "nz-2026-candidacy-naisi-chen-auckland-central",
+      "district": "Auckland Central",
+      "sourceType": "hansard",
+      "title": "Fair Digital News Bargaining Bill — First Reading",
+      "url": "https://hansard.parliament.nz/hansard-transcript/2023-08-30?sId=1d6b58bc-a39e-4cf4-ae5e-c50ad74008f9&lang=en",
+      "author": "Naisi Chen",
+      "publishedAt": "2023-08-30T00:00:00.000Z",
+      "documentType": "speech",
+      "sourceStatus": "final",
+      "parliamentNumber": 53,
+      "content": "Thank you, Mr Speaker. It gives me great pleasure to be able to take a call on the Fair Digital News Bargaining Bill. What an absolutely exciting bill.\n\nWhen I was born or when I first had memory, we had a black and white TV. Then we moved on to the colour TV, then there was the plasma and the flat screen. And now in my household, I don’t have a TV; I don’t even have a landline phone number. So as technology progresses—and probably the only time I ever listen to the radio is through apps streamed on my phone—as Parliament, we need to help media progress with the technology and with the ages. This is exactly what this bill is doing.\n\nPlatforms make money through advertisements which pay for the clicks they get on to their different apps or different social media platforms. The way that people come and the time that we spend—and some of us in this House today have been scrolling our phones because we have to have interesting content that keeps us on these platforms. That content—a lot of that might be our weird and wonderful TikTok, or whatever, videos that members of this House have generated, but a large part of it is the news and, probably, a lot of it generated by this House as well.\n\nSo for the platforms to pay our media the right amount in terms of the content they create and the traction that they draw on to these platforms so that we as users, as well, stay on that platform, I think is getting the fair deal for New Zealand to support journalism in this country, to support our democracy, to make sure the right information gets out there, and to support New Zealanders to make the right choice. That’s why I commend this bill to the House and look forward, in our select committee, to be listening to submissions."
+    }
+  ]
+}

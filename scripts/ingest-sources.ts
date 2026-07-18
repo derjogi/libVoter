@@ -12,6 +12,7 @@
 //   --limit <n>             cap sources per adapter
 //   --since <ISO date>      only sources published on/after this date
 //   --hansard-cache <path>  offline Hansard cache from fetch:hansard
+//   --candidate-manifest <path> exact reviewed candidate evidence excerpts
 //   --allow-partial-cache   permit a bounded Hansard smoke-test cache
 //   --dry-run               resolve + dedup but do not write to the DB
 //
@@ -21,6 +22,7 @@
 
 import { db } from "../src/lib/server/db";
 import { getAdapters } from "../src/lib/server/ingestion/adapters";
+import { loadCandidateEvidenceManifest } from "../src/lib/server/ingestion/adapters/candidate-evidence-manifest";
 import { IdentityResolver } from "../src/lib/server/ingestion/identity";
 import { buildIdentityIndex } from "../src/lib/server/ingestion/identity-index";
 import { runIngestion } from "../src/lib/server/ingestion/runner";
@@ -49,13 +51,24 @@ async function main() {
   const since = sinceStr ? new Date(sinceStr) : undefined;
   const dryRun = hasFlag("dry-run");
   const hansardCacheDir = arg("hansard-cache");
+  const candidateManifestPath = arg("candidate-manifest");
   const allowPartialHansardCache = hasFlag("allow-partial-cache");
   const wantsHansard = !sources || sources.includes("nz-hansard");
+  const wantsCandidateManifest =
+    !sources || sources.includes("nz-candidate-manifest");
   if (wantsHansard && !hansardCacheDir) {
     throw new Error(
       "nz-hansard requires --hansard-cache <path>. Run `bun run fetch:hansard` first.",
     );
   }
+  if (wantsCandidateManifest && !candidateManifestPath) {
+    throw new Error(
+      "nz-candidate-manifest requires --candidate-manifest <path>",
+    );
+  }
+  const candidateEvidenceManifest = candidateManifestPath
+    ? await loadCandidateEvidenceManifest(candidateManifestPath)
+    : undefined;
 
   console.log(
     `Ingesting election=${electionId} sources=${sources?.join(",") ?? "all"}` +
@@ -65,6 +78,7 @@ async function main() {
   const adapters = getAdapters(sources, {
     hansardCacheDir,
     allowPartialHansardCache,
+    candidateEvidenceManifest,
   });
   const index = await buildIdentityIndex(electionId, db);
   console.log(
