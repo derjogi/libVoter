@@ -1,7 +1,7 @@
 // Drive the AIChatHandler through MockChatModel to verify the spec-001 fix:
 // processMessage no longer throws ReferenceError, returns a valid ChatResponse,
 // and follows the AI_MODE=mock fixtures.
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import { mapWithConcurrency } from "@/lib/server/ai/chat-handler";
 
 beforeAll(() => {
@@ -30,15 +30,25 @@ function candidate(overrides: {
   };
 }
 
+function nextQuestionContext(question: string, answer: string) {
+  return {
+    latest: { question, answer },
+    acceptedClaims: [],
+    askedCoverage: [],
+    confidence: 0,
+  };
+}
+
 describe("AIChatHandler.processMessage (mock mode)", () => {
   it("returns a valid ChatResponse without throwing", async () => {
     const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
     const handler = new AIChatHandler();
 
     const result = await handler.processMessage(
-      "I care about housing affordability.",
-      [],
-      [],
+      nextQuestionContext(
+        "What matters most to you?",
+        "I care about housing affordability.",
+      ),
       [],
     );
 
@@ -54,27 +64,12 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
     const handler = new AIChatHandler();
 
-    const turn1 = await handler.processMessage("Housing.", [], [], []);
+    await handler.processMessage(
+      nextQuestionContext("What matters?", "Housing."),
+      [],
+    );
     const turn2 = await handler.processMessage(
-      "And transport too.",
-      [
-        { id: "1", role: "user", content: "Housing.", timestamp: new Date() },
-        {
-          id: "2",
-          role: "assistant",
-          content: turn1.message,
-          timestamp: new Date(),
-        },
-      ],
-      [
-        {
-          id: "r1",
-          questionId: "q1",
-          componentType: "chat",
-          value: "Housing.",
-          timestamp: new Date(),
-        },
-      ],
+      nextQuestionContext("Anything else?", "And transport too."),
       [],
     );
 
@@ -161,6 +156,35 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
       ["1", 82],
       ["2", 43],
     ]);
+  });
+
+  it("does not include raw provider errors in retry logs", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler();
+    const providerSecret = "raw-provider-payload-must-not-be-logged";
+    let calls = 0;
+    (handler as unknown as { chatModel: unknown }).chatModel = {
+      withStructuredOutput: () => ({
+        invoke: async () => {
+          calls++;
+          if (calls === 1) throw new Error(providerSecret);
+          return { rankings: [] };
+        },
+      }),
+    };
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await (
+      handler as unknown as {
+        generateRanking: (
+          messages: [],
+          expectedIds: string[],
+        ) => Promise<unknown>;
+      }
+    ).generateRanking([], []);
+
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain(providerSecret);
+    errorLog.mockRestore();
   });
 });
 

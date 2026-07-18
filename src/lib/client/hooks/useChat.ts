@@ -1,143 +1,77 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { processChatMessage } from "@/lib/actions/chat";
-import { newTraceId, serializeError } from "@/lib/debug/logging";
+import { newTraceId } from "@/lib/debug/logging";
 import type { ChatResponse } from "@/lib/server/ai/chat-handler";
-import type { Candidate, ConversationMessage, UserResponse } from "@/types";
-import { usePersistedState } from "./usePersistedState";
+import type { NextQuestionContext } from "@/lib/server/voter-claims/next-question-context";
+import type { Candidate } from "@/types";
 
 export function useChat() {
-  const [messages, setMessages, , clearStoredMessages] = usePersistedState<
-    ConversationMessage[]
-  >("chat:messages", []);
+  const requestEpochRef = useRef(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confidence, setConfidence, , clearStoredConfidence] =
-    usePersistedState<number>("chat:confidence", 0);
-  const [
-    shouldShowCandidates,
-    setShouldShowCandidates,
-    ,
-    clearStoredShouldShow,
-  ] = usePersistedState<boolean>("chat:shouldShowCandidates", false);
-  const [followupQuestion, setFollowupQuestion, , clearStoredFollowup] =
-    usePersistedState<ChatResponse["followupQuestion"]>(
-      "chat:followupQuestion",
-      undefined,
-    );
-  // MMP two-vote marker for the current question (spec 020).
-  const [voteLane, setVoteLane, , clearStoredVoteLane] = usePersistedState<
-    ChatResponse["voteLane"]
-  >("chat:voteLane", undefined);
+  const [confidence, setConfidence] = useState(0);
+  const [shouldShowCandidates, setShouldShowCandidates] = useState(false);
+  const [followupQuestion, setFollowupQuestion] =
+    useState<ChatResponse["followupQuestion"]>();
+  const [voteLane, setVoteLane] = useState<ChatResponse["voteLane"]>();
 
   const sendMessage = useCallback(
-    async (
-      message: string,
-      userResponseHistory: UserResponse[],
-      availableCandidates: Candidate[],
-    ) => {
+    async (context: NextQuestionContext, availableCandidates: Candidate[]) => {
+      const requestEpoch = ++requestEpochRef.current;
       const traceId = newTraceId("ui:sendMessage");
       const start = Date.now();
       console.log(`[${traceId}] start`, {
-        messagePreview: message.slice(0, 200),
-        userResponses: userResponseHistory.length,
+        acceptedClaims: context.acceptedClaims.length,
+        askedCoverage: context.askedCoverage.length,
         availableCandidates: availableCandidates.length,
       });
       setIsLoading(true);
       setError(null);
 
       try {
-        // Add user message to history
-        const userMessage: ConversationMessage = {
-          id: `msg_${Date.now()}`,
-          role: "user",
-          content: message,
-          timestamp: new Date(),
-        };
+        const result = await processChatMessage(context, availableCandidates);
+        if (!result) throw new Error("No response from server");
 
-        // Build the latest history synchronously, then both update state and
-        // hand it to the server action. Using the functional setter avoids a
-        // stale closure if `messages` hasn't flushed yet.
-        let updatedHistory: ConversationMessage[] = [];
-        setMessages((prev) => {
-          updatedHistory = [...prev, userMessage];
-          return updatedHistory;
-        });
-
-        // Process with AI
-        const result = await processChatMessage(
-          message,
-          updatedHistory,
-          userResponseHistory || [],
-          availableCandidates,
-        );
-
-        if (!result) {
-          throw new Error("No response from server");
+        if (requestEpoch === requestEpochRef.current) {
+          setConfidence(result.confidence);
+          setShouldShowCandidates(result.shouldShowCandidates);
+          setFollowupQuestion(result.followupQuestion);
+          setVoteLane(result.voteLane);
         }
-
-        // Add AI response to history
-        const aiMessage: ConversationMessage = {
-          id: `msg_${Date.now() + 1}`,
-          role: "assistant",
-          content: result.message,
-          timestamp: new Date(),
-          componentData: result.nextComponent,
-        };
-
-        setMessages((prev) => [...prev, aiMessage]);
-        setConfidence(result.confidence);
-        setShouldShowCandidates(result.shouldShowCandidates);
-        setFollowupQuestion(result.followupQuestion);
-        setVoteLane(result.voteLane);
-
         console.log(`[${traceId}] done`, {
           elapsedMs: Date.now() - start,
           confidence: result.confidence,
-          shouldShowCandidates: result.shouldShowCandidates,
-          candidateMatches: result.candidateMatches?.length ?? 0,
+          componentType: result.nextComponent?.type,
         });
         return result;
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : "Unknown error";
-        setError(errorMessage);
+        if (requestEpoch === requestEpochRef.current) setError(errorMessage);
         console.error(`[${traceId}] failed`, {
           elapsedMs: Date.now() - start,
-          error: serializeError(err),
         });
         throw err;
       } finally {
-        setIsLoading(false);
+        if (requestEpoch === requestEpochRef.current) setIsLoading(false);
       }
     },
-    [
-      setMessages,
-      setConfidence,
-      setShouldShowCandidates,
-      setFollowupQuestion,
-      setVoteLane,
-    ],
+    [],
   );
 
   const clearChat = useCallback(() => {
-    clearStoredMessages();
-    clearStoredConfidence();
-    clearStoredShouldShow();
-    clearStoredFollowup();
-    clearStoredVoteLane();
+    requestEpochRef.current += 1;
+    setIsLoading(false);
+    setConfidence(0);
+    setShouldShowCandidates(false);
+    setFollowupQuestion(undefined);
+    setVoteLane(undefined);
     setError(null);
-  }, [
-    clearStoredMessages,
-    clearStoredConfidence,
-    clearStoredShouldShow,
-    clearStoredFollowup,
-    clearStoredVoteLane,
-  ]);
+  }, []);
 
   return {
-    messages,
     isLoading,
     error,
     confidence,

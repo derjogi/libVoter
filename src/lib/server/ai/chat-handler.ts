@@ -1,6 +1,6 @@
 // Server-only AI chat processing
 import {
-  AIMessage,
+  type AIMessage,
   HumanMessage,
   SystemMessage,
 } from "@langchain/core/messages";
@@ -17,11 +17,14 @@ import {
   type CandidateEvidence,
   RAGQueryEngine,
 } from "@/lib/server/rag/query-engine";
+import {
+  buildNextQuestionMessages,
+  type NextQuestionContext,
+} from "@/lib/server/voter-claims/next-question-context";
 import type {
   Candidate,
   CandidateMatch,
   ComponentData,
-  ConversationMessage,
   PartyMatch,
   PartySummary,
   Source,
@@ -31,7 +34,6 @@ import {
   ComponentDataSchema,
   SAFE_FALLBACK_COMPONENT,
 } from "@/types/components.zod";
-import { ConfidenceCalculator } from "./confidence-calculator";
 import { getAIConfig } from "./config";
 import type { ChatModel } from "./model-factory";
 import { createChatModel } from "./model-factory";
@@ -171,47 +173,28 @@ export class AIChatHandler {
    * recompile lands mid-request and aborts the in-flight Server Action fetch.
    */
   async processMessage(
-    userMessage: string,
-    conversationHistory: ConversationMessage[],
-    userResponseHistory: UserResponse[],
+    context: NextQuestionContext,
     _availableCandidates: Candidate[],
   ): Promise<ChatResponse> {
     try {
-      // Confidence is computed deterministically — no LLM call needed. Used for
-      // the in-prompt advisor note and to gate the follow-up chip (the
-      // ranking-derived confidence now arrives separately via rankResponses).
-      const confidenceResult = ConfidenceCalculator.calculate(
-        userResponseHistory,
-        conversationHistory,
-      );
-
       // Static, cache-friendly preamble first; only the per-turn dynamic data
       // (confidence) goes in the final user message so the cached prefix stays
       // byte-stable across turns (OpenAI/OpenRouter automatic prefix caching,
       // Anthropic cache_control).
       const systemPreamble = this.buildSystemPreamble();
 
-      const recentHistory = conversationHistory.slice(-50); // we'll find out when we reach the limit.
-      const messages: (HumanMessage | AIMessage | SystemMessage)[] = [
-        new SystemMessage({ content: systemPreamble }),
-        ...recentHistory.map((h) =>
-          h.role === "user"
-            ? new HumanMessage({ content: h.content })
-            : new AIMessage({ content: h.content }),
-        ),
-        new HumanMessage({
-          content: `${userMessage}\n\n[advisor note — current confidence ${confidenceResult.score}/100: ${confidenceResult.reasoning}]`,
-        }),
-      ];
+      const messages = buildNextQuestionMessages(context, systemPreamble);
 
       console.log("Processing message: chat turn");
       const turn = await this.generateChatTurn(messages);
-      console.log("Chat turn:", JSON.stringify(turn));
+      console.log("Chat turn completed", {
+        componentType: turn.nextComponent.type,
+      });
 
       // Surface the follow-up chip only while the heuristic confidence is still
       // low (preserves the previous "nudge while uncertain" UX).
       const followupQuestion =
-        confidenceResult.score < 70 && turn.followupQuestion
+        context.confidence < 70 && turn.followupQuestion
           ? {
               question: turn.followupQuestion.question,
               type: turn.followupQuestion.type ?? "chat",
@@ -223,7 +206,7 @@ export class AIChatHandler {
         message: turn.message,
         // Ranking-derived confidence / candidate gating now come from
         // rankResponses; the chat turn itself doesn't block on ranking.
-        confidence: confidenceResult.score,
+        confidence: context.confidence,
         shouldShowCandidates: false,
         nextComponent: turn.nextComponent,
         followupQuestion,
@@ -232,7 +215,9 @@ export class AIChatHandler {
         voteLane: isTwoVoteElection() ? turn.voteLane : undefined,
       };
     } catch (error) {
-      console.error("AI chat processing error:", error);
+      console.error("AI chat processing failed", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
       throw new Error("Failed to process chat message");
     }
   }
@@ -280,7 +265,9 @@ export class AIChatHandler {
         shouldShowCandidates,
       };
     } catch (error) {
-      console.error("Candidate ranking failed:", error);
+      console.error("Candidate or party ranking failed", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
       // Non-gating empty result → client keeps its current (unranked) list.
       return {
         candidateMatches: [],
@@ -361,7 +348,6 @@ Output fields:
     messages: (HumanMessage | AIMessage | SystemMessage)[],
   ): Promise<ChatTurn> {
     const maxRetries = 3;
-    let lastError: Error | null = null;
 
     // withStructuredOutput's typings differ across ChatOpenAI / ChatAnthropic /
     // the mock; the cast keeps the call site simple.
@@ -391,8 +377,9 @@ Output fields:
         );
         return result;
       } catch (error) {
-        console.error(`AI chat turn attempt ${attempt} failed:`, error);
-        lastError = error as Error;
+        console.error(`AI chat turn attempt ${attempt} failed`, {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
         }
@@ -402,10 +389,7 @@ Output fields:
     }
 
     // Last-resort fallback: a plain reply with a safe chat component.
-    console.error(
-      "All structured chat-turn attempts failed, using fallback:",
-      lastError,
-    );
+    console.error("All structured chat-turn attempts failed; using fallback");
     try {
       const plain = await withTimeout(
         this.chatModel.invoke(messages),
@@ -498,7 +482,9 @@ If a candidate has little relevant information, score them lower. Return exactly
         })
         .sort((a, b) => b.score - a.score);
     } catch (error) {
-      console.error("Candidate ranking failed:", error);
+      console.error("Candidate ranking failed", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
       // Empty → client keeps the unranked list rather than blanking the panel.
       return [];
     }
@@ -562,7 +548,9 @@ Return exactly one entry per party id, using the ids exactly as given.`;
         })
         .sort((a, b) => b.score - a.score);
     } catch (error) {
-      console.error("Party ranking failed:", error);
+      console.error("Party ranking failed", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
       // Empty → client keeps the unranked party list rather than blanking it.
       return [];
     }
@@ -684,7 +672,9 @@ Return exactly one entry per party id, using the ids exactly as given.`;
       this.assertCompleteRanking(first, expectedIds);
       return first;
     } catch (error) {
-      console.error("Candidate ranking attempt 1 failed, retrying:", error);
+      console.error("Candidate ranking attempt 1 failed; retrying", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
       const repairedMessages =
         expectedIds.length > 0
           ? [

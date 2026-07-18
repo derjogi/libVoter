@@ -1,17 +1,16 @@
 "use server";
 
-import { newTraceId, serializeError } from "@/lib/debug/logging";
+import { newTraceId } from "@/lib/debug/logging";
 import {
   AIChatHandler,
   type ChatResponse,
   type RankingResponse,
 } from "@/lib/server/ai/chat-handler";
-import type {
-  Candidate,
-  ConversationMessage,
-  PartySummary,
-  UserResponse,
-} from "@/types";
+import {
+  type NextQuestionContext,
+  nextQuestionContextSchema,
+} from "@/lib/server/voter-claims/next-question-context";
+import type { Candidate, PartySummary, UserResponse } from "@/types";
 
 let chatHandler: AIChatHandler | null = null;
 
@@ -23,26 +22,22 @@ function getChatHandler() {
 }
 
 export async function processChatMessage(
-  message: string,
-  conversationHistory: ConversationMessage[],
-  userResponseHistory: UserResponse[],
+  context: NextQuestionContext,
   availableCandidates: Candidate[],
 ): Promise<ChatResponse> {
   const traceId = newTraceId("action:processChatMessage");
   const start = Date.now();
   console.log(`[${traceId}] start`, {
-    messageChars: message.length,
-    conversationHistory: conversationHistory.length,
-    userResponses: userResponseHistory.length,
+    acceptedClaims: context.acceptedClaims.length,
+    askedCoverage: context.askedCoverage.length,
     availableCandidates: availableCandidates.length,
   });
 
   try {
+    const validatedContext = nextQuestionContextSchema.parse(context);
     const handler = getChatHandler();
     const response = await handler.processMessage(
-      message,
-      conversationHistory,
-      userResponseHistory,
+      validatedContext,
       availableCandidates,
     );
 
@@ -56,7 +51,7 @@ export async function processChatMessage(
   } catch (error) {
     console.error(`[${traceId}] failed`, {
       elapsedMs: Date.now() - start,
-      error: serializeError(error),
+      errorName: error instanceof Error ? error.name : "UnknownError",
     });
     return {
       message:
@@ -105,7 +100,7 @@ export async function rankCandidatesForSession(
   } catch (error) {
     console.error(`[${traceId}] failed`, {
       elapsedMs: Date.now() - start,
-      error: serializeError(error),
+      errorName: error instanceof Error ? error.name : "UnknownError",
     });
     return {
       candidateMatches: [],

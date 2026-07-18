@@ -92,9 +92,16 @@ describe.skipIf(!LIVE)("chat model latency (LIVE LLM)", () => {
       for (let i = 0; i < RUNS; i++) {
         const start = performance.now();
         const result = await handler.processMessage(
-          "Question: Which of the following areas is most important to you when choosing a candidate?\nAnswer: Economy",
-          [],
-          [],
+          {
+            latest: {
+              question:
+                "Which of the following areas is most important to you when choosing a candidate?",
+              answer: "Economy",
+            },
+            acceptedClaims: [],
+            askedCoverage: [],
+            confidence: 0,
+          },
           fakeCandidates,
         );
         const elapsed = performance.now() - start;

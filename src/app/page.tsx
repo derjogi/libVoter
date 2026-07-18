@@ -13,15 +13,32 @@ import {
   getSeatsForCurrentElection,
 } from "@/lib/actions/database";
 import { selectNextComponent } from "@/lib/actions/prompts";
+import { extractVoterClaims } from "@/lib/actions/voter-claims";
 import {
   toUnrankedMatches,
   toUnrankedPartyMatches,
 } from "@/lib/client/candidate-match";
 import { extractQuestionText } from "@/lib/client/extract-question-text";
 import { useChat } from "@/lib/client/hooks/useChat";
-import { usePersistedState } from "@/lib/client/hooks/usePersistedState";
+import { politicalUserResponses } from "@/lib/client/voter-profile/response-history";
+import {
+  applyExtractionResult,
+  failExtraction,
+  recordResponse,
+  selectRace,
+} from "@/lib/client/voter-profile/session-reducer";
+import { createSessionTurnGuard } from "@/lib/client/voter-profile/session-turn-guard";
+import {
+  hydrateTranscriptSteps,
+  serializeTranscriptSteps,
+} from "@/lib/client/voter-profile/transcript-snapshot";
+import { startTurnPipeline } from "@/lib/client/voter-profile/turn-pipeline";
+import {
+  sessionReducerDependencies,
+  useSessionSnapshot,
+} from "@/lib/client/voter-profile/use-session-snapshot";
 import { electionConfig } from "@/lib/config/election";
-import { newTraceId, serializeError } from "@/lib/debug/logging";
+import { newTraceId } from "@/lib/debug/logging";
 import type {
   Candidate,
   CandidateMatch,
@@ -34,19 +51,20 @@ import type {
 } from "@/types";
 
 export default function VotingAdvisor() {
-  const [steps, setSteps, isStepsHydrated, clearStoredSteps] =
-    usePersistedState<TranscriptStep[]>("session:steps", []);
-  const [candidates, setCandidates, , clearStoredCandidates] =
-    usePersistedState<CandidateMatch[]>("session:candidates", []);
-  const [partyMatches, setPartyMatches, , clearStoredPartyMatches] =
-    usePersistedState<PartyMatch[]>("session:partyMatches", []);
-  const [availableParties, setAvailableParties, , clearStoredAvailableParties] =
-    usePersistedState<PartySummary[]>("session:availableParties", []);
-  const [confidence, setConfidence, , clearStoredConfidence] =
-    usePersistedState<number>("session:confidence", 0);
+  const [snapshot, setSnapshot, isStepsHydrated, clearSnapshot] =
+    useSessionSnapshot();
+  const [steps, setSteps] = useState<TranscriptStep[]>([]);
+  const stepsRef = useRef<TranscriptStep[]>([]);
+  const turnGuardRef = useRef<ReturnType<typeof createSessionTurnGuard> | null>(
+    null,
+  );
+  if (!turnGuardRef.current) turnGuardRef.current = createSessionTurnGuard();
+  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
+  const [partyMatches, setPartyMatches] = useState<PartyMatch[]>([]);
+  const [availableParties, setAvailableParties] = useState<PartySummary[]>([]);
+  const [confidence, setConfidence] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
-  const [showCandidates, setShowCandidates, , clearStoredShowCandidates] =
-    usePersistedState<boolean>("session:showCandidates", false);
+  const [showCandidates, setShowCandidates] = useState(false);
   const [seats, setSeats] = useState<string[]>([]);
   const [isLoadingSeats, setIsLoadingSeats] = useState(true);
   const [isCompiling, setIsCompiling] = useState(false);
@@ -55,12 +73,32 @@ export default function VotingAdvisor() {
   // applied, older in-flight results are ignored.
   const rankSeqRef = useRef(0);
   const appliedRankSeqRef = useRef(0);
-  const [
-    availableCandidates,
-    setAvailableCandidates,
-    ,
-    clearStoredAvailableCandidates,
-  ] = usePersistedState<Candidate[]>("session:availableCandidates", []);
+  const [availableCandidates, setAvailableCandidates] = useState<Candidate[]>(
+    [],
+  );
+  const transcriptHydratedRef = useRef(false);
+  const hydratedRaceRef = useRef<string | null>(null);
+  const shouldRehydrateRankingRef = useRef(false);
+  const rehydratedRankingRef = useRef(false);
+
+  const updateSteps = useCallback(
+    (
+      updater:
+        | TranscriptStep[]
+        | ((current: TranscriptStep[]) => TranscriptStep[]),
+    ) => {
+      const next =
+        typeof updater === "function" ? updater(stepsRef.current) : updater;
+      stepsRef.current = next;
+      setSteps(next);
+      setSnapshot((currentSnapshot) => ({
+        ...currentSnapshot,
+        updatedAt: sessionReducerDependencies.now(),
+        transcriptSteps: serializeTranscriptSteps(next),
+      }));
+    },
+    [setSnapshot],
+  );
 
   // Pretty user-facing label for the seat (configured by the election).
   const seatLabel = electionConfig.seatLabel;
@@ -86,8 +124,7 @@ export default function VotingAdvisor() {
   // `userResponses` is derived from the locked steps — it is what the LLM and
   // the right panel consume, so the transcript stays the single source of truth.
   const userResponses = useMemo<UserResponse[]>(
-    () =>
-      steps.filter((s) => s.response).map((s) => s.response as UserResponse),
+    () => politicalUserResponses(steps),
     [steps],
   );
 
@@ -99,14 +136,48 @@ export default function VotingAdvisor() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (!isStepsHydrated || transcriptHydratedRef.current) return;
+    transcriptHydratedRef.current = true;
+    shouldRehydrateRankingRef.current = snapshot.responses.some(
+      (response) => response.kind === "political",
+    );
+    if (snapshot.transcriptSteps.length > 0) {
+      const hydratedSteps = hydrateTranscriptSteps(
+        snapshot.transcriptSteps,
+        snapshot.responses,
+      );
+      stepsRef.current = hydratedSteps;
+      setSteps(hydratedSteps);
+    }
+  }, [isStepsHydrated, snapshot.responses, snapshot.transcriptSteps]);
+
+  useEffect(() => {
+    const race = snapshot.selectedRace;
+    if (!isStepsHydrated || !race || hydratedRaceRef.current === race) return;
+    hydratedRaceRef.current = race;
+    const sessionEpoch = turnGuardRef.current?.capture();
+    if (sessionEpoch === undefined) return;
+    getCandidatesForSeat(race)
+      .then((result) => {
+        if (!turnGuardRef.current?.isCurrent(sessionEpoch)) return;
+        if (!result.success || !result.data) return;
+        setAvailableCandidates(result.data);
+        setCandidates(toUnrankedMatches(result.data));
+      })
+      .catch(() => {
+        console.error("[ui:session-hydration] candidate reload failed");
+      });
+  }, [isStepsHydrated, snapshot.selectedRace]);
+
   // Fetch seats (seats) on mount.
   useEffect(() => {
     const fetchSeats = async () => {
       try {
         const result = await getSeatsForCurrentElection();
         if (result.success && result.data) setSeats(result.data);
-      } catch (error) {
-        console.error("Error fetching seats:", error);
+      } catch {
+        console.error("[ui:seats] fetch failed");
       } finally {
         setIsLoadingSeats(false);
       }
@@ -130,17 +201,17 @@ export default function VotingAdvisor() {
             prev.length > 0 ? prev : toUnrankedPartyMatches(result.data ?? []),
           );
         }
-      } catch (error) {
-        console.error("Error fetching parties:", error);
+      } catch {
+        console.error("[ui:parties] fetch failed");
       }
     };
     fetchParties();
-  }, [isMMP, setAvailableParties, setPartyMatches]);
+  }, [isMMP]);
 
   // Build the initial seat-selection step.
   const buildSeatStep = useCallback(
     (): TranscriptStep => ({
-      id: `step_${Date.now()}`,
+      id: crypto.randomUUID(),
       locked: false,
       component: {
         type: "dropdown",
@@ -164,10 +235,11 @@ export default function VotingAdvisor() {
     if (
       isStepsHydrated &&
       steps.length === 0 &&
+      snapshot.transcriptSteps.length === 0 &&
       !isLoadingSeats &&
       seats.length > 0
     ) {
-      setSteps([buildSeatStep()]);
+      updateSteps([buildSeatStep()]);
     }
   }, [
     isStepsHydrated,
@@ -175,7 +247,8 @@ export default function VotingAdvisor() {
     isLoadingSeats,
     seats,
     buildSeatStep,
-    setSteps,
+    snapshot.transcriptSteps.length,
+    updateSteps,
   ]);
 
   // Fire the (slow, RAG-backed) candidate ranking without blocking the chat
@@ -194,8 +267,14 @@ export default function VotingAdvisor() {
       )
         return;
       const seq = ++rankSeqRef.current;
+      const sessionEpoch = turnGuardRef.current?.capture();
       rankCandidatesForSession(history, candidates, parties)
         .then((ranking) => {
+          if (
+            sessionEpoch === undefined ||
+            !turnGuardRef.current?.isCurrent(sessionEpoch)
+          )
+            return;
           if (seq < appliedRankSeqRef.current) return;
           appliedRankSeqRef.current = seq;
           setConfidence(ranking.confidence);
@@ -209,25 +288,47 @@ export default function VotingAdvisor() {
             setPartyMatches(ranking.partyMatches);
           }
         })
-        .catch((error) => {
-          console.error("[ui:ranking] failed", serializeError(error));
+        .catch(() => {
+          console.error("[ui:ranking] failed");
         });
     },
-    [setConfidence, setShowCandidates, setCandidates, setPartyMatches],
+    [],
   );
+
+  useEffect(() => {
+    if (
+      !isStepsHydrated ||
+      !shouldRehydrateRankingRef.current ||
+      rehydratedRankingRef.current ||
+      availableCandidates.length === 0 ||
+      (isMMP && availableParties.length === 0)
+    ) {
+      return;
+    }
+    rehydratedRankingRef.current = true;
+    runRanking(userResponses, availableCandidates, availableParties);
+  }, [
+    availableCandidates,
+    availableParties,
+    isMMP,
+    isStepsHydrated,
+    runRanking,
+    userResponses,
+  ]);
 
   const handleComponentResponse = async (
     response: unknown,
     raw?: RawAnswer,
   ) => {
+    // React state does not lock synchronously. The guard closes the double-click
+    // window and its epoch invalidates every continuation when reset runs.
+    const turnToken = turnGuardRef.current?.begin();
+    if (turnToken === null || turnToken === undefined) return;
     const traceId = newTraceId("ui:componentResponse");
     const start = Date.now();
     let phase = "start";
     console.log(`[${traceId}] component response start`, {
-      responsePreview:
-        typeof response === "string" ? response.slice(0, 200) : response,
-      raw,
-      steps: steps.length,
+      steps: stepsRef.current.length,
       availableCandidates: availableCandidates.length,
     });
 
@@ -239,14 +340,17 @@ export default function VotingAdvisor() {
       },
     };
 
-    const appendActive = (component: ComponentData) =>
-      setSteps((prev) => [
+    const appendActive = (component: ComponentData) => {
+      if (!turnGuardRef.current?.isCurrent(turnToken)) return;
+      updateSteps((prev) => [
         ...prev,
-        { id: `step_${Date.now()}`, component, locked: false },
+        { id: crypto.randomUUID(), component, locked: false },
       ]);
+    };
 
     try {
-      const active = steps[steps.length - 1];
+      const currentSteps = stepsRef.current;
+      const active = currentSteps[currentSteps.length - 1];
       if (!active || active.locked) return;
       const comp = active.component;
 
@@ -265,9 +369,10 @@ export default function VotingAdvisor() {
       const rawQuestionId = (comp as { data?: { questionId?: string } })?.data
         ?.questionId;
 
+      const responseId = crypto.randomUUID();
       const userResponse: UserResponse = {
-        id: active.id,
-        questionId: rawQuestionId ?? `question_${Date.now()}`,
+        id: responseId,
+        questionId: rawQuestionId ?? responseId,
         componentType: comp.type,
         value: formatted,
         timestamp: new Date(),
@@ -277,33 +382,56 @@ export default function VotingAdvisor() {
       };
 
       // Lock the active step; compute the derived history synchronously.
-      const lockedSteps = steps.map((s, i) =>
-        i === steps.length - 1
+      const lockedSteps = currentSteps.map((s, i) =>
+        i === currentSteps.length - 1
           ? { ...s, locked: true, answer: raw, response: userResponse }
           : s,
       );
+      // Compute once and commit both representations explicitly. In particular,
+      // do not trigger setSnapshot from inside a setSteps updater (which React
+      // may replay in development/Concurrent rendering).
+      stepsRef.current = lockedSteps;
       setSteps(lockedSteps);
       setIsCompiling(true);
 
-      const history = lockedSteps
-        .filter((s) => s.response)
-        .map((s) => s.response as UserResponse);
+      const history = politicalUserResponses(lockedSteps);
 
-      if (
-        comp.type === "dropdown" &&
-        comp.data.questionId === "seat_selection"
-      ) {
+      const isSeatSelection =
+        comp.type === "dropdown" && comp.data.questionId === "seat_selection";
+      const exactQuestion = extractQuestionText(comp);
+      const exactAnswer =
+        typeof formatted === "string" ? formatted : JSON.stringify(formatted);
+      let committedSnapshot = recordResponse(snapshot, {
+        id: responseId,
+        question: exactQuestion,
+        answer: exactAnswer,
+        componentType: comp.type,
+        submittedAt: new Date().toISOString(),
+        kind: isSeatSelection ? "seat-selection" : "political",
+      });
+      committedSnapshot = {
+        ...committedSnapshot,
+        transcriptSteps: serializeTranscriptSteps(lockedSteps),
+      };
+
+      if (isSeatSelection) {
         const seatName =
           raw?.kind === "dropdown" ? raw.label : String(response);
+        hydratedRaceRef.current = seatName;
+        committedSnapshot = selectRace(
+          committedSnapshot,
+          seatName,
+          sessionReducerDependencies,
+        );
+        setSnapshot(committedSnapshot);
 
         phase = "load-seat-candidates";
-        console.log(`[${traceId}] ${phase}`, { seatName });
+        console.log(`[${traceId}] ${phase}`);
         const candidatesResult = await getCandidatesForSeat(seatName);
+        if (!turnGuardRef.current?.isCurrent(turnToken)) return;
         console.log(`[${traceId}] ${phase}:done`, {
           success: candidatesResult.success,
           count: candidatesResult.data?.length ?? 0,
-          error:
-            "error" in candidatesResult ? candidatesResult.error : undefined,
         });
         const allCandidates = candidatesResult.success
           ? candidatesResult.data || []
@@ -326,32 +454,78 @@ export default function VotingAdvisor() {
           seats: seats.length,
         });
         const componentResult = await selectNextComponent(conversationState);
+        if (!turnGuardRef.current?.isCurrent(turnToken)) return;
         console.log(`[${traceId}] ${phase}:done`, {
           success: componentResult.success,
           validationFailed: componentResult.validationFailed,
           componentType: componentResult.data?.type,
-          error: componentResult.error,
         });
         if (componentResult.success && componentResult.data) {
           appendActive(componentResult.data);
         } else {
-          console.warn(
-            "Component selection failed; using fallback chat. Error:",
-            componentResult.error,
-          );
+          console.warn("Component selection failed; using fallback chat");
           appendActive(fallbackChat);
         }
       } else {
         phase = "send-chat-message";
+        setSnapshot(committedSnapshot);
         console.log(`[${traceId}] ${phase}`, {
           history: history.length,
           availableCandidates: availableCandidates.length,
         });
-        const aiResponse = await sendMessage(
-          typeof formatted === "string" ? formatted : JSON.stringify(formatted),
-          history,
-          availableCandidates,
+        const activeClaims = committedSnapshot.claims.filter(
+          (claim) => claim.status === "active",
         );
+        const acceptedClaims = activeClaims.map((claim, index) => ({
+          alias: `claim-${index + 1}`,
+          statement: claim.statement,
+          conditions: claim.conditions,
+          topicTags: claim.topicTags,
+          importance: claim.confirmedImportance ?? claim.proposedImportance,
+        }));
+        const nextQuestionContext = {
+          latest: { question: exactQuestion, answer: exactAnswer },
+          acceptedClaims,
+          askedCoverage: committedSnapshot.responses
+            .filter((item) => item.kind === "political")
+            .map((item) => ({ question: item.question, topicTags: [] })),
+          confidence,
+        };
+        const pipeline = startTurnPipeline(
+          () => sendMessage(nextQuestionContext, availableCandidates),
+          () =>
+            extractVoterClaims({
+              responseId,
+              baseProfileVersion: committedSnapshot.profileVersion,
+              question: exactQuestion,
+              answer: exactAnswer,
+              activeClaims,
+            }),
+        );
+        pipeline.extraction
+          .then((result) => {
+            if (!turnGuardRef.current?.isCurrent(turnToken)) return;
+            setSnapshot((current) =>
+              applyExtractionResult(
+                current,
+                result,
+                sessionReducerDependencies,
+              ),
+            );
+          })
+          .catch(() => {
+            if (!turnGuardRef.current?.isCurrent(turnToken)) return;
+            setSnapshot((current) =>
+              failExtraction(
+                current,
+                responseId,
+                "Extraction failed. You can continue or reset this session.",
+                sessionReducerDependencies,
+              ),
+            );
+          });
+        const aiResponse = await pipeline.question;
+        if (!turnGuardRef.current?.isCurrent(turnToken)) return;
         console.log(`[${traceId}] ${phase}:done`, {
           hasResponse: !!aiResponse,
         });
@@ -364,11 +538,11 @@ export default function VotingAdvisor() {
         // per-turn request short instead of blocking on the slow RAG ranking.
         runRanking(history, availableCandidates, availableParties);
       }
-    } catch (error) {
+    } catch {
+      if (!turnGuardRef.current?.isCurrent(turnToken)) return;
       console.error(`[${traceId}] component response failed`, {
         phase,
         elapsedMs: Date.now() - start,
-        error: serializeError(error),
       });
       appendActive(fallbackChat);
     } finally {
@@ -376,7 +550,10 @@ export default function VotingAdvisor() {
         phase,
         elapsedMs: Date.now() - start,
       });
-      setIsCompiling(false);
+      if (turnGuardRef.current?.isCurrent(turnToken)) {
+        setIsCompiling(false);
+        turnGuardRef.current.finish(turnToken);
+      }
     }
   };
 
@@ -385,19 +562,24 @@ export default function VotingAdvisor() {
   };
 
   const handleReset = () => {
+    turnGuardRef.current?.reset();
     rankSeqRef.current += 1;
     appliedRankSeqRef.current = rankSeqRef.current;
+    hydratedRaceRef.current = null;
+    shouldRehydrateRankingRef.current = false;
+    rehydratedRankingRef.current = false;
     clearChat();
-    clearStoredSteps();
-    clearStoredCandidates();
-    clearStoredConfidence();
-    clearStoredShowCandidates();
-    clearStoredAvailableCandidates();
-    clearStoredAvailableParties();
+    clearSnapshot();
+    setCandidates([]);
+    setConfidence(0);
+    setShowCandidates(false);
+    setAvailableCandidates([]);
     setIsCompiling(false);
 
     if (seats.length > 0) {
-      setSteps([buildSeatStep()]);
+      updateSteps([buildSeatStep()]);
+    } else {
+      updateSteps([]);
     }
 
     // Re-seed unranked party cards so the party-vote lane stays populated after
@@ -405,7 +587,7 @@ export default function VotingAdvisor() {
     if (isMMP && availableParties.length > 0) {
       setPartyMatches(toUnrankedPartyMatches(availableParties));
     } else {
-      clearStoredPartyMatches();
+      setPartyMatches([]);
     }
   };
 
@@ -448,6 +630,13 @@ export default function VotingAdvisor() {
                   <Badge variant="outline">
                     {userResponses.length} responses
                   </Badge>
+                  {snapshot.extractions.some((item) =>
+                    ["pending", "queued"].includes(item.status),
+                  ) && (
+                    <Badge variant="secondary" className="font-normal">
+                      Updating your private profile…
+                    </Badge>
+                  )}
                   {isMMP && voteLaneLabel && (
                     <Badge variant="secondary" className="font-normal">
                       {voteLaneLabel}
@@ -524,12 +713,11 @@ export default function VotingAdvisor() {
       <footer className="border-t bg-muted/50">
         <div className="container mx-auto px-4 py-6">
           <div className="text-center text-sm text-muted-foreground">
-            <p>
-              AI Voting Advisor - Anonymous and secure political preference
-              matching
-            </p>
+            <p>AI Voting Advisor — browser-local preference matching</p>
             <p className="mt-1">
-              No personal data collected • Open source and transparent
+              Your session stays in this browser. Answers and compact claims are
+              sent to the configured AI provider, whose retention terms apply.
+              Reset clears the local session.
             </p>
           </div>
         </div>

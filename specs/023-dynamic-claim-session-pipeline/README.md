@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: complete
 created: 2026-07-18
 priority: high
 tags:
@@ -9,15 +9,18 @@ tags:
 - privacy
 parent: 021-structured-voter-profile-ranking
 created_at: 2026-07-18T09:53:50.694324252Z
-updated_at: 2026-07-18T09:55:03.868761457Z
+updated_at: 2026-07-18T21:48:15.324474056Z
+completed_at: 2026-07-18T21:48:15.324474056Z
 transitions:
 - status: in-progress
   at: 2026-07-18T09:55:03.868761457Z
+- status: complete
+  at: 2026-07-18T21:48:15.324474056Z
 ---
 
 # Local session and dynamic claim pipeline
 
-> **Status**: planned · **Priority**: high · **Created**: 2026-07-18
+> **Status**: complete · **Priority**: high · **Created**: 2026-07-18
 
 ## Overview
 
@@ -58,37 +61,37 @@ production or shadow metrics.
 
 - [x] Add Zod schemas/types for snapshot, dynamic claim revisions, constrained
       extraction operations, and pending/failed extraction state.
-- [ ] Add a pure reducer with stable injected UUID/time dependencies,
+- [x] Add a pure reducer with stable injected UUID/time dependencies,
       idempotency, in-order application/queueing, revision history, retagging,
       importance confirmation, and reset behavior.
-- [ ] Replace split persistence with a single schema-validated snapshot hook and
+- [x] Replace split persistence with a single schema-validated snapshot hook and
       new namespace; clear old test-only keys without migration.
-- [ ] Add a server action that extracts constrained claim operations from exact
+- [x] Add a server action that extracts constrained claim operations from exact
       Q/A plus a prompt-safe compact prior-claim projection. Add deterministic
       mock responses and redact raw content from logs.
-- [ ] Run next-question generation and extraction in parallel; merge accepted
+- [x] Run next-question generation and extraction in parallel; merge accepted
       results into the snapshot without delaying the displayed next question.
-- [ ] Expose shadow extraction status/progress without changing current ranking;
+- [x] Expose shadow extraction status/progress without changing current ranking;
       add user disclosure and reset semantics.
 
 ## Test
 
-- [ ] Snapshot hydration rejects malformed/unknown schema versions safely.
+- [x] Snapshot hydration rejects malformed/unknown schema versions safely.
 - [x] Duplicate response/result delivery is idempotent and out-of-order results
       queue until prior response extraction resolves.
-- [ ] Same-claim clarification preserves history; distinct claims stay separate;
+- [x] Same-claim clarification preserves history; distinct claims stay separate;
       uncertain operations remain pending.
-- [ ] Multiple dynamic topic tags round-trip; retagging alone does not change the
+- [x] Multiple dynamic topic tags round-trip; retagging alone does not change the
       claim's semantic revision or future score identity.
-- [ ] Extraction cannot choose trusted ids/provenance/status/timestamps and never
+- [x] Extraction cannot choose trusted ids/provenance/status/timestamps and never
       creates a claim from seat selection.
-- [ ] Next-question generation starts without awaiting extraction and receives
+- [x] Next-question generation starts without awaiting extraction and receives
       latest exact Q/A plus only compact accepted prior claims.
-- [ ] Prompt payloads omit session/provenance ids; production logs and shadow
+- [x] Prompt payloads omit session/provenance ids; production logs and shadow
       metrics contain no raw answers or claims.
-- [ ] Reset clears the single snapshot and derived caches; old split-key test
+- [x] Reset clears the single snapshot and derived caches; old split-key test
       sessions are discarded without an extraction call.
-- [ ] Mock mode performs no paid AI calls and returns stable claim operations.
+- [x] Mock mode performs no paid AI calls and returns stable claim operations.
 
 ## Notes
 
@@ -100,3 +103,7 @@ production or shadow metrics.
   idempotently, preserves claim revisions, queues out-of-order results, and marks
   results stale when their base profile version no longer matches. Full tests
   pass (201 passed, 2 skipped); build and lint pass with existing warnings.
+- 2026-07-19: Completed browser hydration/persistence, transcript restoration,
+  parallel question/extraction orchestration, reset epoch guards, queue rebasing,
+  seat-selection isolation, strict bounded action inputs, and privacy-safe logs.
+  Ranking remains the unchanged legacy path by design.

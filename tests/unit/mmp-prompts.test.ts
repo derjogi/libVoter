@@ -57,9 +57,15 @@ describe("AIChatHandler vote-lane marker (spec 020)", () => {
     const handler = new AIChatHandler();
 
     const result = await handler.processMessage(
-      "I care about climate and cost of living.",
-      [],
-      [],
+      {
+        latest: {
+          question: "What matters most?",
+          answer: "I care about climate and cost of living.",
+        },
+        acceptedClaims: [],
+        askedCoverage: [],
+        confidence: 0,
+      },
       [],
     );
 

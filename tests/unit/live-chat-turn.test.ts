@@ -85,9 +85,16 @@ describe.skipIf(!LIVE)("AIChatHandler.processMessage (LIVE LLM)", () => {
 
       for (let i = 0; i < RUNS; i++) {
         const result = await handler.processMessage(
-          "Question: Which of the following areas is most important to you when choosing a candidate?\nAnswer: Economy",
-          [],
-          [],
+          {
+            latest: {
+              question:
+                "Which of the following areas is most important to you when choosing a candidate?",
+              answer: "Economy",
+            },
+            acceptedClaims: [],
+            askedCoverage: [],
+            confidence: 0,
+          },
           fakeCandidates,
         );
 
