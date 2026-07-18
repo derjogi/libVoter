@@ -153,52 +153,30 @@ legacy `PromptManager` path. Introduce one shared question-and-answer formatter
 using `question || questionId` and apply it to current candidate ranking, party
 ranking, and preference-summary paths before the larger migration.
 
-#### Evaluation and rollout
+#### Evaluation and direct replacement
 
-Parity with the current LLM ranker is diagnostic, not ground truth. Add
-human-reviewed evaluation sets for free-text proposition/stance/lane extraction,
-claim polarity and source-span validity, duplicate independence, score
-invariants, no-evidence behavior, and hand-labelled lane rankings. Define
-precision, coverage, stability, latency, and cost thresholds before switching.
-Shadow metrics must not log raw profiles.
+The project is unreleased and run locally. Human-reviewed fixtures should test
+free-text extraction, claim polarity, source spans, duplicate independence,
+score invariants, no-evidence behavior, and lane rankings. The existing LLM
+ranker is not a compatibility target or fallback. Once the new evidence-to-score
+path works end to end, replace the old path directly and delete it.
 
-### Recommended decomposition
+### Revised decomposition
 
-Keep this spec as an umbrella and split implementation into three independently
-rollable children:
+1. **Structured profile and strict turn pipeline:** one browser snapshot, pure
+   reducer, free-text extraction, and compact next-question context.
+2. **Normalized evidence and corpus publication:** canonical candidacy/person/
+   party identity, review, invalidation, and atomic corpus revisions.
+3. **Deterministic scorer and direct UI integration:** separate lane results,
+   insufficient-evidence behavior, coverage/confidence formulas, citations,
+   evaluation fixtures, and replacement of the holistic LLM ranker.
 
-1. **Structured profile and strict turn pipeline:** shared compatibility
-   formatter, registered question definitions, one session snapshot, pure
-   profile reducer, free-text extraction, and compact next-question context.
-   This work does not depend on spec 010 and should relate to spec 020.
-2. **Normalized evidence claims and corpus publication:** canonical
-   candidacy/person/party identity, claim schema and statuses, normalization,
-   review, invalidation, and atomic corpus revisions. This child depends on
-   spec 010.
-3. **Deterministic scorer, evaluation, and rollout:** separate lane results,
-   insufficient-evidence behavior, coverage/confidence formulas, explanations,
-   shadow evaluation, and feature-flagged rollout. This depends on both prior
-   children.
+### Direct implementation sequence
 
-Avoid building a general migration framework for every future taxonomy version
-before a second version exists. For v1, prefer a new schema-versioned session
-namespace with an explicit reset or narrowly defined one-time migration.
-
-### Minimal safe implementation sequence
-
-1. **Compatibility fix:** shared visible-question/answer formatting and
-   regression tests across every component type.
-2. **Trust and identity contracts:** finalize registered-question semantics and
-   canonical candidacy/person/party ids before adding schemas.
-3. **Shadow profile:** implement the single session snapshot, pure reducer,
-   persisted accepted deltas, hashes, and mock fixtures without changing live
-   ranking or next-question behavior.
-4. **Strict turn pipeline:** map registered structured answers, extract free
-   text, commit the accepted delta, and generate the next question from the
-   resulting profile. Keep the old ranker active for independent evaluation.
-5. **Reviewed claim corpus:** add revisioned claim storage and publish a small,
-   hand-reviewed corpus before broad automated normalization.
-6. **Shadow scorer:** run the pure party/electorate scorer against human-labelled
-   fixtures and production-shaped aggregate metrics without exposing scores.
-7. **Guarded rollout:** expose coverage and insufficient-evidence states first,
-   then feature-flag score ordering independently per lane. Retain the old
+1. Complete the local session and dynamic-claim pipeline.
+2. Publish normalized evidence with explicit subjects and source lineage.
+3. Retrieve and classify evidence for changed accepted claims.
+4. Project deterministic scores and evidence coverage into the live UI.
+5. Validate behavior with fixed and human-reviewed fixtures.
+6. Delete the old ranking implementation and obsolete adapters. Do not add
+   shadow mode, feature flags, rollback branches, staged rollout, or parity gates.

@@ -13,7 +13,7 @@ parent: 021-structured-voter-profile-ranking
 created_at: 2026-07-18T21:04:21.373200372Z
 updated_at: 2026-07-18T21:04:21.373270151Z
 ---
-# Deterministic alignment aggregation, evaluation, and rollout
+# Deterministic alignment scoring and direct integration
 
 > **Status**: in-progress · **Priority**: high · **Created**: 2026-07-18
 
@@ -30,7 +30,9 @@ Replace holistic LLM candidate/party ranking with a pure, versioned scorer over 
 - Party-vote uses official-party evidence only. Electorate results show personal and affiliated-party scores separately plus a labelled combined score. Independents omit party score.
 - Combined weighting starts near equal and shifts only within a versioned cap using weighted claim coverage, never passage count.
 - Member disagreement produces a separate cited cohesion warning/confidence reduction and never rewrites official-party compatibility.
-- Keep the legacy ranker behind an environment feature flag until fixed golden and human-reviewed evaluation gates pass.
+- Replace the holistic LLM ranker directly when the evidence-to-score path and
+  result UI are connected. Delete the old ranker and obsolete adapters rather
+  than retaining feature flags, fallback paths, shadow mode, or rollback logic.
 
 ## Plan
 
@@ -38,8 +40,11 @@ Replace holistic LLM candidate/party ranking with a pure, versioned scorer over 
 - [x] Implement party-vote, personal, affiliated-party, combined, topic, coverage, confidence, tie-break, and provisional-status calculations.
 - [x] Add stable profile/input hashes and derived-result cache invalidation.
 - [ ] Add candidate/party UI projection with separate scores, coverage, provisional treatment, citations, and cohesion warning.
-- [ ] Add fixed golden and human-labelled evaluation fixtures plus latency/cache/token aggregate metrics without raw political text.
-- [ ] Add shadow comparison and feature-flagged rollout; legacy parity is diagnostic, not correctness.
+- [ ] Add fixed golden and human-labelled evaluation fixtures. Add local
+      latency/cache/token diagnostics only where useful for development, without
+      recording raw political text.
+- [ ] Connect the scorer as the only live ranking path and remove the holistic
+      LLM ranker, its fallback behavior, and obsolete compatibility adapters.
 
 ## Test
 
@@ -63,10 +68,23 @@ Exact evidence limits, coverage threshold, source/recency weights, and presentat
   nullable confirmed importance as unresolved, and project both candidacy and
   person passages into the candidate-personal evidence lane. Relationship
   categories share one hyphenated contract. Live UI wiring remains deferred until
-  production evidence retrieval is complete.
+  accepted-corpus evidence retrieval is connected.
 
-- Production rollout is intentionally still blocked: the committed NZ 2026
-  corpus has 13 party-policy sources but no candidate-personal evidence. The
-  scorer therefore remains a verified pure core behind the unchanged legacy UI
-  until Spec 024 orchestration, candidate coverage, human-labelled evaluation,
-  shadow metrics, and the feature flag are implemented.
+- Direct integration is still blocked by data and UI work: the committed NZ 2026
+  corpus has 13 party-policy sources but no candidate-personal evidence. Connect
+  Spec 024 orchestration, add candidate coverage and the result projection, run
+  human-labelled evaluation, then remove the old ranker. No rollout or fallback
+  infrastructure is required.
+
+## Remaining direct-integration work
+
+- Collect candidate-personal evidence; the current corpus covers party policy
+  only.
+- Connect accepted voter claims to background evidence retrieval and pairwise
+  classification from Spec 024.
+- Project personal, affiliated-party, combined, party-vote, coverage, citations,
+  and cohesion results into the live candidate and party panels.
+- Review the fixed fixtures with humans and adjust versioned scoring constants
+  where the results are unreasonable.
+- Make the deterministic scorer the only ranking path and delete the holistic
+  LLM ranker and obsolete adapters in the same change.

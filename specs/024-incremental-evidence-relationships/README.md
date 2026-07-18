@@ -60,6 +60,6 @@ Review follow-up added a partial unique index enforcing one accepted revision pe
 corpus key and a transactional publication adapter that atomically supersedes the
 predecessor and inserts the replacement with all passages. Passage ids are
 revision-scoped, independence is derived from validated source lineage, and
-changed or removed sources receive explicit invalidation metadata. Production
+changed or removed sources receive explicit invalidation metadata. End-to-end
 integration remains open: the committed NZ 2026 corpus currently contains only
 13 party-policy sources and no candidate-personal source coverage.

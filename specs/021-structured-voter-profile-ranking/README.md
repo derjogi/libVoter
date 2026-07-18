@@ -87,7 +87,7 @@ child specs before implementing beyond the completed compatibility slice.
   compact previously accepted claims needed for extraction and adaptive question
   planning. The application does not persist them server-side, omits session and
   provenance identifiers from prompts, and excludes raw answers/claims from
-  production logs and shadow metrics. The UI discloses third-party AI processing
+  application logs and evaluation artifacts. The UI discloses third-party AI processing
   and applicable provider retention terms; reset clears the local snapshot and
   derived caches. Local embeddings do not imply local chat/claim inference.
 - Existing test-only split-key sessions are discarded when the new snapshot
@@ -154,6 +154,10 @@ child specs before implementing beyond the completed compatibility slice.
   independent candidate has no party score and uses the personal score as the
   combined score. Coverage and compatibility remain separate, and the warning
   threshold is calibrated from evaluation data rather than guessed.
+- This is an unreleased, local-only project. Replace obsolete ranking paths
+  directly once the new end-to-end path works, and delete superseded code in the
+  same change. Do not add shadow mode, feature flags, rollback paths, staged
+  rollout machinery, or legacy-score parity gates.
 
 ## Historical material
 
@@ -171,11 +175,11 @@ not as implementation guidance.
       preference summaries.
 - [x] Split this umbrella into child specs for (1) local session and dynamic
       claims, (2) incremental evidence relationships, and (3) aggregation,
-      evaluation, and rollout. Preserve the parallel next-question/extraction
+      evaluation, UI integration, and direct replacement. Preserve the parallel next-question/extraction
       ordering in the first child.
 - [ ] Add one browser-local `SessionSnapshot`, stable UUID identities, a pure
       reducer, dynamic claim extraction, claim revision history, idempotency,
-      stale-result rejection, and hashing in shadow mode. Discard old test-only
+      stale-result rejection, and local hashing. Discard old test-only
       split-key sessions; exclude seat selection from political claims.
 - [ ] Store zero or more dynamic topic tags on each claim for display/planning
       only. Scoring uses accepted claim importance once; retagging does not
@@ -203,12 +207,12 @@ not as implementation guidance.
       treatment while retaining all applicable scores and ordering candidates by
       combined score regardless of coverage. Independents omit the party result
       and use their personal result as combined.
-- [ ] Keep the current ranker behind a feature flag until the dynamic-claim
-      pipeline passes reviewed coverage and human-labelled quality evaluation;
-      parity with the old holistic LLM score is not a correctness criterion.
-- [ ] Instrument latency, query count, cache hit rate, token use, ranking
-      stability, and evidence coverage; compare against the existing ranking on
-      a fixed evaluation set before switching the default.
+- [ ] Wire the deterministic scorer into the live candidate and party panels,
+      then delete the holistic LLM ranker and obsolete adapters. There is no
+      feature flag, fallback ranker, staged rollout, or legacy-parity gate.
+- [ ] Use fixed and human-labelled fixtures to calibrate correctness. Keep local
+      latency, cache, token, and evidence-coverage diagnostics only where they
+      help development; they are not rollout gates or shadow telemetry.
 
 ## Test
 
@@ -220,7 +224,7 @@ not as implementation guidance.
       hidden component metadata cannot directly create scoring claims.
 - [ ] Extraction and next-question prompts contain only the permitted exact Q/A
       and compact prior claims, omit session/provenance ids, and raw political
-      content never appears in production logs or shadow metrics.
+      content never appears in application logs or evaluation artifacts.
 - [ ] Invalid extraction does not mutate prior state; the answer remains pending
       and can trigger a neutral clarification.
 - [ ] Clarifications revise the same claim with history; distinct claims remain
@@ -285,11 +289,10 @@ not as implementation guidance.
    opposition. It may remain a weak supplemental retrieval signal only.
 
 
-Implementation children: Spec 023 owns the browser-local dynamic claim/session pipeline; Spec 024 owns normalized evidence passages and incremental relationships; Spec 025 owns deterministic aggregation, evaluation, UI projection, and rollout.
+Implementation children: Spec 023 owns the browser-local dynamic claim/session pipeline; Spec 024 owns normalized evidence passages and incremental relationships; Spec 025 owns deterministic aggregation, evaluation, UI projection, and direct replacement of the old ranker.
 
 ## Historical architecture review
 
 The pre-resolution architecture review was moved to
 [`architecture-review.md`](architecture-review.md). The accepted July 2026
 direction and implementation children above are normative.
-   ranker only as rollback, not as a mixed fallback within one result list.

@@ -25,7 +25,7 @@ transitions:
 ## Overview
 
 Replace the current split browser keys and prose-only preference reconstruction
-with one browser-authoritative, schema-versioned session snapshot and a shadow
+with one browser-authoritative, schema-versioned session snapshot and a local
 profile of dynamic voter claims. Question generation remains responsive: it uses
 the latest exact Q/A plus previously accepted claims while claim extraction runs
 in parallel. This child does not change visible ranking.
@@ -33,7 +33,7 @@ in parallel. This child does not change visible ranking.
 The snapshot is local-only. Configured AI providers may receive the latest exact
 Q/A and compact prior claims, but the application stores no server session, omits
 session/provenance ids from prompts, and does not log raw political content in
-production or shadow metrics.
+application logs or evaluation artifacts.
 
 ## Design
 
@@ -71,7 +71,7 @@ production or shadow metrics.
       mock responses and redact raw content from logs.
 - [x] Run next-question generation and extraction in parallel; merge accepted
       results into the snapshot without delaying the displayed next question.
-- [x] Expose shadow extraction status/progress without changing current ranking;
+- [x] Expose extraction status/progress without changing ranking in this child;
       add user disclosure and reset semantics.
 
 ## Test
@@ -87,8 +87,8 @@ production or shadow metrics.
       creates a claim from seat selection.
 - [x] Next-question generation starts without awaiting extraction and receives
       latest exact Q/A plus only compact accepted prior claims.
-- [x] Prompt payloads omit session/provenance ids; production logs and shadow
-      metrics contain no raw answers or claims.
+- [x] Prompt payloads omit session/provenance ids; application logs and
+      evaluation artifacts contain no raw answers or claims.
 - [x] Reset clears the single snapshot and derived caches; old split-key test
       sessions are discarded without an extraction call.
 - [x] Mock mode performs no paid AI calls and returns stable claim operations.
@@ -106,4 +106,5 @@ production or shadow metrics.
 - 2026-07-19: Completed browser hydration/persistence, transcript restoration,
   parallel question/extraction orchestration, reset epoch guards, queue rebasing,
   seat-selection isolation, strict bounded action inputs, and privacy-safe logs.
-  Ranking remains the unchanged legacy path by design.
+  Ranking integration belongs to Spec 025, which may directly delete and replace
+  the old ranker because the project is unreleased and local-only.
