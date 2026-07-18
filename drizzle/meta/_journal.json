@@ -64,6 +64,20 @@
       "when": 1782210364774,
       "tag": "0008_mean_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1784409188896,
+      "tag": "0009_elite_tinkerer",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784410584182,
+      "tag": "0010_accepted_corpus_revision_guard",
+      "breakpoints": true
     }
   ]
 }

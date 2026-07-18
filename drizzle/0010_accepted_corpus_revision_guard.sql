@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `corpus_revisions_one_accepted_per_key_unique` ON `corpus_revisions` (`corpus_key`) WHERE "corpus_revisions"."status" = 'accepted';

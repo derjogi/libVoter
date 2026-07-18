@@ -1,4 +1,6 @@
+import { sql } from "drizzle-orm";
 import {
+  check,
   index,
   integer,
   real,
@@ -174,6 +176,28 @@ export const SOURCE_TYPES = [
 
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
+export const CORPUS_REVISION_STATUSES = [
+  "draft",
+  "accepted",
+  "superseded",
+] as const;
+export type CorpusRevisionStatus = (typeof CORPUS_REVISION_STATUSES)[number];
+
+export const EVIDENCE_SUBJECT_TYPES = [
+  "candidacy",
+  "person",
+  "official_party",
+] as const;
+export type EvidenceSubjectType = (typeof EVIDENCE_SUBJECT_TYPES)[number];
+
+export const EVIDENCE_PASSAGE_STATUSES = [
+  "draft",
+  "complete",
+  "accepted",
+  "invalidated",
+] as const;
+export type EvidencePassageStatus = (typeof EVIDENCE_PASSAGE_STATUSES)[number];
+
 export const evidenceSources = sqliteTable(
   "evidence_sources",
   {
@@ -212,6 +236,101 @@ export const evidenceSources = sqliteTable(
     byExternalDocument: uniqueIndex(
       "evidence_sources_adapter_external_id_unique",
     ).on(t.sourceAdapter, t.externalId),
+  }),
+);
+
+// Immutable publication boundary for normalized evidence. Runtime retrieval
+// reads accepted passages from one accepted revision, never an in-progress mix.
+export const corpusRevisions = sqliteTable(
+  "corpus_revisions",
+  {
+    id: text("id").primaryKey(),
+    corpusKey: text("corpus_key").notNull(),
+    sequence: integer("sequence").notNull(),
+    status: text("status").$type<CorpusRevisionStatus>().notNull(),
+    contentDigest: text("content_digest").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+  },
+  (t) => ({
+    keySequence: uniqueIndex("corpus_revisions_key_sequence_unique").on(
+      t.corpusKey,
+      t.sequence,
+    ),
+    oneAcceptedPerKey: uniqueIndex(
+      "corpus_revisions_one_accepted_per_key_unique",
+    )
+      .on(t.corpusKey)
+      .where(sql`${t.status} = 'accepted'`),
+    byStatus: index("corpus_revisions_status_idx").on(t.status),
+    validStatus: check(
+      "corpus_revisions_status_check",
+      sql`${t.status} in ('draft', 'accepted', 'superseded')`,
+    ),
+  }),
+);
+
+export const evidencePassages = sqliteTable(
+  "evidence_passages",
+  {
+    id: text("id").primaryKey(),
+    corpusRevisionId: text("corpus_revision_id")
+      .notNull()
+      .references(() => corpusRevisions.id, { onDelete: "cascade" }),
+    evidenceSourceId: text("evidence_source_id")
+      .notNull()
+      .references(() => evidenceSources.id, { onDelete: "restrict" }),
+    subjectType: text("subject_type").$type<EvidenceSubjectType>().notNull(),
+    candidacyId: text("candidacy_id").references(() => candidacies.id, {
+      onDelete: "restrict",
+    }),
+    personId: text("person_id").references(() => people.id, {
+      onDelete: "restrict",
+    }),
+    officialPartyId: text("official_party_id").references(
+      () => electionParties.id,
+      { onDelete: "restrict" },
+    ),
+    sourceLineageKey: text("source_lineage_key").notNull(),
+    independenceKey: text("independence_key").notNull(),
+    contentRevision: text("content_revision").notNull(),
+    contentHash: text("content_hash").notNull(),
+    text: text("text").notNull(),
+    spanStart: integer("span_start").notNull(),
+    spanEnd: integer("span_end").notNull(),
+    status: text("status").$type<EvidencePassageStatus>().notNull(),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    invalidatedAt: integer("invalidated_at", { mode: "timestamp" }),
+    invalidationReason: text("invalidation_reason"),
+    createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  },
+  (t) => ({
+    byRevisionStatus: index("evidence_passages_revision_status_idx").on(
+      t.corpusRevisionId,
+      t.status,
+    ),
+    byCandidacy: index("evidence_passages_candidacy_idx").on(t.candidacyId),
+    byPerson: index("evidence_passages_person_idx").on(t.personId),
+    byOfficialParty: index("evidence_passages_official_party_idx").on(
+      t.officialPartyId,
+    ),
+    byLineage: index("evidence_passages_lineage_idx").on(
+      t.sourceLineageKey,
+      t.independenceKey,
+    ),
+    uniqueRevisionSpan: uniqueIndex(
+      "evidence_passages_revision_source_span_unique",
+    ).on(t.corpusRevisionId, t.evidenceSourceId, t.spanStart, t.spanEnd),
+    validSpan: check(
+      "evidence_passages_span_check",
+      sql`${t.spanStart} >= 0 and ${t.spanEnd} > ${t.spanStart}`,
+    ),
+    exactlyOneSubject: check(
+      "evidence_passages_subject_identity_check",
+      sql`(${t.subjectType} = 'candidacy' and ${t.candidacyId} is not null and ${t.personId} is null and ${t.officialPartyId} is null)
+        or (${t.subjectType} = 'person' and ${t.candidacyId} is null and ${t.personId} is not null and ${t.officialPartyId} is null)
+        or (${t.subjectType} = 'official_party' and ${t.candidacyId} is null and ${t.personId} is null and ${t.officialPartyId} is not null)`,
+    ),
   }),
 );
 
@@ -344,6 +463,52 @@ export const insertCandidacySchema = createInsertSchema(candidacies);
 export const selectCandidacySchema = createSelectSchema(candidacies);
 export const insertEvidenceSourceSchema = createInsertSchema(evidenceSources);
 export const selectEvidenceSourceSchema = createSelectSchema(evidenceSources);
+export const insertCorpusRevisionSchema = createInsertSchema(corpusRevisions);
+export const selectCorpusRevisionSchema = createSelectSchema(corpusRevisions);
+const evidencePassageInsertBase = createInsertSchema(evidencePassages);
+export const insertEvidencePassageSchema =
+  evidencePassageInsertBase.superRefine((passage, context) => {
+    if (!new Set<string>(EVIDENCE_SUBJECT_TYPES).has(passage.subjectType)) {
+      context.addIssue({
+        code: "custom",
+        message: "unknown evidence subject type",
+        path: ["subjectType"],
+      });
+    }
+    if (!new Set<string>(EVIDENCE_PASSAGE_STATUSES).has(passage.status)) {
+      context.addIssue({
+        code: "custom",
+        message: "unknown evidence passage status",
+        path: ["status"],
+      });
+    }
+    const subjectIds = [
+      passage.candidacyId,
+      passage.personId,
+      passage.officialPartyId,
+    ].filter((id) => id != null);
+    const selectedId =
+      passage.subjectType === "candidacy"
+        ? passage.candidacyId
+        : passage.subjectType === "person"
+          ? passage.personId
+          : passage.officialPartyId;
+    if (subjectIds.length !== 1 || selectedId == null) {
+      context.addIssue({
+        code: "custom",
+        message: "exactly one subject id must match subjectType",
+        path: ["subjectType"],
+      });
+    }
+    if (passage.spanStart < 0 || passage.spanEnd <= passage.spanStart) {
+      context.addIssue({
+        code: "custom",
+        message: "spanEnd must be greater than a non-negative spanStart",
+        path: ["spanEnd"],
+      });
+    }
+  });
+export const selectEvidencePassageSchema = createSelectSchema(evidencePassages);
 export const insertHansardDocumentPersonSchema = createInsertSchema(
   hansardDocumentPeople,
 );
@@ -383,6 +548,10 @@ export type Candidacy = typeof candidacies.$inferSelect;
 export type NewCandidacy = typeof candidacies.$inferInsert;
 export type EvidenceSource = typeof evidenceSources.$inferSelect;
 export type NewEvidenceSource = typeof evidenceSources.$inferInsert;
+export type CorpusRevision = typeof corpusRevisions.$inferSelect;
+export type NewCorpusRevision = typeof corpusRevisions.$inferInsert;
+export type EvidencePassage = typeof evidencePassages.$inferSelect;
+export type NewEvidencePassage = typeof evidencePassages.$inferInsert;
 export type HansardDocumentPerson = typeof hansardDocumentPeople.$inferSelect;
 export type NewHansardDocumentPerson =
   typeof hansardDocumentPeople.$inferInsert;
