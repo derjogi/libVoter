@@ -291,6 +291,18 @@ not as implementation guidance.
 
 Implementation children: Spec 023 owns the browser-local dynamic claim/session pipeline; Spec 024 owns normalized evidence passages and incremental relationships; Spec 025 owns deterministic aggregation, evaluation, UI projection, and direct replacement of the old ranker.
 
+
+## Concrete execution sequence
+
+1. [Spec 026](../026-auckland-central-candidate-evidence-slice/README.md) — build one real electorate corpus.
+2. [Spec 027](../027-browser-claim-evidence-orchestration/README.md) — connect accepted claims to retrieval/classification.
+3. [Spec 028](../028-deterministic-live-ranking-boundary/README.md) — create one canonical application result.
+4. [Spec 029](../029-ranking-ui-direct-cutover/README.md) — render it and delete the old ranker.
+5. [Spec 030](../030-alignment-human-review-calibration/README.md) — review and calibrate results.
+6. [Spec 031](../031-nz-electorate-evidence-expansion/README.md) — expand evidence coverage electorate by electorate.
+
+Close Spec 024 after 027, Spec 025 after 030, and this umbrella last.
+
 ## Historical architecture review
 
 The pre-resolution architecture review was moved to

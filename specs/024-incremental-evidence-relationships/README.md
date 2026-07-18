@@ -12,7 +12,6 @@ parent: 021-structured-voter-profile-ranking
 created_at: 2026-07-18T21:04:21.346001330Z
 updated_at: 2026-07-18T21:34:20.087135263Z
 ---
-
 # Incremental evidence relationships and corpus publication
 
 > **Status**: in-progress · **Priority**: high · **Created**: 2026-07-18
@@ -38,7 +37,7 @@ Build the normalized evidence side of Spec 021 without storing voter profiles se
 - [x] Add hybrid retrieval across eligible candidacy/person/party subjects with bounded, deduplicated results per subject.
 - [x] Add strict pairwise-classification schemas, deterministic mock output, and browser-local relationship cache projection.
 - [x] Add incremental work planning/progress so unchanged claim/passage/classifier tuples are reused.
-- [ ] Wire changed accepted claims to background retrieval/classification without blocking next-question generation.
+- [ ] Complete [Spec 027](../027-browser-claim-evidence-orchestration/README.md): wire changed accepted claims to background retrieval/classification and browser-local caching without blocking next-question generation.
 
 ## Test
 

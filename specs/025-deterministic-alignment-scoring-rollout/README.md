@@ -39,12 +39,10 @@ Replace holistic LLM candidate/party ranking with a pure, versioned scorer over 
 - [x] Define versioned scoring/result schemas and pure bounded aggregation helpers.
 - [x] Implement party-vote, personal, affiliated-party, combined, topic, coverage, confidence, tie-break, and provisional-status calculations.
 - [x] Add stable profile/input hashes and derived-result cache invalidation.
-- [ ] Add candidate/party UI projection with separate scores, coverage, provisional treatment, citations, and cohesion warning.
-- [ ] Add fixed golden and human-labelled evaluation fixtures. Add local
-      latency/cache/token diagnostics only where useful for development, without
-      recording raw political text.
-- [ ] Connect the scorer as the only live ranking path and remove the holistic
-      LLM ranker, its fallback behavior, and obsolete compatibility adapters.
+- [ ] Complete [Spec 028](../028-deterministic-live-ranking-boundary/README.md): expose one canonical deterministic application result.
+- [ ] Complete [Spec 029](../029-ranking-ui-direct-cutover/README.md): project that result into the UI and delete the holistic ranker.
+- [ ] Complete [Spec 030](../030-alignment-human-review-calibration/README.md): human-review the Auckland Central fixtures and calibrate versioned constants.
+- [ ] Confirm Spec 029 left the scorer as the only ranking path with no holistic LLM ranker or obsolete compatibility adapters.
 
 ## Test
 

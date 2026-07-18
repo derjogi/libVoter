@@ -180,6 +180,10 @@ where a source requires it (as the Auckland scraper does). Prefer official
       `--repopulate` path resets only the derived `evidence` collection before
       rebuilding, so repeated runs cannot append duplicate random-ID chunks.
 
+
+- [ ] **Spec 026:** build and atomically publish the Auckland Central candidate-personal evidence slice using this ingestion framework and Spec 024 publication.
+- [ ] **Spec 031:** expand the proven evidence workflow electorate by electorate after the vertical slice is reviewed.
+
 ## Test
 
 Unit tests in [`tests/unit/ingestion.test.ts`](../../tests/unit/ingestion.test.ts)
