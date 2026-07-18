@@ -12,6 +12,7 @@
     "validate-env": "bun run scripts/setup-env.ts validate",
     "scrape:candidates": "bun scripts/scrape-candidates.ts",
     "ingest:sources": "bun scripts/ingest-sources.ts",
+    "publish:candidate-corpus": "bun scripts/publish-candidate-corpus.ts",
     "fetch:hansard": "bun scripts/fetch-hansard.ts",
     "scrape:nz-2026": "bun scripts/scrape-nz-2026.ts",
     "scrape:nz-candidates": "bun scripts/scrape-nz-candidates.ts",

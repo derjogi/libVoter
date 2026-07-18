@@ -1,5 +1,5 @@
 ---
-status: planned
+status: in-progress
 created: 2026-07-18
 priority: high
 tags:
@@ -8,8 +8,12 @@ tags:
 - nz-2026
 parent: 010-scrape-sources
 created_at: 2026-07-18T23:54:27.588857896Z
-updated_at: 2026-07-18T23:54:27.589189272Z
+updated_at: 2026-07-19T02:22:44.737253940Z
+transitions:
+- status: in-progress
+  at: 2026-07-19T02:22:44.737253940Z
 ---
+
 # Build Auckland Central candidate evidence slice
 
 > **Status**: planned · **Priority**: high
