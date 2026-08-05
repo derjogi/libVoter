@@ -16,6 +16,8 @@
     "fetch:hansard": "bun scripts/fetch-hansard.ts",
     "scrape:nz-2026": "bun scripts/scrape-nz-2026.ts",
     "scrape:nz-candidates": "bun scripts/scrape-nz-candidates.ts",
+    "coverage:report": "bun scripts/coverage-report.ts",
+    "embed:evidence": "bun scripts/embed-evidence.ts",
     "verify:setup": "bun scripts/verify-setup.ts",
     "migrate:to-races": "bun scripts/migrate-to-races.ts",
     "test:election-config": "bun run scripts/test-election-config.ts",

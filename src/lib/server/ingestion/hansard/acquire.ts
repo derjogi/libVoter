@@ -44,7 +44,6 @@ export async function acquireHansardCorpus(
   const maxAttempts = options.maxAttempts ?? 3;
   const retryDelayMs = options.retryDelayMs ?? 1_000;
   const manifest = await loadManifest(options.cacheDir, since, pageSize);
-  if (manifest.complete && !options.refresh) return manifest;
 
   let browserWasOpened = false;
   try {
@@ -93,6 +92,7 @@ async function acquirePages(
   let expectedPages = manifest.totalDocuments
     ? Math.ceil(manifest.totalDocuments / pageSize)
     : Number.POSITIVE_INFINITY;
+  let countChanged = false;
 
   while (page <= expectedPages) {
     if (
@@ -103,7 +103,15 @@ async function acquirePages(
     }
     try {
       let response: HansardSearchResponse;
-      if (!options.refresh && manifest.completedPages.includes(page)) {
+      // Always fetch page 1 from the API to detect new content.
+      // For subsequent pages, use the cache when the total count is
+      // unchanged and the page was already downloaded.
+      const mustFetchFromApi =
+        page === 1 ||
+        countChanged ||
+        options.refresh ||
+        !manifest.completedPages.includes(page);
+      if (!mustFetchFromApi) {
         response = await readSearchPage(options.cacheDir, page);
       } else {
         await pace(sleep, interval);
@@ -125,6 +133,19 @@ async function acquirePages(
         clearFailure(manifest, "search", String(page));
       }
       pages.push(response);
+
+      // On page 1, compare the total count to detect new content.
+      if (page === 1) {
+        const previousCount = manifest.totalDocuments;
+        const newCount = response["@odata.count"];
+        if (previousCount !== undefined && newCount !== previousCount) {
+          countChanged = true;
+          options.onProgress?.(
+            `Hansard corpus grew: ${previousCount} → ${newCount} documents, re-fetching search pages`,
+          );
+        }
+      }
+
       manifest.totalDocuments = response["@odata.count"];
       expectedPages = Math.ceil(response["@odata.count"] / pageSize);
       manifest.failures = manifest.failures.filter(
@@ -211,11 +232,17 @@ async function loadManifest(
   try {
     await access(cachePaths(cacheDir).manifest);
     const manifest = await readManifest(cacheDir);
-    if (manifest.since !== since || manifest.pageSize !== pageSize) {
-      throw new Error(
-        `Hansard cache contract mismatch: expected since=${since} pageSize=${pageSize},
-        but was since=${manifest.since} & pageSize = ${manifest.pageSize}`,
-      );
+    if (manifest.pageSize !== pageSize) {
+      // pageSize change invalidates all cached pages and transcripts.
+      return createManifest({ since, pageSize });
+    }
+    if (manifest.since !== since) {
+      // since change invalidates search pages (they are date-filtered)
+      // but transcript files are keyed by date and remain valid.
+      manifest.since = since;
+      manifest.completedPages = [];
+      manifest.totalDocuments = undefined;
+      manifest.complete = false;
     }
     return manifest;
   } catch (error) {

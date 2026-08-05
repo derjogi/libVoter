@@ -11,12 +11,17 @@ import {
   CandidateEvidenceManifestAdapter,
 } from "./candidate-evidence-manifest";
 import { NzHansardAdapter } from "./hansard";
+import {
+  WikipediaCandidateAdapter,
+  type WikipediaCandidateSource,
+} from "./wikipedia-candidate";
 import { WikipediaPartyAdapter } from "./wikipedia-party";
 
 export interface AdapterRegistryOptions {
   hansardCacheDir?: string;
   allowPartialHansardCache?: boolean;
   candidateEvidenceManifest?: CandidateEvidenceManifest;
+  wikipediaCandidateSources?: WikipediaCandidateSource[];
 }
 
 export const adapterRegistry: Record<
@@ -40,6 +45,8 @@ export const adapterRegistry: Record<
       allowPartialCache: options?.allowPartialHansardCache,
     }),
   "nz-party-policy": () => new WikipediaPartyAdapter(),
+  "wikipedia-candidate": (options) =>
+    new WikipediaCandidateAdapter(options?.wikipediaCandidateSources ?? []),
 };
 
 export function getAdapters(

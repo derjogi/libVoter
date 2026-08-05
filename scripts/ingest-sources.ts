@@ -14,15 +14,19 @@
 //   --hansard-cache <path>  offline Hansard cache from fetch:hansard
 //   --candidate-manifest <path> exact reviewed candidate evidence excerpts
 //   --allow-partial-cache   permit a bounded Hansard smoke-test cache
+//   --min-interval <ms>     min ms between requests per host (default: 2000)
 //   --dry-run               resolve + dedup but do not write to the DB
 //
 // Examples:
 //   bun run scripts/ingest-sources.ts --source auckland --dry-run
 //   bun run scripts/ingest-sources.ts --election auckland-2025 --limit 20
 
+import { eq } from "drizzle-orm";
+import { candidacies, people, races } from "../src/lib/db/schema";
 import { db } from "../src/lib/server/db";
 import { getAdapters } from "../src/lib/server/ingestion/adapters";
 import { loadCandidateEvidenceManifest } from "../src/lib/server/ingestion/adapters/candidate-evidence-manifest";
+import type { WikipediaCandidateSource } from "../src/lib/server/ingestion/adapters/wikipedia-candidate";
 import { IdentityResolver } from "../src/lib/server/ingestion/identity";
 import { buildIdentityIndex } from "../src/lib/server/ingestion/identity-index";
 import { runIngestion } from "../src/lib/server/ingestion/runner";
@@ -53,9 +57,14 @@ async function main() {
   const hansardCacheDir = arg("hansard-cache");
   const candidateManifestPath = arg("candidate-manifest");
   const allowPartialHansardCache = hasFlag("allow-partial-cache");
+  const minInterval = arg("min-interval")
+    ? Number(arg("min-interval"))
+    : undefined;
   const wantsHansard = !sources || sources.includes("nz-hansard");
   const wantsCandidateManifest =
     !sources || sources.includes("nz-candidate-manifest");
+  const wantsWikipediaCandidate =
+    !sources || sources.includes("wikipedia-candidate");
   if (wantsHansard && !hansardCacheDir) {
     throw new Error(
       "nz-hansard requires --hansard-cache <path>. Run `bun run fetch:hansard` first.",
@@ -70,6 +79,44 @@ async function main() {
     ? await loadCandidateEvidenceManifest(candidateManifestPath)
     : undefined;
 
+  let wikipediaCandidateSources: WikipediaCandidateSource[] = [];
+  if (wantsWikipediaCandidate) {
+    const allCandidacies = await db
+      .select()
+      .from(candidacies)
+      .where(eq(candidacies.electionId, electionId));
+    const allPeople = await db.select().from(people);
+    const allRaces = await db.select().from(races);
+    const peopleMap = new Map(allPeople.map((person) => [person.id, person]));
+    const racesMap = new Map(allRaces.map((race) => [race.id, race]));
+
+    wikipediaCandidateSources = allCandidacies
+      .filter(
+        (candidacy) =>
+          Array.isArray(candidacy.supportingLinks) &&
+          candidacy.supportingLinks.length > 0,
+      )
+      .map((candidacy) => {
+        const person = peopleMap.get(candidacy.personId);
+        const race = racesMap.get(candidacy.raceId);
+        const wikiUrl = (candidacy.supportingLinks as string[])[0];
+        return {
+          candidateName: person?.name ?? "",
+          district: race?.district ?? race?.name ?? "",
+          wikiUrl,
+        };
+      })
+      .filter((source): source is WikipediaCandidateSource =>
+        Boolean(source.candidateName && source.district && source.wikiUrl),
+      );
+
+    if (wikipediaCandidateSources.length === 0) {
+      console.warn(
+        `No Wikipedia candidate sources found for election=${electionId}`,
+      );
+    }
+  }
+
   console.log(
     `Ingesting election=${electionId} sources=${sources?.join(",") ?? "all"}` +
       `${limit ? ` limit=${limit}` : ""}${dryRun ? " (dry-run)" : ""}`,
@@ -79,6 +126,7 @@ async function main() {
     hansardCacheDir,
     allowPartialHansardCache,
     candidateEvidenceManifest,
+    wikipediaCandidateSources,
   });
   const index = await buildIdentityIndex(electionId, db);
   console.log(
@@ -92,6 +140,7 @@ async function main() {
     limit,
     since,
     dryRun,
+    minIntervalMs: minInterval,
     log: (m) => console.log(m),
   });
 

@@ -108,7 +108,7 @@ describe("acquireHansardCorpus", () => {
     expect(result.complete).toBe(true);
   });
 
-  it("resumes a complete cache without opening the browser", async () => {
+  it("re-runs a complete cache: re-checks page 1, skips cached transcripts", async () => {
     const cacheDir = await tempCache();
     await acquireHansardCorpus({
       cacheDir,
@@ -128,8 +128,9 @@ describe("acquireHansardCorpus", () => {
     });
 
     expect(result.complete).toBe(true);
-    expect(browser.start).not.toHaveBeenCalled();
-    expect(browser.search).not.toHaveBeenCalled();
+    // Page 1 is always re-fetched from the API to detect new content.
+    expect(browser.start).toHaveBeenCalledOnce();
+    expect(browser.search).toHaveBeenCalledTimes(1);
     expect(browser.transcript).not.toHaveBeenCalled();
   });
 
@@ -196,5 +197,101 @@ describe("acquireHansardCorpus", () => {
     expect(result.failures).toEqual([]);
     expect(result.complete).toBe(true);
     expect(browser.search).toHaveBeenCalledTimes(3);
+  });
+
+  it("handles --since change: resets search pages, keeps cached transcripts", async () => {
+    const cacheDir = await tempCache();
+    await acquireHansardCorpus({
+      cacheDir,
+      browser: fakeBrowser(),
+      since: "2024-01-01",
+      pageSize: 3,
+      minIntervalMs: 0,
+    });
+    const firstManifest = await readManifest(cacheDir);
+    expect(firstManifest.completedDates).toHaveLength(3);
+
+    // Re-run with a different --since.
+    const browser = fakeBrowser();
+    const result = await acquireHansardCorpus({
+      cacheDir,
+      browser,
+      since: "2024-02-01",
+      pageSize: 3,
+      minIntervalMs: 0,
+    });
+
+    // Search pages are re-fetched (date-filtered results changed).
+    expect(browser.search).toHaveBeenCalled();
+    // Transcripts that are still in range are skipped (already downloaded).
+    expect(browser.transcript).not.toHaveBeenCalled();
+    // The manifest keeps the old completedDates.
+    expect(result.completedDates).toEqual(firstManifest.completedDates);
+    expect(result.since).toBe("2024-02-01");
+  });
+
+  it("detects new content when total document count grows", async () => {
+    const cacheDir = await tempCache();
+    // First fetch: 6 documents, 2 pages.
+    await acquireHansardCorpus({
+      cacheDir,
+      browser: fakeBrowser(),
+      since: "2024-01-01",
+      pageSize: 3,
+      minIntervalMs: 0,
+    });
+
+    // Second fetch: the corpus grew (count 6 → 9, 3 pages).
+    const browser = fakeBrowser();
+    const grownPage1 = {
+      ...searchSample.pages[0],
+      "@odata.count": 9,
+    };
+    const grownPage2 = {
+      ...searchSample.pages[1],
+      "@odata.count": 9,
+    };
+    const grownPage3 = {
+      pageSize: 3,
+      page: 3,
+      "@odata.count": 9,
+      value: [
+        {
+          id: "77777777-7777-7777-7777-777777777777",
+          title: "New Speech After Last Fetch",
+          subtitle: "",
+          sittingDate: "2024-06-01T00:00:00Z",
+          documentType: "DebateItem",
+          documentSubtype: "Speech",
+          progress: "Final",
+          memberId: null,
+          memberName: null,
+          parliamentNumber: 54,
+          parentId: null,
+        },
+      ],
+    };
+    browser.search.mockImplementation(async (request) => {
+      if (request.page === 1) return grownPage1;
+      if (request.page === 2) return grownPage2;
+      if (request.page === 3) return grownPage3;
+      throw new Error(`unexpected page ${request.page}`);
+    });
+
+    const result = await acquireHansardCorpus({
+      cacheDir,
+      browser,
+      since: "2024-01-01",
+      pageSize: 3,
+      minIntervalMs: 0,
+    });
+
+    // Page 1 is always fetched; count changed so page 2 is re-fetched too.
+    expect(browser.search).toHaveBeenCalledTimes(3);
+    // The new transcript date is fetched; old ones are skipped.
+    expect(browser.transcript).toHaveBeenCalledTimes(1);
+    expect(browser.transcript).toHaveBeenCalledWith("2024-06-01");
+    expect(result.completedPages).toEqual([1, 2, 3]);
+    expect(result.complete).toBe(true);
   });
 });
