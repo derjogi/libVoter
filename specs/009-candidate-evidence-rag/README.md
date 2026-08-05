@@ -64,10 +64,10 @@ use it to pick candidates.
 ### Two-stage retrieval ("search only your electorate's sub-selection")
 
 ```
-electorate ─▶ SQL filter ─▶ candidateIds + partyIds (small set)
+electorate ─▶ SQL filter ─▶ candidacyIds + personIds + partyIds (small set)
                                    │
-user priorities ─▶ embed ─▶ vector search  WHERE candidate_id ∈ ids
-                                                OR party_id ∈ ids
+user priorities ─▶ embed ─▶ vector search  WHERE candidate_id ∈ personIds
+                                                OR party_id ∈ partyIds
                                    │
                        relevant chunks (with source_url, type, date)
                                    │
@@ -89,7 +89,9 @@ the track-record-vs-party split, and citations:
 
 ```ts
 interface EvidenceChunkMeta {
-  candidate_id?: string;   // present for candidate-specific evidence
+  person_id?: string;      // reusable personal evidence
+  candidacy_id?: string;   // campaign evidence for one ballot entry
+  candidate_id?: string;   // legacy compatibility: contains person_id
   party_id?: string;       // present for party-level evidence
   source_type: "voting_record" | "hansard" | "statement"
              | "social" | "manifesto" | "party_policy";
@@ -105,11 +107,76 @@ Storing the original chunk text + `source_url` is what makes summaries
 **expandable** (show full passage in-app) and **linkable** (out to the
 origin), per the product goal.
 
+### Identity and evidence lanes (decision 2026-08-10)
+
+A candidate result represents a **candidacy**, while reusable evidence belongs
+to a **person** or **party**. Carry all three identifiers explicitly rather
+than overloading a generic candidate id:
+
+```ts
+interface Candidate {
+  candidacyId: string; // ballot/ranking/UI identity
+  personId: string; // reusable personal-evidence owner
+  partyId: string | null; // party evidence for this candidacy
+}
+```
+
+The generic NZ election repository joins these records into the candidate
+view. The legacy adapter projects its conflated candidate id as both
+`candidacyId` and `personId`, with `partyId: null` when no stored party id is
+available. Ranking, comparison state, and React keys use `candidacyId`;
+personal evidence retrieval uses `personId`; candidate-party evidence uses the
+selected candidacy's stored `partyId`; standalone party-vote evidence uses
+`PartyMatch.party.id`. Evidence ids must never be reconstructed from party
+names.
+
+Candidate evidence is the labelled union of reusable personal evidence filtered
+by `personId` and campaign evidence filtered by `candidacyId` when the accepted-
+passage index is connected. Personal evidence may be shared by multiple
+candidacies for one person; campaign evidence must never leak across those
+candidacies. In the current `election-nz-2026` Chroma collection, non-empty
+legacy `candidate_id` values are person ids, so the immediate retrieval path
+passes `personId` to the legacy `candidateIds` filter. No migration or
+re-embedding is required; candidacy-scoped Chroma filtering remains deferred.
+Remove ambiguous application-level `Candidate.id` after callers have migrated
+to the explicit fields.
+
+Preserve provenance in the result contract rather than splitting one merged
+array only at render time:
+
+```ts
+interface CandidateMatch {
+  candidateSources: Source[];
+  partySources: Source[];
+  candidateEvidenceStatus: "available" | "empty" | "unavailable";
+  partyEvidenceStatus: "available" | "empty" | "unavailable";
+}
+```
+
+Candidate details must keep provenance visible in separate sections:
+
+1. **Candidate evidence** — personal and campaign material attributable to the
+   person/candidacy.
+2. **Party evidence** — official-party material, never presented as the
+   candidate's personal view.
+
+Successful empty retrieval shows an explicit "No candidate-specific evidence
+available yet" state. Retrieval failure shows an unavailable state instead;
+either personal or party evidence may still render when the other lane fails,
+and failures never remove the ranking cards. Deduplicate overlapping chunks by
+stable `evidence_id`, falling back to canonical `source_url` plus a stable
+passage/chunk locator or content hash, and retain the highest-ranked relevant
+passage. Party cards are clickable and open a detail modal matching the
+candidate-modal interaction, with full untruncated reasoning and citations
+sourced only from the party lane.
+
 ### Summaries (gated, cheap)
 
 - Retrieve relevant chunks for each **shortlisted** candidate (those past
   a match threshold — see spec 005's gating idea), split by
-  `candidate_id` chunks vs their `party_id` chunks.
+  `person_id` reusable-person chunks, `candidacy_id` campaign chunks, and their
+  `party_id` chunks. Read legacy `candidate_id` only as a person-id
+  compatibility field.
 - One summarization LLM call per shortlisted candidate for the individual
   summary, and one per party (cached/deduped across candidates sharing a
   party). Not a per-turn global LLM-JSON blob like today's
@@ -124,8 +191,10 @@ Scrape → clean → chunk → embed → upsert during **DB build**, plus a
 is too slow and flaky. Local HuggingFace embeddings
 (`createEmbeddingModel`) keep ingestion free at scale. Extend
 `scripts/scrape-candidates.ts` and the vector populate path to attach the
-metadata above; associate each source with a `candidate_id` and/or
-`party_id`.
+metadata above. New ingestion emits `person_id` for reusable personal evidence,
+`candidacy_id` for campaign evidence, and/or `party_id` for party evidence; it
+may mirror `person_id` into legacy `candidate_id` while the existing Chroma
+reader remains in service.
 
 ### Infra at scale (decision deferred, flagged)
 
@@ -183,19 +252,24 @@ metadata above; associate each source with a `candidate_id` and/or
       `scripts/embed-evidence.ts` chunks and embeds the canonical
       `evidenceSources` rows, and filtered retrieval returns cited candidate
       and party evidence with distance normalized to similarity.
-      `--repopulate` is collection-idempotent: it deletes only Chroma's
-      derived `evidence` collection via `deleteCollection`, discards the stale
-      LangChain collection handle, then rebuilds the index once.
+      For the current collection, callers pass `personId` through the legacy
+      `candidateIds` filter; candidacy-scoped campaign retrieval belongs to the
+      accepted-passage path.
+      `--repopulate` is collection-idempotent: it deletes only the explicitly
+      selected election/reference collection via `deleteCollection`, never any
+      other scoped collection, discards the stale LangChain collection handle,
+      then rebuilds the selected index once.
 - [~] **Phase 5 — ranking + confidence:** rank the electorate pool from
       retrieved-evidence relevance; derive confidence from top-vs-second
       margin + topic/evidence coverage (carries over spec 005's formula).
       `rankCandidates()` now calls `RAGQueryEngine.retrieveForCandidate()`
-      for each available candidate, includes the retrieved individual/party
+      for each available candidate, using its person id for the current
+      `candidateIds` metadata filter, and includes the retrieved personal/party
       chunks in the ranking prompt, surfaces source citations on
-      `CandidateMatch.sources`, and uses evidence similarity as a fallback
-      score when the model returns no ranking in mock mode. The LLM ranking
-      call is still retained for holistic scoring; full evidence-only scoring
-      and UI summaries remain Phase 6/follow-up work.
+      `CandidateMatch.candidateSources` / `partySources`, and uses evidence
+      similarity as a fallback score when the model returns no ranking in mock
+      mode. The LLM ranking call is still retained for holistic scoring; full
+      evidence-only scoring and UI summaries remain Phase 6/follow-up work.
 - [ ] **Phase 6 — gated summaries + UI:** for shortlisted candidates,
       generate individual + party summaries with citations; render
       expandable, source-linked cards (individual track record vs party
@@ -210,6 +284,23 @@ metadata above; associate each source with a `candidate_id` and/or
 - [ ] A retrieved chunk round-trips its `source_url` / `source_type` so
       the UI can expand the passage and link out.
 - [ ] Individual vs party evidence are separable for the same candidate.
+- [ ] Repository returns distinct `candidacyId`, `personId`, and `partyId`;
+      ranking remains keyed by candidacy while personal retrieval filters by
+      person.
+- [ ] Two candidacies for one person remain distinct ranking/UI entries and
+      share only that person's reusable evidence; candidacy-scoped campaign
+      evidence remains isolated to its exact candidacy.
+- [ ] Candidate details render candidate and party citations in separate
+      sections, including an explicit empty candidate-evidence state.
+- [ ] Party ranking retrieves citations by stored `partyId`, and clicking a
+      party opens its detail modal with untruncated reasoning.
+- [ ] Stored party ids differing from name-derived slugs still retrieve the
+      correct candidate-party and standalone party-vote evidence.
+- [ ] Personal and party lanes degrade independently: empty, one-lane failure,
+      and total retrieval failure preserve cards and show the correct state.
+- [ ] Overlapping chunks deduplicate by `evidence_id` (URL + stable passage
+      locator/content-hash fallback) while retaining the highest-ranked
+      relevant passage.
 - [ ] Distance→similarity fix: the closest chunk ranks first (regression
       test for the inversion bug).
 - [ ] Summaries are only generated for candidates past the match
