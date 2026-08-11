@@ -4,7 +4,23 @@ import type { CandidateMatch } from "@/types";
 
 function fakeCandidate(score: number): CandidateMatch {
   return {
-    candidate: { id: score, name: `c${score}` } as any,
+    candidate: {
+      id: String(score),
+      candidacyId: String(score),
+      personId: `person-${score}`,
+      partyId: null,
+      name: `c${score}`,
+      party: null,
+      seat: "Test Seat",
+      candidate_statement: null,
+      key_positions: null,
+      why: null,
+      key_skills: null,
+      top_issues: null,
+      supporting_links: null,
+      photo_url: null,
+      created_at: new Date(0),
+    },
     score,
     reasoning: "",
     pros: [],

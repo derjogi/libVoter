@@ -167,14 +167,18 @@ describe("evidence retrieval (mock mode)", () => {
   it("splits a candidate's individual track record from their party line", async () => {
     const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
     const engine = new RAGQueryEngine();
-    const { individual, party } = await engine.retrieveForCandidate(
-      "housing",
-      "nonexistent-candidate",
-      "nz-2026-party-labour",
-      "nz-2026",
-    );
-    expect(individual).toHaveLength(0); // no candidate-level evidence yet
-    expect(party.every((c) => c.partyId === "nz-2026-party-labour")).toBe(true);
+    const { individual, party } = await engine.retrieveForCandidate("housing", {
+      personId: "person-green",
+      partyId: "nz-2026-party-green",
+      electionId: "nz-2026",
+    });
+    expect(individual).toEqual([
+      expect.objectContaining({
+        candidateId: "person-green",
+        sourceTitle: "Greta Green — candidate statement",
+      }),
+    ]);
+    expect(party.every((c) => c.partyId === "nz-2026-party-green")).toBe(true);
     expect(party.length).toBeGreaterThan(0);
   });
 });

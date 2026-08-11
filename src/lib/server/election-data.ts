@@ -105,34 +105,38 @@ export function createElectionDataRepository(
             args: [seat],
           })
         : await client.execute({
-            sql: "SELECT c.id AS candidacy_id, c.legacy_candidate_id, p.name, ep.name AS party, COALESCE(r.district, r.name) AS seat, c.candidate_statement, c.key_positions, c.why, c.key_skills, c.top_issues, c.supporting_links, p.photo_url, c.created_at FROM candidacies c JOIN races r ON r.id=c.race_id JOIN people p ON p.id=c.person_id LEFT JOIN election_parties ep ON ep.id=c.party_id WHERE c.election_id=? AND (r.district=? OR r.name=?) ORDER BY p.name",
+            sql: "SELECT c.id AS candidacy_id, c.person_id, c.party_id, p.name, ep.name AS party, COALESCE(r.district, r.name) AS seat, c.candidate_statement, c.key_positions, c.why, c.key_skills, c.top_issues, c.supporting_links, p.photo_url, c.created_at FROM candidacies c JOIN races r ON r.id=c.race_id JOIN people p ON p.id=c.person_id LEFT JOIN election_parties ep ON ep.id=c.party_id WHERE c.election_id=? AND (r.district=? OR r.name=?) ORDER BY p.name",
             args: [config.id, seat, seat],
           });
-      return result.rows.map((row) => ({
-        id: String(
-          legacy ? row.id : (row.legacy_candidate_id ?? row.candidacy_id),
-        ),
-        name: String(row.name),
-        party: row.party == null ? null : String(row.party),
-        seat: String(row.seat),
-        candidate_statement:
-          row.candidate_statement == null
-            ? null
-            : String(row.candidate_statement),
-        key_positions:
-          row.key_positions == null
-            ? null
-            : JSON.parse(String(row.key_positions)),
-        why: row.why == null ? null : String(row.why),
-        key_skills: row.key_skills == null ? null : String(row.key_skills),
-        top_issues: row.top_issues == null ? null : String(row.top_issues),
-        supporting_links:
-          row.supporting_links == null
-            ? null
-            : JSON.parse(String(row.supporting_links)),
-        photo_url: row.photo_url == null ? null : String(row.photo_url),
-        created_at: new Date(Number(row.created_at) * 1000),
-      }));
+      return result.rows.map((row) => {
+        const candidacyId = String(legacy ? row.id : row.candidacy_id);
+        return {
+          id: candidacyId,
+          candidacyId,
+          personId: String(legacy ? row.id : row.person_id),
+          partyId: legacy || row.party_id == null ? null : String(row.party_id),
+          name: String(row.name),
+          party: row.party == null ? null : String(row.party),
+          seat: String(row.seat),
+          candidate_statement:
+            row.candidate_statement == null
+              ? null
+              : String(row.candidate_statement),
+          key_positions:
+            row.key_positions == null
+              ? null
+              : JSON.parse(String(row.key_positions)),
+          why: row.why == null ? null : String(row.why),
+          key_skills: row.key_skills == null ? null : String(row.key_skills),
+          top_issues: row.top_issues == null ? null : String(row.top_issues),
+          supporting_links:
+            row.supporting_links == null
+              ? null
+              : JSON.parse(String(row.supporting_links)),
+          photo_url: row.photo_url == null ? null : String(row.photo_url),
+          created_at: new Date(Number(row.created_at) * 1000),
+        };
+      });
     },
     async listParties() {
       if ((await kind()) === "legacy") {

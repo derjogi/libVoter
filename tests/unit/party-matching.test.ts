@@ -15,6 +15,11 @@ function candidate(overrides: {
 }) {
   return {
     id: overrides.id,
+    candidacyId: overrides.id,
+    personId: `person-${overrides.id}`,
+    partyId: overrides.party
+      ? `nz-2026-party-${overrides.party.toLowerCase()}`
+      : null,
     name: overrides.name,
     party: overrides.party,
     seat: "Wellington Central",

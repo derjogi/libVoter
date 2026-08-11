@@ -350,6 +350,16 @@ class MockVectorStoreManager implements EvidenceVectorStore {
   private fixtures: EvidenceChunk[] = [
     {
       content:
+        "Greta Green supports urgent climate action and affordable housing.",
+      score: 0.94,
+      candidateId: "person-green",
+      sourceType: "candidate_statement",
+      sourceUrl: "https://example.test/candidates/greta-green",
+      sourceTitle: "Greta Green — candidate statement",
+      electionId: "nz-2026",
+    },
+    {
+      content:
         "ACT supports lower taxes, deregulation and choice in education. Classical-liberal platform.",
       score: 0.92,
       partyId: "nz-2026-party-act",

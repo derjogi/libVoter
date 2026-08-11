@@ -438,8 +438,8 @@ Output fields:
       );
       const candidateBlock = availableCandidates
         .map((c) => {
-          const evidence = evidenceByCandidate.get(c.id.toString());
-          return `id=${c.id} | ${c.name} (${c.party || "Independent"})\n${this.createCandidateInfoSummary(c)}\n${this.createEvidenceSummary(evidence)}`;
+          const evidence = evidenceByCandidate.get(c.candidacyId);
+          return `id=${c.candidacyId} | ${c.name} (${c.party || "Independent"})\n${this.createCandidateInfoSummary(c)}\n${this.createEvidenceSummary(evidence)}`;
         })
         .join("\n\n");
 
@@ -451,7 +451,7 @@ If a candidate has little relevant information, score them lower. Return exactly
 
       const human = `Voter preferences:\n${userProfile}\n\nCandidates and retrieved evidence:\n${candidateBlock}`;
 
-      const expectedIds = availableCandidates.map((c) => c.id.toString());
+      const expectedIds = availableCandidates.map((c) => c.candidacyId);
       const ranking = await this.generateRanking(
         [
           new SystemMessage({ content: system }),
@@ -464,7 +464,7 @@ If a candidate has little relevant information, score them lower. Return exactly
 
       return availableCandidates
         .map((candidate) => {
-          const id = candidate.id.toString();
+          const id = candidate.candidacyId;
           const r = byId.get(id);
           const evidence = evidenceByCandidate.get(id);
           const sources = this.sourcesFromEvidence(evidence);
@@ -565,27 +565,15 @@ Return exactly one entry per party id, using the ids exactly as given.`;
       candidates,
       4,
       async (candidate) => {
-        const partyId = this.partyEvidenceId(candidate.party);
-        const evidence = await engine.retrieveForCandidate(
-          query,
-          candidate.id.toString(),
-          partyId,
-          electionConfig.id,
-        );
-        return [candidate.id.toString(), evidence] as const;
+        const evidence = await engine.retrieveForCandidate(query, {
+          personId: candidate.personId,
+          partyId: candidate.partyId,
+          electionId: electionConfig.id,
+        });
+        return [candidate.candidacyId, evidence] as const;
       },
     );
     return new Map(entries);
-  }
-
-  private partyEvidenceId(partyName: string | null): string | undefined {
-    if (!partyName?.trim()) return undefined;
-    const slug = partyName
-      .toLowerCase()
-      .replace(/^the\s+/, "")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
-    return slug ? `${electionConfig.id}-party-${slug}` : undefined;
   }
 
   private createEvidenceSummary(evidence?: CandidateEvidence): string {

@@ -11,11 +11,17 @@ beforeAll(() => {
 
 function candidate(overrides: {
   id: string;
+  candidacyId?: string;
+  personId?: string;
+  partyId?: string | null;
   name: string;
   party: string | null;
 }) {
   return {
     id: overrides.id,
+    candidacyId: overrides.candidacyId ?? overrides.id,
+    personId: overrides.personId ?? overrides.id,
+    partyId: overrides.partyId ?? null,
     name: overrides.name,
     party: overrides.party,
     seat: "Wellington Central",
@@ -91,17 +97,35 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
           timestamp: new Date(),
         },
       ],
-      [candidate({ id: "1", name: "Greta Green", party: "Green" })],
+      [
+        candidate({
+          id: "candidacy-green",
+          candidacyId: "candidacy-green",
+          personId: "person-green",
+          partyId: "nz-2026-party-green",
+          name: "Greta Green",
+          party: "Green",
+        }),
+      ],
     );
 
     expect(result.candidateMatches).toHaveLength(1);
     const [match] = result.candidateMatches ?? [];
-    expect(match.sources).toEqual([
-      expect.objectContaining({
-        title: "Green — party platform (Wikipedia)",
-        url: expect.stringContaining("wikipedia.org"),
-      }),
-    ]);
+    expect(match.candidate).toMatchObject({
+      id: "candidacy-green",
+      candidacyId: "candidacy-green",
+      personId: "person-green",
+      partyId: "nz-2026-party-green",
+    });
+    expect(match.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: "Greta Green — candidate statement" }),
+        expect.objectContaining({
+          title: "Green — party platform (Wikipedia)",
+          url: expect.stringContaining("wikipedia.org"),
+        }),
+      ]),
+    );
     expect(match.reasoning).toContain("Evidence consulted");
     expect(match.score).toBeGreaterThan(0);
   });

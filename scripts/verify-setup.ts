@@ -139,9 +139,11 @@ async function main() {
       const engine = new RAGQueryEngine();
       const ev = await engine.retrieveForCandidate(
         electionConfig.keyTopics.join(", "),
-        "__verify_no_such_candidate__",
-        withParty.partyId,
-        ID,
+        {
+          personId: "__verify_no_such_person__",
+          partyId: withParty.partyId,
+          electionId: ID,
+        },
       );
       const n = ev.party.length;
       ragOk = n > 0;

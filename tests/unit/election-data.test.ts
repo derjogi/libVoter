@@ -41,7 +41,14 @@ describe("election data repository", () => {
     expect(await repository.listSeats()).toEqual(["Legacy Seat"]);
     const candidates = await repository.getCandidatesForSeat("Legacy Seat");
     expect(candidates).toMatchObject([
-      { id: "7", name: "Legacy Person", seat: "Legacy Seat" },
+      {
+        id: "7",
+        candidacyId: "7",
+        personId: "7",
+        partyId: null,
+        name: "Legacy Person",
+        seat: "Legacy Seat",
+      },
     ]);
     expect(candidates[0]).not.toHaveProperty("ward");
   });
@@ -62,7 +69,8 @@ describe("election data repository", () => {
     await client.batch([
       "INSERT INTO races VALUES ('race-1', 'nz-2026', 'electorate', 'Test Electorate', 'Test Electorate')",
       "INSERT INTO people VALUES ('person-1', 'Generic Person', NULL)",
-      "INSERT INTO candidacies VALUES ('candidacy-1', 'nz-2026', 'race-1', 'person-1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1700000000)",
+      "INSERT INTO election_parties VALUES ('party-1', 'nz-2026', 'Generic Party', NULL)",
+      "INSERT INTO candidacies VALUES ('candidacy-1', 'nz-2026', 'race-1', 'person-1', 'party-1', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1700000000)",
     ]);
     const repository = createElectionDataRepository(client, NZ_2026);
 
@@ -70,7 +78,15 @@ describe("election data repository", () => {
     expect(
       await repository.getCandidatesForSeat("Test Electorate"),
     ).toMatchObject([
-      { id: "candidacy-1", name: "Generic Person", seat: "Test Electorate" },
+      {
+        id: "candidacy-1",
+        candidacyId: "candidacy-1",
+        personId: "person-1",
+        partyId: "party-1",
+        name: "Generic Person",
+        party: "Generic Party",
+        seat: "Test Electorate",
+      },
     ]);
   });
 

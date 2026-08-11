@@ -39,17 +39,14 @@ export async function retrieveEvidence(
 /** Evidence for one candidate, split into individual track record vs party line. */
 export async function retrieveCandidateEvidence(
   query: string,
-  candidateId: string,
-  partyId: string | undefined,
-  electionId: string,
+  identity: {
+    personId: string;
+    partyId?: string | null;
+    electionId: string;
+  },
 ) {
   try {
-    const data = await getRAGEngine().retrieveForCandidate(
-      query,
-      candidateId,
-      partyId,
-      electionId,
-    );
+    const data = await getRAGEngine().retrieveForCandidate(query, identity);
     return { success: true, data };
   } catch (error) {
     console.error("Candidate evidence retrieval failed:", error);

@@ -42,18 +42,26 @@ export class RAGQueryEngine {
    */
   async retrieveForCandidate(
     query: string,
-    candidateId: string,
-    partyId: string | undefined,
-    electionId: string,
+    identity: {
+      personId: string;
+      partyId?: string | null;
+      electionId: string;
+    },
     maxResults = 6,
   ): Promise<CandidateEvidence> {
     const store = await getVectorStoreManager();
-    const ids = { electionId, candidateIds: [candidateId] };
+    const ids = {
+      electionId: identity.electionId,
+      candidateIds: [identity.personId],
+    };
     const individual = await store.query(query, ids, maxResults);
-    const party = partyId
+    const party = identity.partyId
       ? await store.query(
           query,
-          { electionId, partyIds: [partyId] },
+          {
+            electionId: identity.electionId,
+            partyIds: [identity.partyId],
+          },
           maxResults,
         )
       : [];

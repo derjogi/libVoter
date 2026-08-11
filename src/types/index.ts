@@ -90,7 +90,11 @@ export interface UserPreferences {
 
 /** Serializable candidate model owned by the application boundary. */
 export interface Candidate {
+  /** @deprecated Use candidacyId. */
   id: string;
+  candidacyId: string;
+  personId: string;
+  partyId: string | null;
   name: string;
   party: string | null;
   seat: string;
