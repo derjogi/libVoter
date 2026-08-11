@@ -117,17 +117,274 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
       personId: "person-green",
       partyId: "nz-2026-party-green",
     });
-    expect(match.sources).toEqual(
+    expect(match.candidateSources).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ title: "Greta Green — candidate statement" }),
+      ]),
+    );
+    expect(match.partySources).toEqual(
+      expect.arrayContaining([
         expect.objectContaining({
           title: "Green — party platform (Wikipedia)",
           url: expect.stringContaining("wikipedia.org"),
         }),
       ]),
     );
+    expect(match.candidateEvidenceStatus).toBe("available");
+    expect(match.partyEvidenceStatus).toBe("available");
     expect(match.reasoning).toContain("Evidence consulted");
     expect(match.score).toBeGreaterThan(0);
+  });
+
+  it("keeps every ranked card when one candidate evidence retrieval fails", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler(
+      () =>
+        ({
+          retrieveForCandidate: async (
+            _query: string,
+            identity: { personId: string },
+          ) => {
+            if (identity.personId === "person-broken")
+              throw new Error("offline");
+            return {
+              individual: { status: "empty", data: [] },
+              party: { status: "empty", data: [] },
+            };
+          },
+          retrieveForParty: async () => ({ status: "empty", data: [] }),
+        }) as never,
+    );
+
+    const result = await handler.rankResponses(
+      [
+        {
+          id: "r",
+          questionId: "q",
+          componentType: "chat",
+          value: "housing",
+          timestamp: new Date(),
+        },
+      ],
+      [
+        candidate({
+          id: "ok",
+          personId: "person-ok",
+          name: "Okay",
+          party: null,
+        }),
+        candidate({
+          id: "broken",
+          personId: "person-broken",
+          name: "Broken",
+          party: null,
+        }),
+      ],
+    );
+
+    expect(
+      result.candidateMatches.map((match) => match.candidate.id).sort(),
+    ).toEqual(["broken", "ok"]);
+    expect(
+      result.candidateMatches.find((match) => match.candidate.id === "broken"),
+    ).toMatchObject({
+      candidateEvidenceStatus: "unavailable",
+      partyEvidenceStatus: "empty",
+    });
+  });
+
+  it("keeps candidate cards when the RAG factory fails", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler(() => {
+      throw new Error("setup failed");
+    });
+
+    const result = await handler.rankResponses(
+      [
+        {
+          id: "r",
+          questionId: "q",
+          componentType: "chat",
+          value: "housing",
+          timestamp: new Date(),
+        },
+      ],
+      [candidate({ id: "one", name: "One", party: "Green", partyId: "green" })],
+    );
+
+    expect(result.candidateMatches).toHaveLength(1);
+    expect(result.candidateMatches[0]).toMatchObject({
+      candidateEvidenceStatus: "unavailable",
+      partyEvidenceStatus: "unavailable",
+    });
+  });
+
+  it("keeps surviving candidate citations when the party evidence lane fails", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler(
+      () =>
+        ({
+          retrieveForCandidate: async () => ({
+            individual: {
+              status: "available",
+              data: [
+                {
+                  content: "personal citation",
+                  score: 0.9,
+                  sourceType: "statement",
+                  sourceUrl: "https://example.test/personal",
+                  sourceTitle: "Personal",
+                },
+              ],
+            },
+            party: { status: "unavailable", data: [] },
+          }),
+          retrieveForParty: async () => ({ status: "empty", data: [] }),
+        }) as never,
+    );
+
+    const result = await handler.rankResponses(
+      [
+        {
+          id: "r",
+          questionId: "q",
+          componentType: "chat",
+          value: "housing",
+          timestamp: new Date(),
+        },
+      ],
+      [candidate({ id: "one", name: "One", party: "Green" })],
+    );
+
+    expect(result.candidateMatches[0]).toMatchObject({
+      candidateEvidenceStatus: "available",
+      partyEvidenceStatus: "unavailable",
+      candidateSources: [
+        expect.objectContaining({ excerpt: "personal citation" }),
+      ],
+    });
+  });
+
+  it("keeps surviving party citations when the candidate evidence lane fails", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const handler = new AIChatHandler(
+      () =>
+        ({
+          retrieveForCandidate: async () => ({
+            individual: { status: "unavailable", data: [] },
+            party: {
+              status: "available",
+              data: [
+                {
+                  content: "party citation",
+                  score: 0.9,
+                  sourceType: "party_manifesto",
+                  sourceUrl: "https://example.test/party",
+                  sourceTitle: "Party platform",
+                },
+              ],
+            },
+          }),
+          retrieveForParty: async () => ({ status: "empty", data: [] }),
+        }) as never,
+    );
+
+    const result = await handler.rankResponses(
+      [
+        {
+          id: "r",
+          questionId: "q",
+          componentType: "chat",
+          value: "housing",
+          timestamp: new Date(),
+        },
+      ],
+      [candidate({ id: "one", name: "One", party: "Green" })],
+    );
+
+    expect(result.candidateMatches).toHaveLength(1);
+    expect(result.candidateMatches[0]).toMatchObject({
+      candidateEvidenceStatus: "unavailable",
+      partyEvidenceStatus: "available",
+      candidateSources: [],
+      partySources: [
+        expect.objectContaining({
+          title: "Party platform",
+          excerpt: "party citation",
+        }),
+      ],
+    });
+  });
+
+  it("deduplicates each provenance lane while preserving the best excerpt", async () => {
+    const { AIChatHandler } = await import("@/lib/server/ai/chat-handler");
+    const chunks = [
+      {
+        content: "weaker overlap",
+        score: 0.4,
+        evidenceId: "source-1",
+        sourceType: "statement",
+        sourceUrl: "https://EXAMPLE.test/policy/",
+        sourceTitle: "Policy",
+      },
+      {
+        content: "strongest excerpt",
+        score: 0.9,
+        evidenceId: "source-1",
+        sourceType: "statement",
+        sourceUrl: "https://example.test/policy",
+        sourceTitle: "Policy",
+      },
+      {
+        content: "distinct passage one",
+        score: 0.8,
+        sourceType: "statement",
+        sourceUrl: "https://example.test/shared",
+        sourceTitle: "Shared",
+      },
+      {
+        content: "distinct passage two",
+        score: 0.7,
+        sourceType: "statement",
+        sourceUrl: "https://example.test/shared",
+        sourceTitle: "Shared",
+      },
+    ];
+    const handler = new AIChatHandler(
+      () =>
+        ({
+          retrieveForCandidate: async () => ({
+            individual: { status: "available", data: chunks },
+            party: { status: "empty", data: [] },
+          }),
+          retrieveForParty: async () => ({ status: "empty", data: [] }),
+        }) as never,
+    );
+
+    const result = await handler.rankResponses(
+      [
+        {
+          id: "r",
+          questionId: "q",
+          componentType: "chat",
+          value: "housing",
+          timestamp: new Date(),
+        },
+      ],
+      [candidate({ id: "one", name: "One", party: null })],
+    );
+    const sources = result.candidateMatches[0].candidateSources;
+
+    expect(sources).toHaveLength(3);
+    expect(
+      sources.find((source) => source.evidenceId === "source-1"),
+    ).toMatchObject({
+      reliability: 0.9,
+      excerpt: "strongest excerpt",
+    });
+    expect(
+      sources.filter((source) => source.url.includes("/shared")),
+    ).toHaveLength(2);
   });
 
   it("retries schema-valid but incomplete candidate rankings", async () => {

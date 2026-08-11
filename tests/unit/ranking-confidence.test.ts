@@ -26,7 +26,10 @@ function fakeCandidate(score: number): CandidateMatch {
     pros: [],
     cons: [],
     topMatchingPolicies: [],
-    sources: [],
+    candidateSources: [],
+    partySources: [],
+    candidateEvidenceStatus: "empty",
+    partyEvidenceStatus: "empty",
   };
 }
 

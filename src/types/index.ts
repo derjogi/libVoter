@@ -133,14 +133,23 @@ export interface CandidateMatch {
   pros: string[];
   cons: string[];
   topMatchingPolicies: string[];
-  sources: Source[];
+  candidateSources: Source[];
+  partySources: Source[];
+  candidateEvidenceStatus: EvidenceStatus;
+  partyEvidenceStatus: EvidenceStatus;
+  /** @deprecated Use the provenance-specific source arrays. */
+  sources?: Source[];
 }
+
+export type EvidenceStatus = "available" | "empty" | "unavailable";
 
 export interface Source {
   title: string;
   url: string;
   reliability?: number; // 0-1
   date?: Date;
+  evidenceId?: string;
+  excerpt?: string;
 }
 
 // === Party Types (spec 019: MMP party-vote lane) ===
@@ -168,6 +177,7 @@ export interface PartyMatch {
   reasoning: string;
   topMatchingPolicies: string[];
   sources: Source[];
+  evidenceStatus: EvidenceStatus;
 }
 
 // === UI Component Types ===

@@ -43,7 +43,10 @@ export function toUnrankedMatch(candidate: Candidate): CandidateMatch {
     pros: [],
     cons: [],
     topMatchingPolicies: extractTopPolicies(candidate),
-    sources: [],
+    candidateSources: [],
+    partySources: [],
+    candidateEvidenceStatus: "empty",
+    partyEvidenceStatus: "empty",
   };
 }
 
@@ -62,6 +65,7 @@ export function toUnrankedPartyMatch(party: PartySummary): PartyMatch {
     reasoning: "",
     topMatchingPolicies: [],
     sources: [],
+    evidenceStatus: "empty",
   };
 }
 

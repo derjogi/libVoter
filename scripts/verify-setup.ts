@@ -145,7 +145,7 @@ async function main() {
           electionId: ID,
         },
       );
-      const n = ev.party.length;
+      const n = ev.party.data.length;
       ragOk = n > 0;
       ragDetail = `${n} party-evidence chunks for ${withParty.party}`;
     } catch (err) {

@@ -172,13 +172,149 @@ describe("evidence retrieval (mock mode)", () => {
       partyId: "nz-2026-party-green",
       electionId: "nz-2026",
     });
-    expect(individual).toEqual([
+    expect(individual.status).toBe("available");
+    expect(individual.data).toEqual([
       expect.objectContaining({
         candidateId: "person-green",
         sourceTitle: "Greta Green — candidate statement",
       }),
     ]);
-    expect(party.every((c) => c.partyId === "nz-2026-party-green")).toBe(true);
-    expect(party.length).toBeGreaterThan(0);
+    expect(party.data.every((c) => c.partyId === "nz-2026-party-green")).toBe(
+      true,
+    );
+    expect(party.status).toBe("available");
+  });
+
+  it("reports successful-empty candidate lanes independently", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    const engine = new RAGQueryEngine(async () => ({
+      query: async () => [],
+      populate: async () => 0,
+      repopulate: async () => 0,
+    }));
+    const result = await engine.retrieveForCandidate("housing", {
+      personId: "p",
+      partyId: "party",
+      electionId: "e",
+    });
+    expect(result).toEqual({
+      individual: { status: "empty", data: [] },
+      party: { status: "empty", data: [] },
+    });
+  });
+
+  it("settles rejected personal and party lanes as unavailable", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    const engine = new RAGQueryEngine(async () => ({
+      query: async () => {
+        throw new Error("offline");
+      },
+      populate: async () => 0,
+      repopulate: async () => 0,
+    }));
+    const result = await engine.retrieveForCandidate("housing", {
+      personId: "p",
+      partyId: "party",
+      electionId: "e",
+    });
+    expect(result.individual).toEqual({ status: "unavailable", data: [] });
+    expect(result.party).toEqual({ status: "unavailable", data: [] });
+  });
+
+  it("settles rejected store loading for requested candidate lanes", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    let loads = 0;
+    const engine = new RAGQueryEngine(async () => {
+      loads += 1;
+      throw new Error("store unavailable");
+    });
+
+    await expect(
+      engine.retrieveForCandidate("housing", {
+        personId: "p",
+        partyId: "party",
+        electionId: "e",
+      }),
+    ).resolves.toEqual({
+      individual: { status: "unavailable", data: [] },
+      party: { status: "unavailable", data: [] },
+    });
+    expect(loads).toBe(1);
+  });
+
+  it("keeps an omitted party lane empty when store loading rejects", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    const engine = new RAGQueryEngine(async () => {
+      throw new Error("store unavailable");
+    });
+
+    await expect(
+      engine.retrieveForCandidate("housing", {
+        personId: "p",
+        electionId: "e",
+      }),
+    ).resolves.toEqual({
+      individual: { status: "unavailable", data: [] },
+      party: { status: "empty", data: [] },
+    });
+  });
+
+  it("settles rejected store loading for party retrieval", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    const engine = new RAGQueryEngine(async () => {
+      throw new Error("store unavailable");
+    });
+
+    await expect(
+      engine.retrieveForParty("housing", "party", "e"),
+    ).resolves.toEqual({ status: "unavailable", data: [] });
+  });
+
+  it("keeps personal evidence when the party lane rejects", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    const engine = new RAGQueryEngine(async () => ({
+      query: async (_query: string, filter: { candidateIds?: string[] }) => {
+        if (!filter.candidateIds) throw new Error("party offline");
+        return [{ content: "personal position", score: 0.9 }] as never;
+      },
+      populate: async () => 0,
+      repopulate: async () => 0,
+    }));
+
+    const result = await engine.retrieveForCandidate("housing", {
+      personId: "p",
+      partyId: "party",
+      electionId: "e",
+    });
+
+    expect(result.individual).toMatchObject({
+      status: "available",
+      data: [expect.objectContaining({ content: "personal position" })],
+    });
+    expect(result.party).toEqual({ status: "unavailable", data: [] });
+  });
+
+  it("keeps party evidence when the personal lane rejects", async () => {
+    const { RAGQueryEngine } = await import("@/lib/server/rag/query-engine");
+    const engine = new RAGQueryEngine(async () => ({
+      query: async (_query: string, filter: { partyIds?: string[] }) => {
+        if (!filter.partyIds) throw new Error("personal offline");
+        return [{ content: "party position", score: 0.8 }] as never;
+      },
+      populate: async () => 0,
+      repopulate: async () => 0,
+    }));
+
+    const result = await engine.retrieveForCandidate("housing", {
+      personId: "p",
+      partyId: "party",
+      electionId: "e",
+    });
+
+    expect(result.individual).toEqual({ status: "unavailable", data: [] });
+    expect(result.party).toMatchObject({
+      status: "available",
+      data: [expect.objectContaining({ content: "party position" })],
+    });
   });
 });
