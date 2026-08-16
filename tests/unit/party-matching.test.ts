@@ -86,9 +86,15 @@ describe("AIChatHandler.rankResponses party lane (spec 019)", () => {
     // Candidate lane is unchanged by the presence of the party lane.
     expect(withoutParties.partyMatches).toEqual([]);
     expect(
-      withParties.candidateMatches.map((m) => [m.candidate.candidacyId, m.score]),
+      withParties.candidateMatches.map((m) => [
+        m.candidate.candidacyId,
+        m.score,
+      ]),
     ).toEqual(
-      withoutParties.candidateMatches.map((m) => [m.candidate.candidacyId, m.score]),
+      withoutParties.candidateMatches.map((m) => [
+        m.candidate.candidacyId,
+        m.score,
+      ]),
     );
 
     // Party lane returns one entry per party, sorted by score (desc).

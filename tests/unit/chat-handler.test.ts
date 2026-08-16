@@ -181,10 +181,14 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     );
 
     expect(
-      result.candidateMatches.map((match) => match.candidate.candidacyId).sort(),
+      result.candidateMatches
+        .map((match) => match.candidate.candidacyId)
+        .sort(),
     ).toEqual(["broken", "ok"]);
     expect(
-      result.candidateMatches.find((match) => match.candidate.candidacyId === "broken"),
+      result.candidateMatches.find(
+        (match) => match.candidate.candidacyId === "broken",
+      ),
     ).toMatchObject({
       candidateEvidenceStatus: "unavailable",
       partyEvidenceStatus: "empty",
