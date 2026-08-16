@@ -173,6 +173,61 @@ describe("right-panel evidence details", () => {
   });
 
   it.each([
+    ["candidate", CandidateModal],
+    ["party", PartyModal],
+  ] as const)(
+    "renders same-URL distinct %s passages without duplicate React keys",
+    async (kind, Modal) => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+      const sources = [
+        {
+          title: "Shared source",
+          url: "https://example.test/shared-source",
+          evidenceId: `${kind}-evidence-1`,
+          excerpt: `First ${kind} passage.`,
+        },
+        {
+          title: "Shared source",
+          url: "https://example.test/shared-source",
+          evidenceId: `${kind}-evidence-2`,
+          excerpt: `Second ${kind} passage.`,
+        },
+      ];
+
+      await act(async () => {
+        root.render(
+          kind === "candidate"
+            ? createElement(Modal, {
+                candidate: { ...candidate, candidateSources: sources },
+                isOpen: true,
+                onClose: vi.fn(),
+              })
+            : createElement(Modal, {
+                party: { ...party, sources },
+                isOpen: true,
+                onClose: vi.fn(),
+              }),
+        );
+      });
+
+      expect(document.body.textContent).toContain(`First ${kind} passage.`);
+      expect(document.body.textContent).toContain(`Second ${kind} passage.`);
+      expect(
+        consoleError.mock.calls.some((call) =>
+          call.some(
+            (value) =>
+              typeof value === "string" &&
+              value.includes("Encountered two children with the same key"),
+          ),
+        ),
+      ).toBe(false);
+      consoleError.mockRestore();
+    },
+  );
+
+  it.each([
     ["empty", "No party evidence was found"],
     ["unavailable", "Party evidence is currently unavailable"],
   ] as const)("shows %s party evidence status copy", async (status, copy) => {

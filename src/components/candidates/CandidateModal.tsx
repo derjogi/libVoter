@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import type { CandidateMatch, EvidenceStatus, Source } from "@/types";
-import { EvidenceSource } from "./EvidenceSource";
+import { EvidenceSource, evidenceSourceKey } from "./EvidenceSource";
 
 function EvidenceLane({
   heading,
@@ -30,7 +30,7 @@ function EvidenceLane({
         <div className="space-y-2">
           {sources.map((source) => (
             <EvidenceSource
-              key={source.url}
+              key={evidenceSourceKey(source)}
               source={source}
               titleClassName="flex items-center justify-between gap-2 font-medium text-sm"
               iconClassName="h-4 w-4 shrink-0 text-muted-foreground"

@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { EvidenceStatus, PartyMatch } from "@/types";
-import { EvidenceSource } from "./EvidenceSource";
+import { EvidenceSource, evidenceSourceKey } from "./EvidenceSource";
 
 interface PartyModalProps {
   party: PartyMatch | null;
@@ -74,7 +74,7 @@ export function PartyModal({
               <div className="space-y-3">
                 {party.sources.map((source) => (
                   <EvidenceSource
-                    key={source.url}
+                    key={evidenceSourceKey(source)}
                     source={source}
                     titleClassName="flex items-center justify-between gap-2 font-medium"
                     iconClassName="h-4 w-4 shrink-0"

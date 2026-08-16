@@ -1,6 +1,24 @@
 import { ExternalLink } from "lucide-react";
 import type { Source } from "@/types";
 
+function canonicalCitationUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    url.hostname = url.hostname.toLowerCase();
+    url.hash = "";
+    url.pathname = url.pathname.replace(/\/$/, "") || "/";
+    return url.toString();
+  } catch {
+    return value.trim();
+  }
+}
+
+export function evidenceSourceKey(source: Source): string {
+  return source.evidenceId
+    ? `id:${source.evidenceId}`
+    : `passage:${canonicalCitationUrl(source.url)}:${source.excerpt ?? source.title}`;
+}
+
 export function isSafeCitationUrl(url: string): boolean {
   try {
     const protocol = new URL(url).protocol;
