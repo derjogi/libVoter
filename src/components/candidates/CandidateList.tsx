@@ -218,7 +218,7 @@ export function CandidateList({
             console.log("Candidate: ", candidate);
             return (
               <CandidateCard
-                key={candidate.candidate.id}
+                key={candidate.candidate.candidacyId}
                 candidate={candidate}
                 onSelect={onSelectCandidate}
                 confidence={confidence}

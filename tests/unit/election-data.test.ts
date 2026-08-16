@@ -42,7 +42,6 @@ describe("election data repository", () => {
     const candidates = await repository.getCandidatesForSeat("Legacy Seat");
     expect(candidates).toMatchObject([
       {
-        id: "7",
         candidacyId: "7",
         personId: "7",
         partyId: null,
@@ -79,7 +78,6 @@ describe("election data repository", () => {
       await repository.getCandidatesForSeat("Test Electorate"),
     ).toMatchObject([
       {
-        id: "candidacy-1",
         candidacyId: "candidacy-1",
         personId: "person-1",
         partyId: "party-1",

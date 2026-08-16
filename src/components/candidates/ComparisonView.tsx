@@ -46,7 +46,7 @@ export function ComparisonView({
               <TabsContent value="overview" className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {candidates.map((candidate) => (
-                    <Card key={candidate.candidate.id}>
+                    <Card key={candidate.candidate.candidacyId}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div>
@@ -90,7 +90,10 @@ export function ComparisonView({
               <TabsContent value="policies" className="space-y-4">
                 <div className="grid gap-6 md:grid-cols-2">
                   {candidates.map((candidate) => (
-                    <div key={candidate.candidate.id} className="space-y-3">
+                    <div
+                      key={candidate.candidate.candidacyId}
+                      className="space-y-3"
+                    >
                       <div className="flex items-center space-x-2">
                         <h3 className="font-semibold">
                           {candidate.candidate.name}
@@ -119,7 +122,10 @@ export function ComparisonView({
               <TabsContent value="details" className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   {candidates.map((candidate) => (
-                    <div key={candidate.candidate.id} className="space-y-4">
+                    <div
+                      key={candidate.candidate.candidacyId}
+                      className="space-y-4"
+                    >
                       <div className="flex items-center space-x-2">
                         <h3 className="font-semibold text-lg">
                           {candidate.candidate.name}

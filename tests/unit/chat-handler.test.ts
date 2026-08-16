@@ -18,7 +18,6 @@ function candidate(overrides: {
   party: string | null;
 }) {
   return {
-    id: overrides.id,
     candidacyId: overrides.candidacyId ?? overrides.id,
     personId: overrides.personId ?? overrides.id,
     partyId: overrides.partyId ?? null,
@@ -112,7 +111,6 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     expect(result.candidateMatches).toHaveLength(1);
     const [match] = result.candidateMatches ?? [];
     expect(match.candidate).toMatchObject({
-      id: "candidacy-green",
       candidacyId: "candidacy-green",
       personId: "person-green",
       partyId: "nz-2026-party-green",
@@ -183,10 +181,10 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     );
 
     expect(
-      result.candidateMatches.map((match) => match.candidate.id).sort(),
+      result.candidateMatches.map((match) => match.candidate.candidacyId).sort(),
     ).toEqual(["broken", "ok"]);
     expect(
-      result.candidateMatches.find((match) => match.candidate.id === "broken"),
+      result.candidateMatches.find((match) => match.candidate.candidacyId === "broken"),
     ).toMatchObject({
       candidateEvidenceStatus: "unavailable",
       partyEvidenceStatus: "empty",
@@ -432,7 +430,7 @@ describe("AIChatHandler.processMessage (mock mode)", () => {
     expect(calls).toBe(2);
     expect(result.candidateMatches).toHaveLength(2);
     expect(
-      result.candidateMatches.map((m) => [m.candidate.id, m.score]),
+      result.candidateMatches.map((m) => [m.candidate.candidacyId, m.score]),
     ).toEqual([
       ["1", 82],
       ["2", 43],

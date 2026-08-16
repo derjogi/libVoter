@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, ExternalLink, Star, XCircle } from "lucide-react";
+import { CheckCircle, Star, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +10,45 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import type { CandidateMatch } from "@/types";
+import type { CandidateMatch, EvidenceStatus, Source } from "@/types";
+import { EvidenceSource } from "./EvidenceSource";
+
+function EvidenceLane({
+  heading,
+  sources,
+  status,
+}: {
+  heading: "Candidate evidence" | "Party evidence";
+  sources: Source[];
+  status: EvidenceStatus;
+}) {
+  const subject = heading === "Candidate evidence" ? "Candidate" : "Party";
+  return (
+    <section>
+      <h3 className="mb-3 text-lg font-semibold">{heading}</h3>
+      {sources.length > 0 ? (
+        <div className="space-y-2">
+          {sources.map((source) => (
+            <EvidenceSource
+              key={source.url}
+              source={source}
+              titleClassName="flex items-center justify-between gap-2 font-medium text-sm"
+              iconClassName="h-4 w-4 shrink-0 text-muted-foreground"
+            />
+          ))}
+        </div>
+      ) : status === "empty" ? (
+        <p className="text-sm text-muted-foreground">
+          No {subject.toLowerCase()} evidence was found for this match.
+        </p>
+      ) : status === "unavailable" ? (
+        <p className="text-sm text-muted-foreground">
+          {subject} evidence is currently unavailable.
+        </p>
+      ) : null}
+    </section>
+  );
+}
 
 interface CandidateModalProps {
   candidate: CandidateMatch | null;
@@ -29,7 +67,10 @@ export function CandidateModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        aria-describedby={undefined}
+        className="max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -113,38 +154,18 @@ export function CandidateModal({
             </div>
           </div>
 
-          {/* Sources */}
-          {candidate.sources && candidate.sources.length > 0 && (
-            <>
-              <Separator />
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Sources</h3>
-                <div className="space-y-2">
-                  {candidate.sources.map((source) => (
-                    <a
-                      key={source.url}
-                      href={source.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center p-3 border rounded-lg hover:bg-muted transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">
-                          {source.title}
-                        </div>
-                        {source.date && (
-                          <div className="text-xs text-muted-foreground">
-                            {new Date(source.date).toLocaleDateString()}
-                          </div>
-                        )}
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+          <Separator />
+          <EvidenceLane
+            heading="Candidate evidence"
+            sources={candidate.candidateSources}
+            status={candidate.candidateEvidenceStatus}
+          />
+          <Separator />
+          <EvidenceLane
+            heading="Party evidence"
+            sources={candidate.partySources}
+            status={candidate.partyEvidenceStatus}
+          />
 
           {/* Actions */}
           <div className="flex justify-end space-x-3 pt-4">

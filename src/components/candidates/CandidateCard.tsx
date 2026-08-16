@@ -2,7 +2,6 @@
 
 import { ExternalLink, Info, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import type { CandidateMatch } from "@/types";
@@ -21,13 +20,24 @@ export function CandidateCard({
   isLowConfidence = false,
 }: CandidateCardProps) {
   const opacityClass = isLowConfidence ? "opacity-60" : "opacity-100";
+  const selectCandidate = () => onSelect(candidate);
 
   return (
+    // biome-ignore lint/a11y/useSemanticElements: A native button cannot contain the card's flow content.
     <Card
-      className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${opacityClass} ${
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${candidate.candidate.name}`}
+      className={`w-full cursor-pointer transition-all duration-200 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${opacityClass} ${
         isLowConfidence ? "border-dashed" : ""
       }`}
-      onClick={() => onSelect(candidate)}
+      onClick={selectCandidate}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          if (event.key === " ") event.preventDefault();
+          selectCandidate();
+        }
+      }}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -39,9 +49,7 @@ export function CandidateCard({
               {candidate.candidate.party}
             </Badge>
           </div>
-          <Button variant="ghost" size="sm" className="p-1">
-            <Info className="h-4 w-4" />
-          </Button>
+          <Info aria-hidden="true" className="m-2 h-4 w-4" />
         </div>
 
         <div className="space-y-2">
@@ -65,18 +73,28 @@ export function CandidateCard({
                   key={policy}
                   className="text-sm text-muted-foreground flex items-center"
                 >
-                  <Star className="h-3 w-3 mr-2 text-yellow-500 flex-shrink-0" />
+                  <Star
+                    aria-hidden="true"
+                    className="h-3 w-3 mr-2 text-yellow-500 flex-shrink-0"
+                  />
                   {policy}
                 </li>
               ))}
             </ul>
           </div>
 
-          {candidate.sources && candidate.sources.length > 0 && (
+          {candidate.candidateSources.length + candidate.partySources.length >
+            0 && (
             <div className="flex items-center text-xs text-muted-foreground">
-              <ExternalLink className="h-3 w-3 mr-1" />
-              {candidate.sources.length} source
-              {candidate.sources.length !== 1 ? "s" : ""}
+              <ExternalLink aria-hidden="true" className="h-3 w-3 mr-1" />
+              {candidate.candidateSources.length +
+                candidate.partySources.length}{" "}
+              source
+              {candidate.candidateSources.length +
+                candidate.partySources.length !==
+              1
+                ? "s"
+                : ""}
             </div>
           )}
 

@@ -7,6 +7,7 @@ import { CandidateList } from "@/components/candidates/CandidateList";
 import { CandidateModal } from "@/components/candidates/CandidateModal";
 import { ComparisonView } from "@/components/candidates/ComparisonView";
 import { PartyList } from "@/components/candidates/PartyList";
+import { PartyModal } from "@/components/candidates/PartyModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +52,8 @@ export function RightPanel({
   const showPartyVote = partyMatches.length > 0;
   const [selectedCandidate, setSelectedCandidate] =
     useState<CandidateMatch | null>(null);
+  const [selectedParty, setSelectedParty] = useState<PartyMatch | null>(null);
+  const partyTriggerRef = useRef<HTMLElement | null>(null);
   const [comparisonCandidates, setComparisonCandidates] = useState<
     CandidateMatch[]
   >([]);
@@ -71,9 +74,14 @@ export function RightPanel({
     onCandidateSelect?.(candidate);
   };
 
+  const handlePartySelect = (party: PartyMatch) => {
+    partyTriggerRef.current = document.activeElement as HTMLElement | null;
+    setSelectedParty(party);
+  };
+
   const handleCompare = (candidate: CandidateMatch) => {
     const existingIndex = comparisonCandidates.findIndex(
-      (c) => c.candidate.id === candidate.candidate.id,
+      (c) => c.candidate.candidacyId === candidate.candidate.candidacyId,
     );
     if (existingIndex >= 0) {
       setComparisonCandidates((prev) =>
@@ -265,7 +273,11 @@ export function RightPanel({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <PartyList parties={partyMatches} confidence={confidence} />
+              <PartyList
+                parties={partyMatches}
+                confidence={confidence}
+                onSelectParty={handlePartySelect}
+              />
             </CardContent>
           </Card>
         )}
@@ -333,6 +345,12 @@ export function RightPanel({
         isOpen={!!selectedCandidate}
         onClose={() => setSelectedCandidate(null)}
         onCompare={handleCompare}
+      />
+      <PartyModal
+        party={selectedParty}
+        isOpen={!!selectedParty}
+        onClose={() => setSelectedParty(null)}
+        returnFocusTo={partyTriggerRef.current}
       />
 
       {/* Comparison View */}

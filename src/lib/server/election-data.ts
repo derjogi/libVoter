@@ -111,7 +111,6 @@ export function createElectionDataRepository(
       return result.rows.map((row) => {
         const candidacyId = String(legacy ? row.id : row.candidacy_id);
         return {
-          id: candidacyId,
           candidacyId,
           personId: String(legacy ? row.id : row.person_id),
           partyId: legacy || row.party_id == null ? null : String(row.party_id),

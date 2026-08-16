@@ -5,7 +5,6 @@ import type { CandidateMatch } from "@/types";
 function fakeCandidate(score: number): CandidateMatch {
   return {
     candidate: {
-      id: String(score),
       candidacyId: String(score),
       personId: `person-${score}`,
       partyId: null,

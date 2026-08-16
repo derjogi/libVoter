@@ -10,6 +10,7 @@ interface PartyListProps {
   parties: PartyMatch[];
   /** Ranking-derived confidence; dims cards while still "building". */
   confidence: number;
+  onSelectParty: (party: PartyMatch) => void;
 }
 
 /**
@@ -18,7 +19,11 @@ interface PartyListProps {
  * ranking starts heuristic/LLM-backed; evidence-backed citations arrive with
  * spec 009.
  */
-export function PartyList({ parties, confidence }: PartyListProps) {
+export function PartyList({
+  parties,
+  confidence,
+  onSelectParty,
+}: PartyListProps) {
   const isLowConfidence = confidence < 60; // AI_CONFIDENCE_THRESHOLD
 
   if (parties.length === 0) {
@@ -40,48 +45,48 @@ export function PartyList({ parties, confidence }: PartyListProps) {
       {sorted.map((match) => {
         const opacityClass = isLowConfidence ? "opacity-60" : "opacity-100";
         return (
-          <Card
+          <button
             key={match.party.id}
-            className={`transition-all duration-200 ${opacityClass} ${
-              isLowConfidence ? "border-dashed" : ""
-            }`}
+            type="button"
+            aria-label={`View evidence for ${match.party.name}`}
+            onClick={() => onSelectParty(match)}
+            className="block w-full cursor-pointer text-left"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-base leading-tight">
-                    {match.party.name}
-                  </h3>
-                  {match.party.leader && (
-                    <Badge variant="secondary" className="mt-1">
-                      {match.party.leader}
-                    </Badge>
-                  )}
-                </div>
-                <span className="text-sm font-bold text-primary">
-                  {match.score}%
-                </span>
-              </div>
-              <Progress value={match.score} className="h-2" />
-            </CardHeader>
-
-            {(match.reasoning || match.sources.length > 0) && (
-              <CardContent className="pt-0 space-y-2">
-                {match.reasoning && (
-                  <p className="text-sm text-muted-foreground">
-                    {match.reasoning}
-                  </p>
-                )}
-                {match.sources.length > 0 && (
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <ExternalLink className="h-3 w-3 mr-1" />
-                    {match.sources.length} source
-                    {match.sources.length !== 1 ? "s" : ""}
+            <Card
+              className={`transition-all duration-200 hover:shadow-lg ${opacityClass} ${isLowConfidence ? "border-dashed" : ""}`}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-base leading-tight">
+                      {match.party.name}
+                    </h3>
+                    {match.party.leader && (
+                      <Badge variant="secondary" className="mt-1">
+                        {match.party.leader}
+                      </Badge>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            )}
-          </Card>
+                  <span className="text-sm font-bold text-primary">
+                    {match.score}%
+                  </span>
+                </div>
+                <Progress value={match.score} className="h-2" />
+              </CardHeader>
+
+              {match.sources.length > 0 && (
+                <CardContent className="pt-0 space-y-2">
+                  {match.sources.length > 0 && (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      {match.sources.length} source
+                      {match.sources.length !== 1 ? "s" : ""}
+                    </div>
+                  )}
+                </CardContent>
+              )}
+            </Card>
+          </button>
         );
       })}
     </div>
